@@ -1530,11 +1530,16 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSize, setSelectedSize] = useState('TODOS');
   const [currentPage, setCurrentPage] = useState(() => {
-    // Restaura a página a partir da URL (?page=N) — sobrevive ao reload.
+    // Restaura a página da URL (?page=N) ou do sessionStorage — sobrevive ao reload.
     if (typeof window === 'undefined') return 1;
     const sp = new URLSearchParams(window.location.search);
-    const n = parseInt(sp.get('page') || '1', 10);
-    return Number.isFinite(n) && n > 0 ? n : 1;
+    const fromUrl = parseInt(sp.get('page') || '', 10);
+    if (Number.isFinite(fromUrl) && fromUrl > 0) return fromUrl;
+    try {
+      const fromStore = parseInt(sessionStorage.getItem('catalog:page') || '', 10);
+      if (Number.isFinite(fromStore) && fromStore > 0) return fromStore;
+    } catch {}
+    return 1;
   });
   const PRODUCTS_PER_PAGE = 20;
   const [showMyOrders, setShowMyOrders] = useState(false);
