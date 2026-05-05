@@ -1530,8 +1530,13 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSize, setSelectedSize] = useState('TODOS');
   const [currentPage, setCurrentPage] = useState(() => {
-    // Restaura a página da URL (?page=N) ou do sessionStorage — sobrevive ao reload.
+    // Restaura a página a partir do path /pagina/N (ou ?page=N legado, ou sessionStorage).
     if (typeof window === 'undefined') return 1;
+    const m = window.location.pathname.match(/\/pagina\/(\d+)/i);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
     const sp = new URLSearchParams(window.location.search);
     const fromUrl = parseInt(sp.get('page') || '', 10);
     if (Number.isFinite(fromUrl) && fromUrl > 0) return fromUrl;
