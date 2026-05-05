@@ -2095,8 +2095,12 @@ function App() {
                     {!isOutOfStock && product.stock <= 3 && <div className="absolute top-2 left-2 z-10 bg-amber-500 text-zinc-950 text-[8px] font-black uppercase px-2 py-1 rounded-md animate-pulse" data-testid={`badge-last-pieces-${product.id}`}>Restam {product.stock}</div>}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
                     
-                      <div className="aspect-[4/5] bg-zinc-900/50 relative overflow-hidden">
-                        <img src={product.image} loading="lazy" decoding="async" className={`w-full h-full object-cover transition-transform duration-700 ${isOutOfStock ? 'grayscale opacity-40' : 'opacity-95 group-hover:scale-105 group-hover:opacity-100'}`} alt={product.name} />
+                       <ProductImage
+                         src={product.image}
+                         alt={product.name}
+                         eager={idx < 4}
+                         isOutOfStock={isOutOfStock}
+                       >
                         
                         {isOutOfStock && (
                            <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px] flex items-center justify-center">
