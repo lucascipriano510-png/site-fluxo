@@ -1530,11 +1530,16 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSize, setSelectedSize] = useState('TODOS');
   const [currentPage, setCurrentPage] = useState(() => {
-    // Restaura a página a partir da URL (?page=N) — sobrevive ao reload.
+    // Restaura a página da URL (?page=N) ou do sessionStorage — sobrevive ao reload.
     if (typeof window === 'undefined') return 1;
     const sp = new URLSearchParams(window.location.search);
-    const n = parseInt(sp.get('page') || '1', 10);
-    return Number.isFinite(n) && n > 0 ? n : 1;
+    const fromUrl = parseInt(sp.get('page') || '', 10);
+    if (Number.isFinite(fromUrl) && fromUrl > 0) return fromUrl;
+    try {
+      const fromStore = parseInt(sessionStorage.getItem('catalog:page') || '', 10);
+      if (Number.isFinite(fromStore) && fromStore > 0) return fromStore;
+    } catch {}
+    return 1;
   });
   const PRODUCTS_PER_PAGE = 20;
   const [showMyOrders, setShowMyOrders] = useState(false);
@@ -1839,9 +1844,18 @@ function App() {
   }, [filteredProducts, currentPage]);
 
   // Sempre que os filtros/busca mudarem, volta para a primeira página.
-  useEffect(() => { setCurrentPage(1); }, [selectedCategory, selectedSubcategory, searchQuery, selectedSize, activeCollectionFilter]);
+  // IMPORTANTE: não dispara no mount inicial — preserva a página vinda da URL (?page=N).
+  const isFirstFilterRun = React.useRef(true);
+  useEffect(() => {
+    if (isFirstFilterRun.current) { isFirstFilterRun.current = false; return; }
+    setCurrentPage(1);
+  }, [selectedCategory, selectedSubcategory, searchQuery, selectedSize, activeCollectionFilter]);
   // Se a página atual ficar fora do range (ex.: filtro reduziu lista), corrige.
-  useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [totalPages, currentPage]);
+  // Só corrige depois que a lista de produtos já carregou (evita zerar antes do fetch).
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage, products]);
   // Espelha a página atual na URL (?page=N) para sobreviver a recargas.
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1850,7 +1864,19 @@ function App() {
     const qs = sp.toString();
     const newUrl = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
     window.history.replaceState(null, '', newUrl);
+    try { sessionStorage.setItem('catalog:page', String(currentPage)); } catch {}
   }, [currentPage]);
+  // Suporte ao botão voltar/avançar do navegador — sincroniza com a URL.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPop = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const n = parseInt(sp.get('page') || '1', 10);
+      setCurrentPage(Number.isFinite(n) && n > 0 ? n : 1);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   const availableSizes = useMemo(() => {
     const set = new Set();
