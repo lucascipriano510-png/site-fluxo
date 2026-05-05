@@ -1530,8 +1530,13 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSize, setSelectedSize] = useState('TODOS');
   const [currentPage, setCurrentPage] = useState(() => {
-    // Restaura a página da URL (?page=N) ou do sessionStorage — sobrevive ao reload.
+    // Restaura a página a partir do path /pagina/N (ou ?page=N legado, ou sessionStorage).
     if (typeof window === 'undefined') return 1;
+    const m = window.location.pathname.match(/\/pagina\/(\d+)/i);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
     const sp = new URLSearchParams(window.location.search);
     const fromUrl = parseInt(sp.get('page') || '', 10);
     if (Number.isFinite(fromUrl) && fromUrl > 0) return fromUrl;
@@ -1856,20 +1861,34 @@ function App() {
     if (!products || products.length === 0) return;
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [totalPages, currentPage, products]);
-  // Espelha a página atual na URL (?page=N) para sobreviver a recargas.
+  // Espelha a página atual na URL como /pagina/N (push para criar histórico).
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // Remove qualquer segmento /pagina/N existente do path.
+    const cleanPath = window.location.pathname.replace(/\/pagina\/\d+\/?$/i, '') || '/';
+    // Remove ?page= legado também.
     const sp = new URLSearchParams(window.location.search);
-    if (currentPage <= 1) sp.delete('page'); else sp.set('page', String(currentPage));
+    sp.delete('page');
     const qs = sp.toString();
-    const newUrl = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
-    window.history.replaceState(null, '', newUrl);
+    const base = cleanPath === '/' ? '' : cleanPath.replace(/\/$/, '');
+    const newPath = currentPage <= 1 ? (cleanPath || '/') : `${base}/pagina/${currentPage}`;
+    const newUrl = newPath + (qs ? `?${qs}` : '') + window.location.hash;
+    const fullCurrent = window.location.pathname + window.location.search + window.location.hash;
+    if (newUrl !== fullCurrent) {
+      window.history.pushState(null, '', newUrl);
+    }
     try { sessionStorage.setItem('catalog:page', String(currentPage)); } catch {}
   }, [currentPage]);
   // Suporte ao botão voltar/avançar do navegador — sincroniza com a URL.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onPop = () => {
+      const m = window.location.pathname.match(/\/pagina\/(\d+)/i);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        setCurrentPage(Number.isFinite(n) && n > 0 ? n : 1);
+        return;
+      }
       const sp = new URLSearchParams(window.location.search);
       const n = parseInt(sp.get('page') || '1', 10);
       setCurrentPage(Number.isFinite(n) && n > 0 ? n : 1);
