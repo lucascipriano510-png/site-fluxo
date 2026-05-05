@@ -1839,9 +1839,18 @@ function App() {
   }, [filteredProducts, currentPage]);
 
   // Sempre que os filtros/busca mudarem, volta para a primeira página.
-  useEffect(() => { setCurrentPage(1); }, [selectedCategory, selectedSubcategory, searchQuery, selectedSize, activeCollectionFilter]);
+  // IMPORTANTE: não dispara no mount inicial — preserva a página vinda da URL (?page=N).
+  const isFirstFilterRun = React.useRef(true);
+  useEffect(() => {
+    if (isFirstFilterRun.current) { isFirstFilterRun.current = false; return; }
+    setCurrentPage(1);
+  }, [selectedCategory, selectedSubcategory, searchQuery, selectedSize, activeCollectionFilter]);
   // Se a página atual ficar fora do range (ex.: filtro reduziu lista), corrige.
-  useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [totalPages, currentPage]);
+  // Só corrige depois que a lista de produtos já carregou (evita zerar antes do fetch).
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage, products]);
   // Espelha a página atual na URL (?page=N) para sobreviver a recargas.
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1850,7 +1859,19 @@ function App() {
     const qs = sp.toString();
     const newUrl = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
     window.history.replaceState(null, '', newUrl);
+    try { sessionStorage.setItem('catalog:page', String(currentPage)); } catch {}
   }, [currentPage]);
+  // Suporte ao botão voltar/avançar do navegador — sincroniza com a URL.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPop = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const n = parseInt(sp.get('page') || '1', 10);
+      setCurrentPage(Number.isFinite(n) && n > 0 ? n : 1);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   const availableSizes = useMemo(() => {
     const set = new Set();
