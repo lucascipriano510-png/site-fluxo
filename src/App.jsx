@@ -1364,6 +1364,7 @@ function App() {
   const products = productsRaw;
 
   const [banners, setBannersRaw] = useState(DEFAULT_BANNERS);
+  const [bannersLoaded, setBannersLoaded] = useState(false);
   useEffect(() => {
     let alive = true;
     const load = async () => {
@@ -1378,6 +1379,7 @@ function App() {
           setBannersRaw(normalized);
         }
       } catch (e) { console.warn('[banners] fetch falhou:', e?.message); }
+      finally { if (alive) setBannersLoaded(true); }
     };
     load();
     const t = setInterval(load, 10000);
