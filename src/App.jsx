@@ -1283,6 +1283,7 @@ const AdminConfig = ({ config, setConfig, showToast }) => {
 function App() {
   // ======= PRODUTOS: agora vivem no Supabase =======
   const [productsRaw, setProductsRaw] = useState(DEFAULT_PRODUCTS);
+  const [productsLoaded, setProductsLoaded] = useState(false);
   const productsRef = useRef(DEFAULT_PRODUCTS);
   useEffect(() => { productsRef.current = productsRaw; }, [productsRaw]);
 
@@ -1294,6 +1295,7 @@ function App() {
         const remote = await fetchProducts();
         if (alive && Array.isArray(remote) && remote.length > 0) setProductsRaw(remote);
       } catch (e) { console.warn('[products] fetch falhou:', e?.message); }
+      finally { if (alive) setProductsLoaded(true); }
     };
     load();
     const t = setInterval(load, 5000);
@@ -1860,11 +1862,11 @@ function App() {
     setCurrentPage(1);
   }, [selectedCategory, selectedSubcategory, searchQuery, selectedSize, activeCollectionFilter]);
   // Se a página atual ficar fora do range (ex.: filtro reduziu lista), corrige.
-  // Só corrige depois que a lista de produtos já carregou (evita zerar antes do fetch).
+  // Só corrige depois que a carga remota terminou — evita /pagina2 voltar para / na primeira renderização.
   useEffect(() => {
-    if (!products || products.length === 0) return;
+    if (!productsLoaded) return;
     if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [totalPages, currentPage, products]);
+  }, [totalPages, currentPage, productsLoaded]);
   // Espelha a página atual na URL como /paginaN (push para criar histórico).
   useEffect(() => {
     if (typeof window === 'undefined') return;
