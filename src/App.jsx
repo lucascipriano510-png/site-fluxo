@@ -98,6 +98,7 @@ const ProductImage = ({ src, alt, isOutOfStock }) => {
   const wrapperRef = React.useRef(null);
 
   React.useEffect(() => {
+    if (!src) return;
     setLoaded(false);
     setInView(false);
     const el = wrapperRef.current;
@@ -114,7 +115,7 @@ const ProductImage = ({ src, alt, isOutOfStock }) => {
           }
         });
       },
-      { rootMargin: '0px', threshold: 0.12 }
+      { rootMargin: '180px 0px', threshold: 0.01 }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -135,6 +136,32 @@ const ProductImage = ({ src, alt, isOutOfStock }) => {
         />
       )}
     </div>
+  );
+};
+
+const BannerImage = ({ src, alt, active }) => {
+  const [loaded, setLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    setLoaded(false);
+  }, [src]);
+
+  if (!src) return <div className="absolute inset-0 bg-black" />;
+
+  return (
+    <>
+      {!loaded && <div className="absolute inset-0 bg-black" />}
+      <img
+        src={src}
+        className={`w-full h-full object-cover opacity-80 transition-opacity duration-300 ${loaded ? 'opacity-80' : 'opacity-0'}`}
+        alt={alt}
+        loading={active ? 'eager' : 'lazy'}
+        decoding="async"
+        fetchPriority={active ? 'high' : 'low'}
+        onLoad={() => setLoaded(true)}
+        style={{ imageRendering: 'high-quality', WebkitOptimizeContrast: 'optimize-contrast' }}
+      />
+    </>
   );
 };
 
