@@ -109,20 +109,48 @@ class AdminTabErrorBoundary extends React.Component {
 // ==========================================
 // 2. FUNÇÕES DE TRACKING E UTILITÁRIOS
 // ==========================================
-const ProductImage = ({ src, alt, isOutOfStock }) => {
+const ProductImage = ({ src, alt, isOutOfStock, priority = false }) => {
   const [loaded, setLoaded] = React.useState(false);
+  const [inView, setInView] = React.useState(priority);
+  const wrapperRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (priority || inView) return;
+    const el = wrapperRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setInView(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setInView(true);
+            io.disconnect();
+          }
+        });
+      },
+      { rootMargin: '600px 0px', threshold: 0.01 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [priority, inView]);
+
   return (
-    <>
+    <div ref={wrapperRef} className="absolute inset-0">
       {!loaded && <div className="absolute inset-0 bg-zinc-800 animate-pulse" />}
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        decoding="async"
-        onLoad={() => setLoaded(true)}
-        className={`w-full h-full object-cover transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : 'group-hover:scale-105'} transition-transform`}
-      />
-    </>
+      {inView && (
+        <img
+          src={src}
+          alt={alt}
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchpriority={priority ? 'high' : 'low'}
+          onLoad={() => setLoaded(true)}
+          className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : 'group-hover:scale-105'} transition-transform`}
+        />
+      )}
+    </div>
   );
 };
 
