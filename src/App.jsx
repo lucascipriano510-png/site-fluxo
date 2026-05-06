@@ -109,13 +109,14 @@ class AdminTabErrorBoundary extends React.Component {
 // ==========================================
 // 2. FUNÇÕES DE TRACKING E UTILITÁRIOS
 // ==========================================
-const ProductImage = ({ src, alt, isOutOfStock, priority = false }) => {
+const ProductImage = ({ src, alt, isOutOfStock }) => {
   const [loaded, setLoaded] = React.useState(false);
-  const [inView, setInView] = React.useState(priority);
+  const [inView, setInView] = React.useState(false);
   const wrapperRef = React.useRef(null);
 
   React.useEffect(() => {
-    if (priority || inView) return;
+    setLoaded(false);
+    setInView(false);
     const el = wrapperRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') {
       setInView(true);
@@ -130,11 +131,11 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false }) => {
           }
         });
       },
-      { rootMargin: '600px 0px', threshold: 0.01 }
+      { rootMargin: '0px', threshold: 0.12 }
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [priority, inView]);
+  }, [src]);
 
   return (
     <div ref={wrapperRef} className="absolute inset-0">
@@ -143,9 +144,9 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false }) => {
         <img
           src={src}
           alt={alt}
-          loading={priority ? 'eager' : 'lazy'}
+          loading="lazy"
           decoding="async"
-          fetchpriority={priority ? 'high' : 'low'}
+          fetchPriority="low"
           onLoad={() => setLoaded(true)}
           className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : 'group-hover:scale-105'} transition-transform`}
         />
@@ -2199,7 +2200,6 @@ function App() {
                            src={product.image}
                            alt={product.name}
                            isOutOfStock={isOutOfStock}
-                           priority={idx < 4}
                          />
                         
                         {isOutOfStock && (
