@@ -37,24 +37,7 @@ const DEFAULT_PRODUCTS = [
   { id: 5, sku: '9059', name: 'Calça Super Skinny Malibu Rasgada', price: 189.90, category: 'VESTUÁRIO', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800', stock: 10, sales: 5, sizes: [{size: '38', stock: 5}, {size: '40', stock: 5}], featured: true }
 ];
 
-const DEFAULT_BANNERS = [
-  {
-    id: 1,
-    image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1000&q=80',
-    title: 'NOVA COLEÇÃO',
-    subtitle: 'STREETWEAR PREMIUM 2026',
-    buttonText: 'VER PEÇAS',
-    active: true
-  },
-  {
-    id: 2,
-    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=1000&q=80',
-    title: 'FRETE GRÁTIS',
-    subtitle: 'ENVIOS EXPRESSOS',
-    buttonText: 'APROVEITAR',
-    active: true
-  }
-];
+const DEFAULT_BANNERS = [];
 
 const DEFAULT_CONFIG = {
   brandName: 'FLUXO OUTLET EXCLUSIVE',
@@ -115,6 +98,7 @@ const ProductImage = ({ src, alt, isOutOfStock }) => {
   const wrapperRef = React.useRef(null);
 
   React.useEffect(() => {
+    if (!src) return;
     setLoaded(false);
     setInView(false);
     const el = wrapperRef.current;
@@ -131,7 +115,7 @@ const ProductImage = ({ src, alt, isOutOfStock }) => {
           }
         });
       },
-      { rootMargin: '0px', threshold: 0.12 }
+      { rootMargin: '180px 0px', threshold: 0.01 }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -152,6 +136,32 @@ const ProductImage = ({ src, alt, isOutOfStock }) => {
         />
       )}
     </div>
+  );
+};
+
+const BannerImage = ({ src, alt, active }) => {
+  const [loaded, setLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    setLoaded(false);
+  }, [src]);
+
+  if (!src) return <div className="absolute inset-0 bg-black" />;
+
+  return (
+    <>
+      {!loaded && <div className="absolute inset-0 bg-black" />}
+      <img
+        src={src}
+        className={`w-full h-full object-cover opacity-80 transition-opacity duration-300 ${loaded ? 'opacity-80' : 'opacity-0'}`}
+        alt={alt}
+        loading={active ? 'eager' : 'lazy'}
+        decoding="async"
+        fetchPriority={active ? 'high' : 'low'}
+        onLoad={() => setLoaded(true)}
+        style={{ imageRendering: 'high-quality', WebkitOptimizeContrast: 'optimize-contrast' }}
+      />
+    </>
   );
 };
 
@@ -1354,6 +1364,7 @@ function App() {
   const products = productsRaw;
 
   const [banners, setBannersRaw] = useState(DEFAULT_BANNERS);
+  const [bannersLoaded, setBannersLoaded] = useState(false);
   useEffect(() => {
     let alive = true;
     const load = async () => {
@@ -1368,6 +1379,7 @@ function App() {
           setBannersRaw(normalized);
         }
       } catch (e) { console.warn('[banners] fetch falhou:', e?.message); }
+      finally { if (alive) setBannersLoaded(true); }
     };
     load();
     const t = setInterval(load, 10000);
@@ -2051,17 +2063,13 @@ function App() {
         </div>
       </header>
 
-      {activeBanners.length > 0 && (
-        <section className="relative w-full max-w-md mx-auto aspect-[4/5] sm:aspect-video bg-zinc-900 overflow-hidden group">
+      {(activeBanners.length > 0 || !bannersLoaded) && (
+        <section className="relative w-full max-w-md mx-auto aspect-[4/5] sm:aspect-video bg-black overflow-hidden group">
+          {activeBanners.length === 0 && <div className="absolute inset-0 bg-black" />}
           <div className="flex h-full transition-transform duration-700 ease-in-out" style={{ transform: `translateX(-${currentBannerSlide * 100}%)` }}>
             {activeBanners.map((banner, idx) => (
               <div key={idx} className="w-full h-full shrink-0 relative">
-                <img 
-                  src={banner.image} 
-                  className="w-full h-full object-cover opacity-80" 
-                  alt="Banner" 
-                  style={{ imageRendering: 'high-quality', WebkitOptimizeContrast: 'optimize-contrast' }}
-                />
+                <BannerImage src={banner.image} alt={banner.title || 'Banner'} active={idx === currentBannerSlide} />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent"></div>
                 <div className="absolute inset-x-0 bottom-0 p-8 flex flex-col items-center text-center animate-slide-up">
                   <h2 className="text-3xl font-black text-white uppercase tracking-tighter shadow-black drop-shadow-lg">{banner.title}</h2>
