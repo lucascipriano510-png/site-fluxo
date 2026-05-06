@@ -37,24 +37,7 @@ const DEFAULT_PRODUCTS = [
   { id: 5, sku: '9059', name: 'Calça Super Skinny Malibu Rasgada', price: 189.90, category: 'VESTUÁRIO', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800', stock: 10, sales: 5, sizes: [{size: '38', stock: 5}, {size: '40', stock: 5}], featured: true }
 ];
 
-const DEFAULT_BANNERS = [
-  {
-    id: 1,
-    image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1000&q=80',
-    title: 'NOVA COLEÇÃO',
-    subtitle: 'STREETWEAR PREMIUM 2026',
-    buttonText: 'VER PEÇAS',
-    active: true
-  },
-  {
-    id: 2,
-    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=1000&q=80',
-    title: 'FRETE GRÁTIS',
-    subtitle: 'ENVIOS EXPRESSOS',
-    buttonText: 'APROVEITAR',
-    active: true
-  }
-];
+const DEFAULT_BANNERS = [];
 
 const DEFAULT_CONFIG = {
   brandName: 'FLUXO OUTLET EXCLUSIVE',
