@@ -1530,9 +1530,9 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSize, setSelectedSize] = useState('TODOS');
   const [currentPage, setCurrentPage] = useState(() => {
-    // Restaura a página a partir do path /pagina/N (ou ?page=N legado, ou sessionStorage).
+    // Restaura a página a partir do path /paginaN (ou /pagina/N legado, ?page=N legado, ou sessionStorage).
     if (typeof window === 'undefined') return 1;
-    const m = window.location.pathname.match(/\/pagina\/(\d+)/i);
+    const m = window.location.pathname.match(/\/pagina\/?(\d+)/i);
     if (m) {
       const n = parseInt(m[1], 10);
       if (Number.isFinite(n) && n > 0) return n;
@@ -1861,17 +1861,17 @@ function App() {
     if (!products || products.length === 0) return;
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [totalPages, currentPage, products]);
-  // Espelha a página atual na URL como /pagina/N (push para criar histórico).
+  // Espelha a página atual na URL como /paginaN (push para criar histórico).
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // Remove qualquer segmento /pagina/N existente do path.
-    const cleanPath = window.location.pathname.replace(/\/pagina\/\d+\/?$/i, '') || '/';
+    // Remove qualquer segmento /pagina(/)?N existente do path.
+    const cleanPath = window.location.pathname.replace(/\/pagina\/?\d+\/?$/i, '') || '/';
     // Remove ?page= legado também.
     const sp = new URLSearchParams(window.location.search);
     sp.delete('page');
     const qs = sp.toString();
     const base = cleanPath === '/' ? '' : cleanPath.replace(/\/$/, '');
-    const newPath = currentPage <= 1 ? (cleanPath || '/') : `${base}/pagina/${currentPage}`;
+    const newPath = currentPage <= 1 ? (cleanPath || '/') : `${base}/pagina${currentPage}`;
     const newUrl = newPath + (qs ? `?${qs}` : '') + window.location.hash;
     const fullCurrent = window.location.pathname + window.location.search + window.location.hash;
     if (newUrl !== fullCurrent) {
@@ -1883,7 +1883,7 @@ function App() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onPop = () => {
-      const m = window.location.pathname.match(/\/pagina\/(\d+)/i);
+      const m = window.location.pathname.match(/\/pagina\/?(\d+)/i);
       if (m) {
         const n = parseInt(m[1], 10);
         setCurrentPage(Number.isFinite(n) && n > 0 ? n : 1);
