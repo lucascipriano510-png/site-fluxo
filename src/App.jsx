@@ -1283,6 +1283,7 @@ const AdminConfig = ({ config, setConfig, showToast }) => {
 function App() {
   // ======= PRODUTOS: agora vivem no Supabase =======
   const [productsRaw, setProductsRaw] = useState(DEFAULT_PRODUCTS);
+  const [productsLoaded, setProductsLoaded] = useState(false);
   const productsRef = useRef(DEFAULT_PRODUCTS);
   useEffect(() => { productsRef.current = productsRaw; }, [productsRaw]);
 
@@ -1294,6 +1295,7 @@ function App() {
         const remote = await fetchProducts();
         if (alive && Array.isArray(remote) && remote.length > 0) setProductsRaw(remote);
       } catch (e) { console.warn('[products] fetch falhou:', e?.message); }
+      finally { if (alive) setProductsLoaded(true); }
     };
     load();
     const t = setInterval(load, 5000);
