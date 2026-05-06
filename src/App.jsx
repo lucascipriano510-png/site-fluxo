@@ -1529,10 +1529,15 @@ function App() {
   const [selectedSubcategory, setSelectedSubcategory] = useState('TODOS');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSize, setSelectedSize] = useState('TODOS');
-  const [currentPage, setCurrentPage] = useState(() => {
-    // Restaura a página a partir do path /paginaN (ou /pagina/N legado, ?page=N legado, ou sessionStorage).
+   const [currentPage, setCurrentPage] = useState(() => {
+    // Restaura a página a partir do path /paginaN (preferido) ou /pagina/N (fallback legado),
+    // depois ?page=N (legado) ou sessionStorage.
     if (typeof window === 'undefined') return 1;
-    const m = window.location.pathname.match(/\/pagina\/?(\d+)/i);
+    const path = window.location.pathname;
+    // 1) Formato preferido: /paginaN  (ex: /pagina2, /pagina3)
+    let m = path.match(/\/pagina(\d+)(?:\/)?$/i);
+    // 2) Fallback: /pagina/N  (ex: /pagina/2)
+    if (!m) m = path.match(/\/pagina\/(\d+)(?:\/)?$/i);
     if (m) {
       const n = parseInt(m[1], 10);
       if (Number.isFinite(n) && n > 0) return n;
@@ -1883,7 +1888,9 @@ function App() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onPop = () => {
-      const m = window.location.pathname.match(/\/pagina\/?(\d+)/i);
+      const path = window.location.pathname;
+      let m = path.match(/\/pagina(\d+)(?:\/)?$/i);
+      if (!m) m = path.match(/\/pagina\/(\d+)(?:\/)?$/i);
       if (m) {
         const n = parseInt(m[1], 10);
         setCurrentPage(Number.isFinite(n) && n > 0 ? n : 1);
