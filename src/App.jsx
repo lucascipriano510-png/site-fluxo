@@ -2063,17 +2063,13 @@ function App() {
         </div>
       </header>
 
-      {activeBanners.length > 0 && (
-        <section className="relative w-full max-w-md mx-auto aspect-[4/5] sm:aspect-video bg-zinc-900 overflow-hidden group">
+      {(activeBanners.length > 0 || !bannersLoaded) && (
+        <section className="relative w-full max-w-md mx-auto aspect-[4/5] sm:aspect-video bg-black overflow-hidden group">
+          {activeBanners.length === 0 && <div className="absolute inset-0 bg-black" />}
           <div className="flex h-full transition-transform duration-700 ease-in-out" style={{ transform: `translateX(-${currentBannerSlide * 100}%)` }}>
             {activeBanners.map((banner, idx) => (
               <div key={idx} className="w-full h-full shrink-0 relative">
-                <img 
-                  src={banner.image} 
-                  className="w-full h-full object-cover opacity-80" 
-                  alt="Banner" 
-                  style={{ imageRendering: 'high-quality', WebkitOptimizeContrast: 'optimize-contrast' }}
-                />
+                <BannerImage src={banner.image} alt={banner.title || 'Banner'} active={idx === currentBannerSlide} />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent"></div>
                 <div className="absolute inset-x-0 bottom-0 p-8 flex flex-col items-center text-center animate-slide-up">
                   <h2 className="text-3xl font-black text-white uppercase tracking-tighter shadow-black drop-shadow-lg">{banner.title}</h2>
