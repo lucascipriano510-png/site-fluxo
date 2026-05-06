@@ -1530,9 +1530,9 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSize, setSelectedSize] = useState('TODOS');
   const [currentPage, setCurrentPage] = useState(() => {
-    // Restaura a página a partir do path /pagina/N (ou ?page=N legado, ou sessionStorage).
+    // Restaura a página a partir do path /paginaN (ou /pagina/N legado, ?page=N legado, ou sessionStorage).
     if (typeof window === 'undefined') return 1;
-    const m = window.location.pathname.match(/\/pagina\/(\d+)/i);
+    const m = window.location.pathname.match(/\/pagina\/?(\d+)/i);
     if (m) {
       const n = parseInt(m[1], 10);
       if (Number.isFinite(n) && n > 0) return n;
