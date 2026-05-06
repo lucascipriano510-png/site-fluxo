@@ -1888,7 +1888,9 @@ function App() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onPop = () => {
-      const m = window.location.pathname.match(/\/pagina\/?(\d+)/i);
+      const path = window.location.pathname;
+      let m = path.match(/\/pagina(\d+)(?:\/)?$/i);
+      if (!m) m = path.match(/\/pagina\/(\d+)(?:\/)?$/i);
       if (m) {
         const n = parseInt(m[1], 10);
         setCurrentPage(Number.isFinite(n) && n > 0 ? n : 1);
