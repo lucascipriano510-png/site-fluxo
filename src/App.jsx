@@ -109,7 +109,7 @@ class AdminTabErrorBoundary extends React.Component {
 // ==========================================
 // 2. FUNÇÕES DE TRACKING E UTILITÁRIOS
 // ==========================================
-const ProductImage = ({ src, alt, eager, isOutOfStock }) => {
+const ProductImage = ({ src, alt, isOutOfStock }) => {
   const [loaded, setLoaded] = React.useState(false);
   return (
     <>
@@ -117,9 +117,8 @@ const ProductImage = ({ src, alt, eager, isOutOfStock }) => {
       <img
         src={src}
         alt={alt}
-        loading={eager ? 'eager' : 'lazy'}
+        loading="lazy"
         decoding="async"
-        {...(eager ? { fetchpriority: 'high' } : {})}
         onLoad={() => setLoaded(true)}
         className={`w-full h-full object-cover transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : 'group-hover:scale-105'} transition-transform`}
       />
@@ -2169,7 +2168,6 @@ function App() {
                          <ProductImage
                            src={product.image}
                            alt={product.name}
-                           eager={idx < 4}
                            isOutOfStock={isOutOfStock}
                          />
                         
