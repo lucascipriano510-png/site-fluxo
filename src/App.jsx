@@ -2168,7 +2168,6 @@ function App() {
                          <ProductImage
                            src={product.image}
                            alt={product.name}
-                           eager={idx < 4}
                            isOutOfStock={isOutOfStock}
                          />
                         
