@@ -1785,6 +1785,19 @@ function App() {
     setCartBounce(true);
     setTimeout(() => setCartBounce(false), 400);
     showToast(`Adicionado à sacola!`);
+    // 🟣 AddToCart (Pixel + CAPI com mesmo event_id)
+    try {
+      const addedValue = entries.reduce((acc, [, qty]) => acc + (Number(selectedProduct.price || 0) * Number(qty || 0)), 0);
+      const addedQty   = entries.reduce((acc, [, qty]) => acc + Number(qty || 0), 0);
+      trackPixel('AddToCart', {
+        value: addedValue,
+        currency: 'BRL',
+        content_name: selectedProduct.name,
+        content_ids: [String(selectedProduct.sku || selectedProduct.id)],
+        content_type: 'product',
+        contents: [{ id: String(selectedProduct.sku || selectedProduct.id), quantity: addedQty, item_price: Number(selectedProduct.price || 0) }],
+      });
+    } catch (e) { /* ignore */ }
     setSelectedProduct(null);
     setSelectedSizes({});
   };
