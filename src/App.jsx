@@ -19,6 +19,7 @@ import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
 import { dispatchCAPIPurchase } from './lib/capi';
+import { initMetaPixel, trackEvent } from './lib/metaPixel';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip as ReTooltip, Cell } from 'recharts';
 import AdminRastreio from './components/AdminRastreio';
 
