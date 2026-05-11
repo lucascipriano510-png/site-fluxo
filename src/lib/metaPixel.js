@@ -66,6 +66,34 @@ function readCookie(name) {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
+async function sendCAPIEvent(payload) {
+  const url = `${SUPABASE_URL}/functions/v1/webhook-meta`;
+  let bearer = '';
+  try {
+    const { data: s } = await supabase.auth.getSession();
+    if (s?.session?.access_token) bearer = s.session.access_token;
+  } catch {}
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-webhook-secret': WEBHOOK_SECRET,
+      ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+    },
+    body: JSON.stringify(payload),
+    keepalive: true,
+  });
+
+  if (!res.ok) {
+    const details = await res.text().catch(() => '');
+    console.warn('[capi] webhook-meta retornou', res.status, details);
+    return { ok: false, status: res.status, details };
+  }
+
+  return { ok: true, status: res.status };
+}
+
 /**
  * Dispara um evento na Meta de forma híbrida (Pixel + CAPI) com dedup.
  * Fire-and-forget — nunca bloqueia / nunca lança.
@@ -97,13 +125,6 @@ export function trackEvent(eventName, data = {}) {
   // 2) CAPI (server) — paralelo, com mesmo event_id -------------------
   (async () => {
     try {
-      const url = `${SUPABASE_URL}/functions/v1/webhook-meta`;
-      let bearer = '';
-      try {
-        const { data: s } = await supabase.auth.getSession();
-        if (s?.session?.access_token) bearer = s.session.access_token;
-      } catch {}
-
       const payload = {
         event_name: eventName,
         event_id: eventId,
@@ -122,16 +143,7 @@ export function trackEvent(eventName, data = {}) {
         },
       };
 
-      await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-webhook-secret': WEBHOOK_SECRET,
-          ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
-        },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      });
+      await sendCAPIEvent(payload);
     } catch (err) {
       console.warn('[capi] falha:', err?.message || err);
     }

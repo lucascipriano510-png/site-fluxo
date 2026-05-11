@@ -172,6 +172,13 @@ const trackPixel = (eventName, payload = {}) => {
   catch (e) { console.warn('[trackPixel] falhou:', e); }
 };
 
+const createMetaEventId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `evt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+};
+
 // ==========================================
 // 3. COMPONENTES ADMIN DESACOPLADOS
 // ==========================================
@@ -1789,7 +1796,9 @@ function App() {
     try {
       const addedValue = entries.reduce((acc, [, qty]) => acc + (Number(selectedProduct.price || 0) * Number(qty || 0)), 0);
       const addedQty   = entries.reduce((acc, [, qty]) => acc + Number(qty || 0), 0);
+      const event_id = createMetaEventId();
       trackPixel('AddToCart', {
+        event_id,
         value: addedValue,
         currency: 'BRL',
         content_name: selectedProduct.name,
@@ -1850,8 +1859,22 @@ function App() {
       const waNumber = String(config?.whatsapp || '5534984148067').replace(/\D/g, '');
       const whatsappUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
 
+      // 🟣 AddToCart no clique de finalizar/WhatsApp (Pixel + CAPI com mesmo event_id)
+      const addToCartEventId = createMetaEventId();
+      trackPixel('AddToCart', {
+        event_id: addToCartEventId,
+        value: totalPedido,
+        currency: 'BRL',
+        phone: customerPhone,
+        content_ids: itensNormalizados.map(i => String(i.sku || i.id)),
+        content_type: 'product',
+        contents: itensNormalizados.map(i => ({ id: String(i.sku || i.id), quantity: i.qty, item_price: i.price })),
+      });
+
       // 🟣 InitiateCheckout (gatilho híbrido — Pixel + CAPI com mesmo event_id)
+      const checkoutEventId = createMetaEventId();
       trackPixel('InitiateCheckout', {
+        event_id: checkoutEventId,
         value: totalPedido,
         currency: 'BRL',
         phone: customerPhone,
