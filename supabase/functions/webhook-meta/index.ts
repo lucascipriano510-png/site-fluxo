@@ -60,7 +60,7 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 // 🔖 Version stamp — atualize a cada deploy para auditar o que está publicado.
-const FN_VERSION = '2026-05-11.1';
+const FN_VERSION = '2026-05-11.2';
 const FN_NAME    = 'webhook-meta';
 const FN_NOTES   = 'phone obrigatório apenas para Purchase; PageView/ViewContent/AddToCart/InitiateCheckout liberados';
 
