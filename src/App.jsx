@@ -1630,6 +1630,8 @@ function App() {
       meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
       document.head.appendChild(meta);
     }
+    // Inicializa Meta Pixel + dispara PageView (com dedup via CAPI)
+    try { initMetaPixel(); } catch (e) { console.warn('[pixel] init err', e); }
   }, []);
 
   // products + leads + banners + config vivem no Supabase.
