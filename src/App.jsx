@@ -1796,7 +1796,9 @@ function App() {
     try {
       const addedValue = entries.reduce((acc, [, qty]) => acc + (Number(selectedProduct.price || 0) * Number(qty || 0)), 0);
       const addedQty   = entries.reduce((acc, [, qty]) => acc + Number(qty || 0), 0);
+      const event_id = createMetaEventId();
       trackPixel('AddToCart', {
+        event_id,
         value: addedValue,
         currency: 'BRL',
         content_name: selectedProduct.name,
@@ -1858,7 +1860,9 @@ function App() {
       const whatsappUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
 
       // 🟣 InitiateCheckout (gatilho híbrido — Pixel + CAPI com mesmo event_id)
+      const checkoutEventId = createMetaEventId();
       trackPixel('InitiateCheckout', {
+        event_id: checkoutEventId,
         value: totalPedido,
         currency: 'BRL',
         phone: customerPhone,
