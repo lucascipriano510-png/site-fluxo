@@ -2072,8 +2072,8 @@ function App() {
                 <BannerImage src={banner.image} alt={banner.title || 'Banner'} active={idx === currentBannerSlide} />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent"></div>
                 <div className="absolute inset-x-0 bottom-0 p-8 flex flex-col items-center text-center animate-slide-up">
-                  <h2 className="text-3xl font-black uppercase tracking-tighter drop-shadow-lg" style={{ color: '#9aa0a6', opacity: 1 }}>{banner.title}</h2>
-                  <p className="text-[11px] font-bold uppercase tracking-widest mt-2 mb-6 drop-shadow-md" style={{ color: '#d4af37' }}>{banner.subtitle}</p>
+                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">{banner.title}</h2>
+                  <p className="text-xs font-medium text-white/70 uppercase tracking-widest mt-2 mb-6 drop-shadow-md">{banner.subtitle}</p>
                   <button 
                     onClick={() => {
                       if (banner.collection_name) {
@@ -2083,7 +2083,7 @@ function App() {
                         document.getElementById('search-input')?.focus();
                       }
                     }} 
-                    className="bg-black text-white px-8 py-3.5 rounded-md font-black text-[10px] uppercase tracking-widest active:scale-95 shadow-lg border border-white/10"
+                    className="bg-white text-black px-8 py-3.5 rounded-md font-bold text-[10px] uppercase tracking-widest active:scale-95 shadow-lg"
                   >
                     {banner.buttonText}
                   </button>
