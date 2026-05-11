@@ -13,6 +13,11 @@ const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL ||
   'https://tapgnlrjhrhewqlpahvg.supabase.co';
 
+const SUPABASE_ANON_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.SUPABASE_ANON_KEY ||
+  'sb_publishable_XaGrDdX2df8qolf2WocwuQ_FsVP1-kW';
+
 const WEBHOOK_SECRET =
   import.meta.env.VITE_META_WEBHOOK_SECRET || 'METODOFLUXO';
 
@@ -68,7 +73,7 @@ function readCookie(name) {
 
 async function sendCAPIEvent(payload) {
   const url = `${SUPABASE_URL}/functions/v1/webhook-meta`;
-  let bearer = '';
+  let bearer = SUPABASE_ANON_KEY;
   try {
     const { data: s } = await supabase.auth.getSession();
     if (s?.session?.access_token) bearer = s.session.access_token;
@@ -79,7 +84,8 @@ async function sendCAPIEvent(payload) {
     headers: {
       'Content-Type': 'application/json',
       'x-webhook-secret': WEBHOOK_SECRET,
-      ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${bearer}`,
     },
     body: JSON.stringify(payload),
     keepalive: true,
