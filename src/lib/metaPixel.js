@@ -63,6 +63,8 @@ function readCookie(name) {
 }
 
 async function sendCAPIEvent(payload) {
+  const headers = { 'x-webhook-secret': WEBHOOK_SECRET };
+
   const { data, error } = await supabase.functions.invoke('webhook-meta', {
     headers,
     body: payload,
