@@ -5,16 +5,6 @@
 // =====================================================================
 import { supabase } from './supabaseClient';
 
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ||
-  import.meta.env.SUPABASE_URL ||
-  'https://tapgnlrjhrhewqlpahvg.supabase.co';
-
-const SUPABASE_ANON_KEY =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.SUPABASE_ANON_KEY ||
-  'sb_publishable_XaGrDdX2df8qolf2WocwuQ_FsVP1-kW';
-
 // Senha compartilhada com a Edge Function (header x-webhook-secret).
 // Conforme combinado: METODOFLUXO.
 const WEBHOOK_SECRET =
@@ -28,31 +18,21 @@ const WEBHOOK_SECRET =
  */
 export async function dispatchCAPIPurchase({ phone, value, type = 'purchase' }) {
   try {
-    const url = `${SUPABASE_URL}/functions/v1/webhook-meta`;
-    const body = JSON.stringify({
+    const payload = {
       phone: String(phone || ''),
       value: Number(value || 0),
       type,
-    });
-
-    // verify_jwt = false na função webhook-meta. Auth é via x-webhook-secret.
-    const headers = {
-      'Content-Type': 'application/json',
-      'x-webhook-secret': WEBHOOK_SECRET,
     };
-    if (SUPABASE_ANON_KEY) headers.apikey = SUPABASE_ANON_KEY;
+    const headers = { 'x-webhook-secret': WEBHOOK_SECRET };
 
-    const res = await fetch(url, {
-      method: 'POST',
+    const { error } = await supabase.functions.invoke('webhook-meta', {
+      body: payload,
       headers,
-      body,
-      keepalive: true, // permite que a request finalize mesmo se a aba fechar
     });
 
-    if (!res.ok) {
-      const txt = await res.text().catch(() => '');
-      console.warn('[capi] webhook-meta retornou', res.status, txt);
-      return { ok: false, status: res.status };
+    if (error) {
+      console.warn('[capi] webhook-meta retornou erro:', error.message || error);
+      return { ok: false, error: String(error.message || error) };
     }
     return { ok: true };
   } catch (err) {
