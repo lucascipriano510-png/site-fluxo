@@ -1,0 +1,9 @@
+project_id = "tapgnlrjhrhewqlpahvg"
+
+# A Edge Function `webhook-meta` é pública (chamada do navegador e do servidor da Meta).
+# Ela usa o header `x-webhook-secret` (METODOFLUXO) como autenticação própria,
+# por isso desativamos a verificação automática de JWT do gateway do Supabase.
+# Sem isso, o gateway exige um JWT válido no header Authorization e rejeita
+# a `publishable key` (formato `sb_publishable_...`) com "Invalid JWT".
+[functions.webhook-meta]
+verify_jwt = false
