@@ -166,8 +166,10 @@ const BannerImage = ({ src, alt, active }) => {
   );
 };
 
-const trackPixel = (eventName, payload) => {
-  console.log(`[PIXEL TRACKING] 🟢 ${eventName}`, payload);
+// Wrapper compat: encaminha pro pipeline híbrido (Pixel + CAPI com dedup)
+const trackPixel = (eventName, payload = {}) => {
+  try { trackEvent(eventName, payload); }
+  catch (e) { console.warn('[trackPixel] falhou:', e); }
 };
 
 // ==========================================
