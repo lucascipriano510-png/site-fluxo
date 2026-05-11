@@ -1850,7 +1850,16 @@ function App() {
       const waNumber = String(config?.whatsapp || '5534984148067').replace(/\D/g, '');
       const whatsappUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
 
-      trackPixel('Purchase', { value: totalPedido, currency: 'BRL', orderNumber: orderNum });
+      // 🟣 InitiateCheckout (gatilho híbrido — Pixel + CAPI com mesmo event_id)
+      trackPixel('InitiateCheckout', {
+        value: totalPedido,
+        currency: 'BRL',
+        phone: customerPhone,
+        content_ids: itensNormalizados.map(i => String(i.sku || i.id)),
+        content_type: 'product',
+        contents: itensNormalizados.map(i => ({ id: String(i.sku || i.id), quantity: i.qty, item_price: i.price })),
+      });
+      trackPixel('Purchase', { value: totalPedido, currency: 'BRL', phone: customerPhone, orderNumber: orderNum });
 
       setWhatsappLink(whatsappUrl);
       setCheckoutOrderNumber(orderNum);
