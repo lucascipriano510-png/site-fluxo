@@ -1859,6 +1859,18 @@ function App() {
       const waNumber = String(config?.whatsapp || '5534984148067').replace(/\D/g, '');
       const whatsappUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
 
+      // 🟣 AddToCart no clique de finalizar/WhatsApp (Pixel + CAPI com mesmo event_id)
+      const addToCartEventId = createMetaEventId();
+      trackPixel('AddToCart', {
+        event_id: addToCartEventId,
+        value: totalPedido,
+        currency: 'BRL',
+        phone: customerPhone,
+        content_ids: itensNormalizados.map(i => String(i.sku || i.id)),
+        content_type: 'product',
+        contents: itensNormalizados.map(i => ({ id: String(i.sku || i.id), quantity: i.qty, item_price: i.price })),
+      });
+
       // 🟣 InitiateCheckout (gatilho híbrido — Pixel + CAPI com mesmo event_id)
       const checkoutEventId = createMetaEventId();
       trackPixel('InitiateCheckout', {
