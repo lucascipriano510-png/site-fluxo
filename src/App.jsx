@@ -19,6 +19,7 @@ import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
 import { dispatchCAPIPurchase } from './lib/capi';
+import { initMetaPixel, trackEvent } from './lib/metaPixel';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip as ReTooltip, Cell } from 'recharts';
 import AdminRastreio from './components/AdminRastreio';
 
@@ -165,8 +166,10 @@ const BannerImage = ({ src, alt, active }) => {
   );
 };
 
-const trackPixel = (eventName, payload) => {
-  console.log(`[PIXEL TRACKING] 🟢 ${eventName}`, payload);
+// Wrapper compat: encaminha pro pipeline híbrido (Pixel + CAPI com dedup)
+const trackPixel = (eventName, payload = {}) => {
+  try { trackEvent(eventName, payload); }
+  catch (e) { console.warn('[trackPixel] falhou:', e); }
 };
 
 // ==========================================
@@ -1627,6 +1630,8 @@ function App() {
       meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
       document.head.appendChild(meta);
     }
+    // Inicializa Meta Pixel + dispara PageView (com dedup via CAPI)
+    try { initMetaPixel(); } catch (e) { console.warn('[pixel] init err', e); }
   }, []);
 
   // products + leads + banners + config vivem no Supabase.
@@ -1780,6 +1785,19 @@ function App() {
     setCartBounce(true);
     setTimeout(() => setCartBounce(false), 400);
     showToast(`Adicionado à sacola!`);
+    // 🟣 AddToCart (Pixel + CAPI com mesmo event_id)
+    try {
+      const addedValue = entries.reduce((acc, [, qty]) => acc + (Number(selectedProduct.price || 0) * Number(qty || 0)), 0);
+      const addedQty   = entries.reduce((acc, [, qty]) => acc + Number(qty || 0), 0);
+      trackPixel('AddToCart', {
+        value: addedValue,
+        currency: 'BRL',
+        content_name: selectedProduct.name,
+        content_ids: [String(selectedProduct.sku || selectedProduct.id)],
+        content_type: 'product',
+        contents: [{ id: String(selectedProduct.sku || selectedProduct.id), quantity: addedQty, item_price: Number(selectedProduct.price || 0) }],
+      });
+    } catch (e) { /* ignore */ }
     setSelectedProduct(null);
     setSelectedSizes({});
   };
@@ -1832,7 +1850,16 @@ function App() {
       const waNumber = String(config?.whatsapp || '5534984148067').replace(/\D/g, '');
       const whatsappUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
 
-      trackPixel('Purchase', { value: totalPedido, currency: 'BRL', orderNumber: orderNum });
+      // 🟣 InitiateCheckout (gatilho híbrido — Pixel + CAPI com mesmo event_id)
+      trackPixel('InitiateCheckout', {
+        value: totalPedido,
+        currency: 'BRL',
+        phone: customerPhone,
+        content_ids: itensNormalizados.map(i => String(i.sku || i.id)),
+        content_type: 'product',
+        contents: itensNormalizados.map(i => ({ id: String(i.sku || i.id), quantity: i.qty, item_price: i.price })),
+      });
+      trackPixel('Purchase', { value: totalPedido, currency: 'BRL', phone: customerPhone, orderNumber: orderNum });
 
       setWhatsappLink(whatsappUrl);
       setCheckoutOrderNumber(orderNum);
