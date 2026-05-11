@@ -59,9 +59,31 @@ const ALLOWED_EVENTS = new Set([
   'Purchase',
 ]);
 
+// 🔖 Version stamp — atualize a cada deploy para auditar o que está publicado.
+const FN_VERSION = '2026-05-11.1';
+const FN_NAME    = 'webhook-meta';
+const FN_NOTES   = 'phone obrigatório apenas para Purchase; PageView/ViewContent/AddToCart/InitiateCheckout liberados';
+
+console.log(`[${FN_NAME}] boot version=${FN_VERSION} notes="${FN_NOTES}"`);
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
-  if (req.method !== 'POST')    return json({ error: 'Method not allowed' }, 405);
+
+  // Health-check / auditoria de versão publicada (sem auth, somente leitura).
+  if (req.method === 'GET') {
+    return json({
+      ok: true,
+      fn: FN_NAME,
+      version: FN_VERSION,
+      notes: FN_NOTES,
+      allowed_events: [...ALLOWED_EVENTS],
+      deployed_at_runtime: new Date().toISOString(),
+    });
+  }
+
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  console.log(`[${FN_NAME}] invoke version=${FN_VERSION} ts=${new Date().toISOString()}`);
 
   const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
