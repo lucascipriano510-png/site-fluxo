@@ -60,7 +60,7 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 // 🔖 Version stamp — atualize a cada deploy para auditar o que está publicado.
-const FN_VERSION = '2026-05-11.1';
+const FN_VERSION = '2026-05-11.2';
 const FN_NAME    = 'webhook-meta';
 const FN_NOTES   = 'phone obrigatório apenas para Purchase; PageView/ViewContent/AddToCart/InitiateCheckout liberados';
 
@@ -186,7 +186,15 @@ Deno.serve(async (req) => {
     baseCustom.currency = currency;
   }
 
-  const metaPayload = {
+  // test_event_code: enviado em todas as chamadas para aparecer no painel
+  // "Testar eventos" do Meta Events Manager. Pode vir do body (override),
+  // do secret META_TEST_EVENT_CODE ou usar o default abaixo.
+  const testEventCode =
+    (typeof body?.test_event_code === 'string' && body.test_event_code) ||
+    Deno.env.get('META_TEST_EVENT_CODE') ||
+    'TEST58091';
+
+  const metaPayload: Record<string, unknown> = {
     data: [
       {
         event_name: eventName,
@@ -198,6 +206,7 @@ Deno.serve(async (req) => {
         custom_data: baseCustom,
       },
     ],
+    test_event_code: testEventCode,
   };
 
   let metaStatus = 0;
