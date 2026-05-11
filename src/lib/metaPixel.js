@@ -73,20 +73,20 @@ function readCookie(name) {
 
 async function sendCAPIEvent(payload) {
   const url = `${SUPABASE_URL}/functions/v1/webhook-meta`;
-  let bearer = SUPABASE_ANON_KEY;
-  try {
-    const { data: s } = await supabase.auth.getSession();
-    if (s?.session?.access_token) bearer = s.session.access_token;
-  } catch {}
+
+  // A função `webhook-meta` está marcada como `verify_jwt = false` no
+  // supabase/config.toml. A autenticação é feita via `x-webhook-secret`.
+  // Mandar Authorization Bearer com a publishable key causa "Invalid JWT",
+  // por isso só enviamos `apikey` (necessário para passar pelo gateway).
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-webhook-secret': WEBHOOK_SECRET,
+  };
+  if (SUPABASE_ANON_KEY) headers.apikey = SUPABASE_ANON_KEY;
 
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-webhook-secret': WEBHOOK_SECRET,
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${bearer}`,
-    },
+    headers,
     body: JSON.stringify(payload),
     keepalive: true,
   });

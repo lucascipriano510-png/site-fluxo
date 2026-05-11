@@ -35,22 +35,16 @@ export async function dispatchCAPIPurchase({ phone, value, type = 'purchase' }) 
       type,
     });
 
-    // Tenta anexar o JWT do usuário logado (modo "app autenticado"),
-    // mas o header principal de auth é o x-webhook-secret.
-    let bearer = SUPABASE_ANON_KEY;
-    try {
-      const { data } = await supabase.auth.getSession();
-      if (data?.session?.access_token) bearer = data.session.access_token;
-    } catch (_) { /* opcional */ }
+    // verify_jwt = false na função webhook-meta. Auth é via x-webhook-secret.
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-webhook-secret': WEBHOOK_SECRET,
+    };
+    if (SUPABASE_ANON_KEY) headers.apikey = SUPABASE_ANON_KEY;
 
     const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-webhook-secret': WEBHOOK_SECRET,
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${bearer}`,
-      },
+      headers,
       body,
       keepalive: true, // permite que a request finalize mesmo se a aba fechar
     });
