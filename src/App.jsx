@@ -2031,7 +2031,7 @@ function App() {
       
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
-        <div className="bg-gradient-to-r from-[#9a7400] via-[#d4af37] to-[#f3d27a] text-[#1a1200] overflow-hidden py-2.5 relative flex items-center justify-center border-b border-[#f3d27a]/30 shadow-[0_0_18px_rgba(212,175,55,0.35)]">
+        <div className="bg-[#A8A8A9] text-black overflow-hidden py-2.5 relative flex items-center justify-center border-b border-black/10">
           <div className="animate-marquee whitespace-nowrap text-[9px] font-black uppercase tracking-[0.25em] flex gap-12">
             {config.marqueePhrases.map((ph, i) => (<span key={i}>✦ {ph}</span>))}
             {config.marqueePhrases.map((ph, i) => (<span key={`dup-${i}`}>✦ {ph}</span>))}
