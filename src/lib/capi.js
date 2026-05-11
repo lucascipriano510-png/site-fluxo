@@ -23,6 +23,7 @@ export async function dispatchCAPIPurchase({ phone, value, type = 'purchase' }) 
       value: Number(value || 0),
       type,
     };
+    const headers = { 'x-webhook-secret': WEBHOOK_SECRET };
 
     const { error } = await supabase.functions.invoke('webhook-meta', {
       body: payload,

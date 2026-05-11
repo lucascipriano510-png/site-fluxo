@@ -9,15 +9,6 @@
 // =====================================================================
 import { supabase } from './supabaseClient';
 
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ||
-  'https://tapgnlrjhrhewqlpahvg.supabase.co';
-
-const SUPABASE_ANON_KEY =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.SUPABASE_ANON_KEY ||
-  'sb_publishable_XaGrDdX2df8qolf2WocwuQ_FsVP1-kW';
-
 const WEBHOOK_SECRET =
   import.meta.env.VITE_META_WEBHOOK_SECRET || 'METODOFLUXO';
 
@@ -72,32 +63,17 @@ function readCookie(name) {
 }
 
 async function sendCAPIEvent(payload) {
-  const url = `${SUPABASE_URL}/functions/v1/webhook-meta`;
-
-  // A função `webhook-meta` está marcada como `verify_jwt = false` no
-  // supabase/config.toml. A autenticação é feita via `x-webhook-secret`.
-  // Mandar Authorization Bearer com a publishable key causa "Invalid JWT",
-  // por isso só enviamos `apikey` (necessário para passar pelo gateway).
-  const headers = {
-    'Content-Type': 'application/json',
-    'x-webhook-secret': WEBHOOK_SECRET,
-  };
-  if (SUPABASE_ANON_KEY) headers.apikey = SUPABASE_ANON_KEY;
-
-  const res = await fetch(url, {
-    method: 'POST',
+  const { data, error } = await supabase.functions.invoke('webhook-meta', {
     headers,
-    body: JSON.stringify(payload),
-    keepalive: true,
+    body: payload,
   });
 
-  if (!res.ok) {
-    const details = await res.text().catch(() => '');
-    console.warn('[capi] webhook-meta retornou', res.status, details);
-    return { ok: false, status: res.status, details };
+  if (error) {
+    console.warn('[capi] webhook-meta retornou erro:', error.message || error);
+    return { ok: false, error: String(error.message || error) };
   }
 
-  return { ok: true, status: res.status };
+  return { ok: true, data };
 }
 
 /**
