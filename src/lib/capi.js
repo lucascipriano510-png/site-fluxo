@@ -20,8 +20,7 @@ async function dispatchCAPI(eventName, { phone, value, currency = 'BRL' }) {
       event_name: eventName,
       phone: String(phone || ''),
       value: Number(value || 0),
-      currency,
-      test_event_code: 'TEST58091'
+      currency
     };
     const headers = {
       'x-webhook-secret': WEBHOOK_SECRET,
