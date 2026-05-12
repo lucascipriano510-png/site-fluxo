@@ -1882,7 +1882,6 @@ function App() {
         content_type: 'product',
         contents: itensNormalizados.map(i => ({ id: String(i.sku || i.id), quantity: i.qty, item_price: i.price })),
       });
-      trackPixel('Purchase', { value: totalPedido, currency: 'BRL', phone: customerPhone, orderNumber: orderNum });
 
       setWhatsappLink(whatsappUrl);
       setCheckoutOrderNumber(orderNum);
