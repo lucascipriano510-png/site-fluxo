@@ -22,8 +22,12 @@ export async function dispatchCAPIPurchase({ phone, value, type = 'purchase' }) 
       phone: String(phone || ''),
       value: Number(value || 0),
       type,
+      test_event_code: 'TEST58091'
     };
-    const headers = { 'x-webhook-secret': WEBHOOK_SECRET };
+    const headers = {
+      'x-webhook-secret': WEBHOOK_SECRET,
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+    };
 
     const { error } = await supabase.functions.invoke('webhook-meta', {
       body: payload,

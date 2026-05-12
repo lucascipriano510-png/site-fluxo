@@ -119,6 +119,7 @@ export function trackEvent(eventName, data = {}) {
         user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
         fbp: readCookie('_fbp'),
         fbc: readCookie('_fbc'),
+        test_event_code: 'TEST58091',
         custom_data: {
           ...(data.content_name ? { content_name: data.content_name } : {}),
           ...(data.content_ids  ? { content_ids:  data.content_ids  } : {}),
