@@ -18,7 +18,7 @@ import { fetchProducts, upsertProduct, deleteProduct as deleteProductRemote, fet
 import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, restoreOrderStock } from './lib/orders';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
-import { dispatchCAPIPurchase } from './lib/capi';
+import { dispatchCAPIPurchase, dispatchCAPIRefund } from './lib/capi';
 import { initMetaPixel, trackEvent } from './lib/metaPixel';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip as ReTooltip, Cell } from 'recharts';
 import AdminRastreio from './components/AdminRastreio';
@@ -946,11 +946,10 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
         }
 
         setLeads(prev => prev.map(l => l.id === id ? { ...l, status: 'CANCELADO' } : l));
-        // 🔴 CAPI — fire-and-forget: dispara estorno (type: 'cancel') para a Meta
-        dispatchCAPIPurchase({
+        // 🔴 CAPI — fire-and-forget: dispara Refund para a Meta
+        dispatchCAPIRefund({
           phone: leadToUpdate.phone,
           value: leadToUpdate.value,
-          type: 'cancel',
         }).catch(() => {});
       } else {
         // Outros status (NOVO, EM ATENDIMENTO) — persiste no Supabase

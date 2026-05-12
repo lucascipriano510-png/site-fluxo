@@ -57,6 +57,7 @@ const ALLOWED_EVENTS = new Set([
   'AddToCart',
   'InitiateCheckout',
   'Purchase',
+  'Refund',
 ]);
 
 // 🔖 Version stamp — atualize a cada deploy para auditar o que está publicado.
