@@ -2169,7 +2169,7 @@ function App() {
                     onClick={() => goToBannerSlide(idx)}
                     aria-label={`Ir para banner ${idx + 1}`}
                     data-testid={`banner-dot-${idx}`}
-                    className={`h-2 rounded-full transition-all ${idx === currentBannerSlide ? 'w-6 bg-emerald-500' : 'w-2 bg-white/40'}`}
+                    className={`h-2 rounded-full transition-all ${idx === currentBannerSlide ? 'w-6 bg-zinc-300' : 'w-2 bg-white/40'}`}
                   />
                 ))}
               </div>
@@ -2199,19 +2199,19 @@ function App() {
         )}
 
         {activeCollectionFilter && (
-          <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl animate-in">
+          <div className="flex items-center justify-between bg-zinc-500/10 border border-zinc-400/20 p-4 rounded-2xl animate-in">
             <div className="flex flex-col">
-              <span className="text-[8px] font-black uppercase text-emerald-500 tracking-widest">Coleção Ativa</span>
+              <span className="text-[8px] font-black uppercase text-zinc-300 tracking-widest">Coleção Ativa</span>
               <span className="text-xs font-black uppercase text-white">{activeCollectionFilter}</span>
             </div>
-            <button onClick={() => setActiveCollectionFilter(null)} className="p-2 bg-emerald-500 text-zinc-950 rounded-xl active:scale-90 transition-transform"><X size={14}/></button>
+            <button onClick={() => setActiveCollectionFilter(null)} className="p-2 bg-zinc-300 text-zinc-950 rounded-xl active:scale-90 transition-transform"><X size={14}/></button>
           </div>
         )}
 
         {availableSizes.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear touch-pan-x items-center">
             {availableSizes.map(sz => (
-              <button key={sz} onClick={() => setSelectedSize(sz)} data-testid={`size-filter-${sz}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSize === sz ? 'bg-emerald-500 text-zinc-950 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>{sz === 'TODOS' ? 'Todos tamanhos' : sz}</button>
+              <button key={sz} onClick={() => setSelectedSize(sz)} data-testid={`size-filter-${sz}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSize === sz ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>{sz === 'TODOS' ? 'Todos tamanhos' : sz}</button>
             ))}
           </div>
         )}
@@ -2219,8 +2219,8 @@ function App() {
         {filteredProducts.length > 0 && (
           <div className="flex items-center justify-between pt-1 animate-in">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/90">Peças Disponíveis</span>
-            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-500 flex items-center gap-1.5" data-testid="products-count">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 flex items-center gap-1.5" data-testid="products-count">
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 animate-pulse"></span>
               {filteredProducts.length} {filteredProducts.length === 1 ? 'peça' : 'peças'}
             </span>
           </div>
