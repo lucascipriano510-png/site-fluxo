@@ -2169,7 +2169,7 @@ function App() {
                     onClick={() => goToBannerSlide(idx)}
                     aria-label={`Ir para banner ${idx + 1}`}
                     data-testid={`banner-dot-${idx}`}
-                    className={`h-2 rounded-full transition-all ${idx === currentBannerSlide ? 'w-6 bg-emerald-500' : 'w-2 bg-white/40'}`}
+                    className={`h-2 rounded-full transition-all ${idx === currentBannerSlide ? 'w-6 bg-zinc-300' : 'w-2 bg-white/40'}`}
                   />
                 ))}
               </div>
