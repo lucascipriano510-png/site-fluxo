@@ -2468,9 +2468,9 @@ function App() {
                     const qty = selectedSizes[sz] || 0;
                     if (qty > 0) {
                       return (
-                        <div key={idx} className="py-2.5 rounded-xl border border-emerald-500 bg-emerald-500/10 flex flex-col items-center justify-center gap-1.5 shadow-inner">
-                          <span className="text-xs font-black text-emerald-500">{sz}</span>
-                          <div className="flex items-center gap-2 bg-zinc-950 rounded-md px-1 py-1 border border-emerald-500/20">
+                        <div key={idx} className="py-2.5 rounded-lg border-2 border-white bg-zinc-900 flex flex-col items-center justify-center gap-1.5">
+                          <span className="text-xs font-black text-white">{sz}</span>
+                          <div className="flex items-center gap-2 bg-zinc-950 rounded-md px-1 py-1 border border-zinc-800">
                             <button onClick={() => { const n = {...selectedSizes}; if(n[sz]>1) n[sz]--; else delete n[sz]; setSelectedSizes(n); }} className="text-zinc-400 touch-manipulation"><Minus size={10}/></button>
                             <span className="text-[10px] font-black text-white w-3 text-center">{qty}</span>
                             <button onClick={() => handleSizeSelect(sz, stock)} className="text-zinc-400 touch-manipulation"><Plus size={10}/></button>
@@ -2479,7 +2479,7 @@ function App() {
                       );
                     }
                     return (
-                      <button key={idx} disabled={stock <= 0} onClick={() => handleSizeSelect(sz, stock)} className={`py-3 rounded-xl border font-black text-sm transition-all touch-manipulation ${stock > 0 ? 'bg-zinc-900 border-white/5 text-zinc-300 active:scale-95' : 'bg-zinc-950/50 border-white/5 text-zinc-600 opacity-50'}`}>{sz}</button>
+                      <button key={idx} disabled={stock <= 0} onClick={() => handleSizeSelect(sz, stock)} className={`py-3 rounded-lg border font-black text-sm transition-all touch-manipulation bg-zinc-900 border-zinc-800 ${stock > 0 ? 'text-zinc-300 active:scale-95' : 'text-zinc-600 opacity-50'}`}>{sz}</button>
                     );
                   })}
                 </div>
