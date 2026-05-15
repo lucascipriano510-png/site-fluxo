@@ -2495,6 +2495,36 @@ function App() {
         </div>
       )}
 
+      {/* MODAL — Adicionado ao Carrinho */}
+      {isCartModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCartModalOpen(false)} />
+          <div className="relative w-full sm:max-w-md bg-zinc-950 border border-zinc-800 rounded-t-3xl sm:rounded-2xl px-6 pt-8 pb-7 animate-slide-up">
+            <div className="flex justify-center mb-5">
+              <div className="w-14 h-14 rounded-full border-2 border-emerald-500 flex items-center justify-center">
+                <Check size={28} className="text-emerald-500" strokeWidth={3} />
+              </div>
+            </div>
+            <h3 className="text-center text-white font-black text-lg uppercase tracking-wide">Adicionado ao Carrinho</h3>
+            <p className="text-center text-zinc-400 text-sm mt-2 mb-7">A sua peça foi separada com sucesso.</p>
+            <div className="space-y-3">
+              <button
+                onClick={() => { setIsCartModalOpen(false); setShowCart(true); }}
+                className="w-full py-4 rounded-xl bg-emerald-500 text-white font-black text-[12px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation"
+              >
+                Ir para o Carrinho
+              </button>
+              <button
+                onClick={() => setIsCartModalOpen(false)}
+                className="w-full py-4 rounded-xl bg-transparent border-2 border-zinc-800 text-white font-black text-[12px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation"
+              >
+                Continuar Comprando
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* LIGHTBOX — Zoom em tela cheia */}
       {zoomImage && (
         <div
