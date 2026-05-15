@@ -2290,6 +2290,7 @@ function App() {
                            src={product.image}
                            alt={product.name}
                            isOutOfStock={isOutOfStock}
+                           priority={idx < 4}
                          />
                         
                         {isOutOfStock && (
