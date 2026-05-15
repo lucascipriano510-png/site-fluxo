@@ -1793,7 +1793,7 @@ function App() {
     setCart(updatedCart);
     setCartBounce(true);
     setTimeout(() => setCartBounce(false), 400);
-    showToast(`Adicionado à sacola!`);
+    setIsCartModalOpen(true);
     // 🟣 AddToCart (Pixel + CAPI com mesmo event_id)
     try {
       const addedValue = entries.reduce((acc, [, qty]) => acc + (Number(selectedProduct.price || 0) * Number(qty || 0)), 0);
