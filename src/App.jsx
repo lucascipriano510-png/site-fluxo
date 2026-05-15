@@ -279,7 +279,7 @@ const AdminDashboard = ({ leads, products }) => {
         </div>
         <div className="col-span-2 bg-zinc-900 p-5 rounded-[24px] border border-white/5 shadow-xl flex flex-col justify-between">
           <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><BarChart3 size={12}/> Ticket Médio (TM)</p>
-          <h3 className="text-2xl font-black text-emerald-500 tracking-tighter">R$ {avgTicket.toFixed(2)}</h3>
+          <h3 className="text-2xl font-black text-emerald-500 tracking-tighter">{formatBRL(avgTicket)}</h3>
         </div>
       </div>
 
@@ -296,7 +296,7 @@ const AdminDashboard = ({ leads, products }) => {
                              <span className="text-[9px] font-bold text-zinc-500">#{l.orderNumber || '0000'}</span>
                          </div>
                          <div className="flex flex-col items-end gap-1">
-                             <span className="text-[11px] font-black text-emerald-500">R$ {(l.value || 0).toFixed(2)}</span>
+                             <span className="text-[11px] font-black text-emerald-500">{formatBRL(l.value || 0)}</span>
                              <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-full ${statusColors[l.status || 'NOVO']}`}>{l.status || 'NOVO'}</span>
                          </div>
                      </div>
@@ -1082,7 +1082,7 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
                   </button>
                 </span>
               )}
-              <span className="text-emerald-500">R$ {(lead.value || 0).toFixed(2)}</span>
+              <span className="text-emerald-500">{formatBRL(lead.value || 0)}</span>
             </div>
 
           </div>
@@ -2311,7 +2311,7 @@ function App() {
                      </div>
                       <div className="p-4 bg-zinc-950/50 flex-1 flex flex-col justify-between">
                         <h3 className="font-black text-zinc-300 text-[10px] uppercase line-clamp-2 leading-tight group-hover:text-white transition-colors">{product.name}</h3>
-                        <p className={`font-black text-sm mt-2 ${isOutOfStock ? 'text-zinc-600 line-through' : 'text-white'}`}>R$ {(product.price || 0).toFixed(2)}</p>
+                        <p className={`font-black text-sm mt-2 ${isOutOfStock ? 'text-zinc-600 line-through' : 'text-white'}`}>{formatBRL(product.price || 0)}</p>
                       </div>
                   </motion.div>
                 )
@@ -2457,7 +2457,7 @@ function App() {
               <div className="flex flex-col gap-1 mb-6">
                 <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest self-start">REF: {selectedProduct.sku}</span>
                 <h2 className="text-2xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{selectedProduct.name}</h2>
-                <p className="text-3xl font-black text-emerald-500 mt-2 tracking-tighter">R$ {(selectedProduct.price || 0).toFixed(2)}</p>
+                <p className="text-3xl font-black text-emerald-500 mt-2 tracking-tighter">{formatBRL(selectedProduct.price || 0)}</p>
               </div>
               <div className="space-y-4">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Selecione o Tamanho</p>
@@ -2544,7 +2544,7 @@ function App() {
                             <button onClick={() => setCart(cart.filter(i => i.itemKey !== item.itemKey))} className="text-zinc-600 hover:text-red-500 touch-manipulation"><Trash2 size={16}/></button>
                           </div>
                           <div className="flex justify-between items-center mt-3">
-                            <span className="font-black text-emerald-500 text-sm">R$ {(item.price || 0).toFixed(2)}</span>
+                            <span className="font-black text-emerald-500 text-sm">{formatBRL(item.price || 0)}</span>
                             <div className="flex items-center bg-zinc-950 rounded-lg border border-white/5 p-1">
                               <button onClick={() => { if(item.quantity > 1) setCart(cart.map(i => i.itemKey === item.itemKey ? {...i, quantity: i.quantity - 1} : i)) }} className="text-zinc-400 p-1.5 touch-manipulation"><Minus size={12}/></button>
                               <span className="font-black text-xs text-white w-6 text-center">{item.quantity}</span>
@@ -2565,8 +2565,8 @@ function App() {
             {cart.length > 0 && (
               <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 px-6 py-6 max-w-md mx-auto z-50 shadow-2xl">
                 <div className="space-y-2 mb-5">
-                   <div className="flex justify-between items-center text-[11px] font-bold uppercase text-zinc-400"><span>Subtotal</span><span>R$ {subtotal.toFixed(2)}</span></div>
-                   <div className="flex justify-between items-end pt-3 border-t border-white/10"><p className="text-[12px] font-black text-white uppercase tracking-widest">Total dos Itens</p><h3 className="text-3xl font-black text-emerald-500 tracking-tighter">R$ {subtotal.toFixed(2)}</h3></div>
+                   <div className="flex justify-between items-center text-[11px] font-bold uppercase text-zinc-400"><span>Subtotal</span><span>{formatBRL(subtotal)}</span></div>
+                   <div className="flex justify-between items-end pt-3 border-t border-white/10"><p className="text-[12px] font-black text-white uppercase tracking-widest">Total dos Itens</p><h3 className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(subtotal)}</h3></div>
                 </div>
                 <button onClick={() => { setShowCart(false); setShowLeadModal(true); }} className="w-full py-5 rounded-2xl font-black text-[11px] uppercase bg-white text-zinc-950 active:scale-95 shadow-2xl flex items-center justify-center gap-2 touch-manipulation">Finalizar Pedido <Lock size={14}/></button>
               </div>
@@ -2666,13 +2666,13 @@ function App() {
 	                        {(its || []).map((it, i) => (
 	                          <div key={i} className="text-[10px] text-zinc-300 font-bold flex justify-between">
 	                            <span className="truncate pr-2">{it.qty || 1}x {it.name} <span className="text-emerald-500">({it.size || 'U'})</span></span>
-	                            <span className="text-zinc-500 shrink-0">R$ {Number(it.price || 0).toFixed(2)}</span>
+	                            <span className="text-zinc-500 shrink-0">{formatBRL(it.price || 0)}</span>
 	                          </div>
 	                        ))}
 	                      </div>
 	                      <div className="flex justify-between items-center pt-2 mt-2 border-t border-white/5">
 	                        <span className="text-[9px] text-zinc-500 font-black uppercase">Total</span>
-	                        <span className="text-[13px] font-black text-emerald-500">R$ {Number(row.value || 0).toFixed(2)}</span>
+	                        <span className="text-[13px] font-black text-emerald-500">{formatBRL(row.value || 0)}</span>
 	                      </div>
 	                    </div>
 	                  );
