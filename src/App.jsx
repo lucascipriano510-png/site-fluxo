@@ -26,6 +26,8 @@ import AdminRastreio from './components/AdminRastreio';
 // ==========================================
 // 1. CONFIGURAÇÃO E DADOS INICIAIS
 // ==========================================
+const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatBRL = (v) => BRL.format(Number(v) || 0);
 const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'fluxo-dark-ultimate';
 const LEAD_STORAGE_KEY = '@fluxo-outlet:lead-data-v3';
 const BANNERS_STORAGE_KEY = `@${APP_ID}:banners`;
