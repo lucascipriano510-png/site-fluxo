@@ -95,14 +95,41 @@ class AdminTabErrorBoundary extends React.Component {
 // ==========================================
 // 2. FUNÇÕES DE TRACKING E UTILITÁRIOS
 // ==========================================
-const ProductImage = ({ src, alt, isOutOfStock }) => {
+
+// Otimização de imagens via CDN (WebP + resize on-the-fly).
+// Unsplash já oferece query params; demais URLs passam pelo proxy gratuito wsrv.nl.
+const optimizeImage = (src, width = 600, quality = 70) => {
+  if (!src || typeof src !== 'string') return src;
+  if (src.startsWith('data:') || src.startsWith('blob:')) return src;
+  try {
+    if (src.includes('images.unsplash.com')) {
+      const u = new URL(src);
+      u.searchParams.set('w', String(width));
+      u.searchParams.set('q', String(quality));
+      u.searchParams.set('auto', 'format');
+      u.searchParams.set('fit', 'crop');
+      return u.toString();
+    }
+    // Proxy universal: serve em WebP, redimensiona e cacheia globalmente.
+    const clean = src.replace(/^https?:\/\//, '');
+    return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we`;
+  } catch {
+    return src;
+  }
+};
+
+const buildSrcSet = (src, widths = [400, 600, 900]) =>
+  widths.map((w) => `${optimizeImage(src, w)} ${w}w`).join(', ');
+
+const ProductImage = ({ src, alt, isOutOfStock, priority = false }) => {
   const [loaded, setLoaded] = React.useState(false);
-  const [inView, setInView] = React.useState(false);
+  const [inView, setInView] = React.useState(priority);
   const wrapperRef = React.useRef(null);
 
   React.useEffect(() => {
     if (!src) return;
     setLoaded(false);
+    if (priority) { setInView(true); return; }
     setInView(false);
     const el = wrapperRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') {
@@ -118,22 +145,24 @@ const ProductImage = ({ src, alt, isOutOfStock }) => {
           }
         });
       },
-      { rootMargin: '180px 0px', threshold: 0.01 }
+      { rootMargin: '400px 0px', threshold: 0.01 }
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [src]);
+  }, [src, priority]);
 
   return (
     <div ref={wrapperRef} className="absolute inset-0">
       {!loaded && <div className="absolute inset-0 bg-zinc-800 animate-pulse" />}
       {inView && (
         <img
-          src={src}
+          src={optimizeImage(src, 600)}
+          srcSet={buildSrcSet(src)}
+          sizes="(max-width: 640px) 50vw, 300px"
           alt={alt}
-          loading="lazy"
+          loading={priority ? 'eager' : 'lazy'}
           decoding="async"
-          fetchPriority="low"
+          fetchPriority={priority ? 'high' : 'low'}
           onLoad={() => setLoaded(true)}
           className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : 'group-hover:scale-105'} transition-transform`}
         />
@@ -155,14 +184,15 @@ const BannerImage = ({ src, alt, active }) => {
     <>
       {!loaded && <div className="absolute inset-0 bg-black" />}
       <img
-        src={src}
+        src={optimizeImage(src, 900, 75)}
+        srcSet={buildSrcSet(src, [600, 900, 1200])}
+        sizes="(max-width: 640px) 100vw, 448px"
         className={`w-full h-full object-cover opacity-80 transition-opacity duration-300 ${loaded ? 'opacity-80' : 'opacity-0'}`}
         alt={alt}
         loading={active ? 'eager' : 'lazy'}
         decoding="async"
         fetchPriority={active ? 'high' : 'low'}
         onLoad={() => setLoaded(true)}
-        style={{ imageRendering: 'high-quality', WebkitOptimizeContrast: 'optimize-contrast' }}
       />
     </>
   );
@@ -2260,6 +2290,7 @@ function App() {
                            src={product.image}
                            alt={product.name}
                            isOutOfStock={isOutOfStock}
+                           priority={idx < 4}
                          />
                         
                         {isOutOfStock && (
