@@ -1613,6 +1613,7 @@ function App() {
   const [selectedSizes, setSelectedSizes] = useState({});
   const [zoomImage, setZoomImage] = useState(null);
   const [showCart, setShowCart] = useState(false);
+  const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [productImageFile, setProductImageFile] = useState(null);
