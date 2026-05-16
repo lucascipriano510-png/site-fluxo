@@ -935,10 +935,11 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
         });
         setProducts(updatedProducts);
         showToast('Venda confirmada e estoque atualizado!');
-        // 🔴 CAPI — fire-and-forget: dispara Purchase para a Meta
+        // 🔴 CAPI — fire-and-forget: dispara Purchase para a Meta (com Advanced Matching)
         dispatchCAPIPurchase({
           phone: leadToUpdate.phone,
           value: leadToUpdate.value,
+          name: leadToUpdate.name,
         }).catch(() => {});
       } else if (newStatus === 'CANCELADO') {
         await cancelOrder(leadToUpdate._raw?.id || leadToUpdate.id);
@@ -978,10 +979,11 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
         }
 
         setLeads(prev => prev.map(l => l.id === id ? { ...l, status: 'CANCELADO' } : l));
-        // 🔴 CAPI — fire-and-forget: dispara Refund para a Meta
+        // 🔴 CAPI — fire-and-forget: dispara Refund para a Meta (com Advanced Matching)
         dispatchCAPIRefund({
           phone: leadToUpdate.phone,
           value: leadToUpdate.value,
+          name: leadToUpdate.name,
         }).catch(() => {});
       } else {
         // Outros status (NOVO, EM ATENDIMENTO) — persiste no Supabase

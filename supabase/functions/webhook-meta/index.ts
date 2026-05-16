@@ -61,9 +61,9 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 // 🔖 Version stamp — atualize a cada deploy para auditar o que está publicado.
-const FN_VERSION = '2026-05-11.2';
+const FN_VERSION = '2026-05-16.1';
 const FN_NAME    = 'webhook-meta';
-const FN_NOTES   = 'phone obrigatório apenas para Purchase; PageView/ViewContent/AddToCart/InitiateCheckout liberados';
+const FN_NOTES   = 'Advanced Matching: hash de ph + fn + ln no user_data';
 
 console.log(`[${FN_NAME}] boot version=${FN_VERSION} notes="${FN_NOTES}"`);
 
@@ -130,6 +130,19 @@ Deno.serve(async (req) => {
   const phoneClean = cleanPhone(phoneRaw);
   const phoneHash  = phoneClean.length >= 8 ? await sha256(phoneClean) : null;
 
+  // Nome do cliente — Advanced Matching (fn/ln). Normaliza: lowercase, sem acentos/espaços.
+  const nameRaw = String(body?.name ?? '').trim();
+  const nameNorm = nameRaw
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z\s]/g, '')
+    .trim();
+  const nameParts = nameNorm ? nameNorm.split(/\s+/) : [];
+  const firstName = nameParts[0] || '';
+  const lastName  = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+  const fnHash = firstName ? await sha256(firstName) : null;
+  const lnHash = lastName  ? await sha256(lastName)  : null;
+
   const eventId    = String(body?.event_id || crypto.randomUUID());
   const sourceUrl  = String(body?.event_source_url || '');
   const userAgent  = String(body?.user_agent || req.headers.get('user-agent') || '');
@@ -176,6 +189,8 @@ Deno.serve(async (req) => {
 
   const userData: Record<string, unknown> = {};
   if (phoneHash)  userData.ph  = [phoneHash];
+  if (fnHash)     userData.fn  = [fnHash];
+  if (lnHash)     userData.ln  = [lnHash];
   if (fbp)        userData.fbp = fbp;
   if (fbc)        userData.fbc = fbc;
   if (clientIp)   userData.client_ip_address = clientIp;
