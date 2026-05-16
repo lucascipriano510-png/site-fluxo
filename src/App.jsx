@@ -1915,11 +1915,36 @@ function App() {
         contents: itensNormalizados.map(i => ({ id: String(i.sku || i.id), quantity: i.qty, item_price: i.price })),
       });
 
+      // 🟢 Purchase com Advanced Matching (fn, ph) — dispara ANTES do redirect
+      // Formata telefone: só dígitos, garante prefixo país 55 (Brasil)
+      const phoneDigits = customerPhone.replace(/\D/g, '');
+      const phoneAM = phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`;
+      const firstName = customerName.trim().split(/\s+/)[0] || customerName.trim();
+      const purchaseEventId = createMetaEventId();
+      try {
+        if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+          window.fbq(
+            'track',
+            'Purchase',
+            { value: totalPedido, currency: 'BRL' },
+            { eventID: purchaseEventId, fn: firstName, ph: phoneAM }
+          );
+        }
+      } catch (e) { console.warn('[pixel] Purchase AM falhou:', e); }
+
+      // CAPI Purchase (mesmo event_id → dedup) — fire-and-forget
+      try {
+        dispatchCAPIPurchase({ phone: phoneAM, value: totalPedido, event_id: purchaseEventId });
+      } catch (e) { /* ignora */ }
+
       setWhatsappLink(whatsappUrl);
       setCheckoutOrderNumber(orderNum);
       setCheckoutSuccess(true);   // Mostra tela de sucesso
       setCart([]);
       showToast('Pedido registrado!', 'success');
+
+      // Pequeno delay garante que o beacon do Pixel saia antes da nova aba
+      await new Promise((r) => setTimeout(r, 250));
 
       // Abre WhatsApp em nova aba (não quebra se o popup for bloqueado)
       try { window.open(whatsappUrl, '_blank'); } catch (e) { /* ignora */ }
