@@ -189,6 +189,8 @@ Deno.serve(async (req) => {
 
   const userData: Record<string, unknown> = {};
   if (phoneHash)  userData.ph  = [phoneHash];
+  if (fnHash)     userData.fn  = [fnHash];
+  if (lnHash)     userData.ln  = [lnHash];
   if (fbp)        userData.fbp = fbp;
   if (fbc)        userData.fbc = fbc;
   if (clientIp)   userData.client_ip_address = clientIp;
