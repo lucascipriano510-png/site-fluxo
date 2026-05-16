@@ -935,10 +935,11 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
         });
         setProducts(updatedProducts);
         showToast('Venda confirmada e estoque atualizado!');
-        // 🔴 CAPI — fire-and-forget: dispara Purchase para a Meta
+        // 🔴 CAPI — fire-and-forget: dispara Purchase para a Meta (com Advanced Matching)
         dispatchCAPIPurchase({
           phone: leadToUpdate.phone,
           value: leadToUpdate.value,
+          name: leadToUpdate.name,
         }).catch(() => {});
       } else if (newStatus === 'CANCELADO') {
         await cancelOrder(leadToUpdate._raw?.id || leadToUpdate.id);
