@@ -130,6 +130,19 @@ Deno.serve(async (req) => {
   const phoneClean = cleanPhone(phoneRaw);
   const phoneHash  = phoneClean.length >= 8 ? await sha256(phoneClean) : null;
 
+  // Nome do cliente — Advanced Matching (fn/ln). Normaliza: lowercase, sem acentos/espaços.
+  const nameRaw = String(body?.name ?? '').trim();
+  const nameNorm = nameRaw
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z\s]/g, '')
+    .trim();
+  const nameParts = nameNorm ? nameNorm.split(/\s+/) : [];
+  const firstName = nameParts[0] || '';
+  const lastName  = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+  const fnHash = firstName ? await sha256(firstName) : null;
+  const lnHash = lastName  ? await sha256(lastName)  : null;
+
   const eventId    = String(body?.event_id || crypto.randomUUID());
   const sourceUrl  = String(body?.event_source_url || '');
   const userAgent  = String(body?.user_agent || req.headers.get('user-agent') || '');
