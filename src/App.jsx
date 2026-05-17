@@ -1963,7 +1963,8 @@ function App() {
       if (p.stock <= 0) return false;
       const matchesCat = selectedCategory === 'TODOS' || p.category === selectedCategory;
       const matchesSub = selectedSubcategory === 'TODOS' || (p.subcategory || '').toUpperCase() === selectedSubcategory;
-      const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.sku || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = !q || (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q) || (p.subcategory || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
       const matchesSize = selectedSize === 'TODOS' || (Array.isArray(p.sizes) && p.sizes.some(s => {
         const sName = typeof s === 'string' ? s : s.size;
         const sStock = typeof s === 'string' ? (p.stock || 0) : Number(s.stock || 0);
