@@ -1144,7 +1144,32 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
                   </button>
                 </span>
               )}
-              <span className="text-emerald-500">{formatBRL(lead.value || 0)}</span>
+              {editingValueId === lead.id ? (
+                <span className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-emerald-500 text-[10px]">R$</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    autoFocus
+                    value={editingValueText}
+                    onChange={(e) => setEditingValueText(e.target.value.replace(/[^0-9.,]/g, ''))}
+                    className="w-20 px-2 py-1 bg-zinc-950 border border-emerald-500/30 rounded-md text-[11px] font-bold text-emerald-500 outline-none focus:border-emerald-500 text-right"
+                  />
+                  <button onClick={saveValueEdit} className="px-2 py-1 bg-emerald-500 text-zinc-950 rounded-md text-[9px] font-black uppercase active:scale-95">OK</button>
+                  <button onClick={() => setEditingValueId(null)} className="px-2 py-1 bg-zinc-800 text-zinc-400 rounded-md text-[9px] font-black uppercase active:scale-95">X</button>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-emerald-500">{formatBRL(lead.value || 0)}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openValueEditor(lead); }}
+                    className="p-1 text-zinc-500 hover:text-emerald-500 active:scale-90 transition-colors"
+                    title="Editar valor (desconto/acréscimo)"
+                  >
+                    <Edit3 size={11}/>
+                  </button>
+                </span>
+              )}
             </div>
 
           </div>
