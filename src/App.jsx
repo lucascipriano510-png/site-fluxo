@@ -15,7 +15,7 @@ import {
   GripVertical, Instagram, ShieldQuestion, Globe, HelpCircle, ScanLine, Scan
 } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct as deleteProductRemote, fetchBanners, upsertBanner, deleteBanner as deleteBannerRemote, uploadImage } from './lib/supabase';
-import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, restoreOrderStock } from './lib/orders';
+import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, updateOrderValue, restoreOrderStock } from './lib/orders';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
 import { dispatchCAPIPurchase, dispatchCAPIRefund } from './lib/capi';
@@ -877,6 +877,8 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
   const [isProcessing, setIsProcessing] = useState(false);
   const [editingPhoneId, setEditingPhoneId] = useState(null);
   const [editingPhoneValue, setEditingPhoneValue] = useState('');
+  const [editingValueId, setEditingValueId] = useState(null);
+  const [editingValueText, setEditingValueText] = useState('');
   // Filtro: 'NOVOS' = NOVO + EM ATENDIMENTO; 'CONCLUÍDOS' e 'CANCELADOS' ficam separados
   const [leadsFilter, setLeadsFilter] = useState('NOVOS');
 
@@ -898,6 +900,34 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
     } catch (err) {
       console.log('[PHONE_EDIT_ERROR]', err);
       showToast('Erro ao atualizar telefone.', 'error');
+    }
+  };
+
+  const openValueEditor = (lead) => {
+    setEditingValueId(lead.id);
+    setEditingValueText(String(Number(lead.value || 0).toFixed(2)).replace('.', ','));
+  };
+
+  const saveValueEdit = async () => {
+    const lead = leads.find(l => l.id === editingValueId);
+    if (!lead) { setEditingValueId(null); return; }
+    const parsed = Number(String(editingValueText).replace(/\./g, '').replace(',', '.'));
+    if (!Number.isFinite(parsed) || parsed < 0) { showToast('Valor inválido.', 'error'); return; }
+    const original = Number(lead.value || 0);
+    try {
+      await updateOrderValue(lead._raw?.id || lead.id, parsed);
+      setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, value: parsed } : l));
+      const diff = parsed - original;
+      const msg = diff === 0
+        ? 'Valor atualizado.'
+        : diff < 0
+          ? `Desconto de ${formatBRL(Math.abs(diff))} aplicado.`
+          : `Acréscimo de ${formatBRL(diff)} aplicado.`;
+      showToast(msg);
+      setEditingValueId(null);
+    } catch (err) {
+      console.log('[VALUE_EDIT_ERROR]', err);
+      showToast('Erro ao atualizar valor.', 'error');
     }
   };
 
@@ -1114,7 +1144,32 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
                   </button>
                 </span>
               )}
-              <span className="text-emerald-500">{formatBRL(lead.value || 0)}</span>
+              {editingValueId === lead.id ? (
+                <span className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-emerald-500 text-[10px]">R$</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    autoFocus
+                    value={editingValueText}
+                    onChange={(e) => setEditingValueText(e.target.value.replace(/[^0-9.,]/g, ''))}
+                    className="w-20 px-2 py-1 bg-zinc-950 border border-emerald-500/30 rounded-md text-[11px] font-bold text-emerald-500 outline-none focus:border-emerald-500 text-right"
+                  />
+                  <button onClick={saveValueEdit} className="px-2 py-1 bg-emerald-500 text-zinc-950 rounded-md text-[9px] font-black uppercase active:scale-95">OK</button>
+                  <button onClick={() => setEditingValueId(null)} className="px-2 py-1 bg-zinc-800 text-zinc-400 rounded-md text-[9px] font-black uppercase active:scale-95">X</button>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-emerald-500">{formatBRL(lead.value || 0)}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openValueEditor(lead); }}
+                    className="p-1 text-zinc-500 hover:text-emerald-500 active:scale-90 transition-colors"
+                    title="Editar valor (desconto/acréscimo)"
+                  >
+                    <Edit3 size={11}/>
+                  </button>
+                </span>
+              )}
             </div>
 
           </div>
@@ -1963,8 +2018,10 @@ function App() {
       if (p.stock <= 0) return false;
       const matchesCat = selectedCategory === 'TODOS' || p.category === selectedCategory;
       const matchesSub = selectedSubcategory === 'TODOS' || (p.subcategory || '').toUpperCase() === selectedSubcategory;
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = !q || (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q) || (p.subcategory || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
+      const q = searchQuery.toLowerCase().trim();
+      const haystack = `${p.name || ''} ${p.subcategory || ''} ${p.category || ''} ${p.sku || ''}`.toLowerCase();
+      const tokens = q.split(/\s+/).filter(Boolean);
+      const matchesSearch = tokens.length === 0 || tokens.every(t => haystack.includes(t));
       const matchesSize = selectedSize === 'TODOS' || (Array.isArray(p.sizes) && p.sizes.some(s => {
         const sName = typeof s === 'string' ? s : s.size;
         const sStock = typeof s === 'string' ? (p.stock || 0) : Number(s.stock || 0);

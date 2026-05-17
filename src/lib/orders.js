@@ -159,3 +159,18 @@ export async function updateOrderPhone(orderId, phone) {
   if (error) throw error;
   return data;
 }
+
+// Atualiza o valor pago do pedido (ex: após aplicar desconto manual).
+// Útil quando o cliente fecha o pedido com valor diferente do calculado pelo carrinho.
+export async function updateOrderValue(orderId, value) {
+  const v = Number(value);
+  if (!Number.isFinite(v) || v < 0) throw new Error('Valor inválido');
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ value: Math.round(v * 100) / 100 })
+    .eq('id', orderId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
