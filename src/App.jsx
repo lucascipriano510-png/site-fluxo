@@ -877,6 +877,8 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
   const [isProcessing, setIsProcessing] = useState(false);
   const [editingPhoneId, setEditingPhoneId] = useState(null);
   const [editingPhoneValue, setEditingPhoneValue] = useState('');
+  const [editingValueId, setEditingValueId] = useState(null);
+  const [editingValueText, setEditingValueText] = useState('');
   // Filtro: 'NOVOS' = NOVO + EM ATENDIMENTO; 'CONCLUÍDOS' e 'CANCELADOS' ficam separados
   const [leadsFilter, setLeadsFilter] = useState('NOVOS');
 
@@ -898,6 +900,34 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
     } catch (err) {
       console.log('[PHONE_EDIT_ERROR]', err);
       showToast('Erro ao atualizar telefone.', 'error');
+    }
+  };
+
+  const openValueEditor = (lead) => {
+    setEditingValueId(lead.id);
+    setEditingValueText(String(Number(lead.value || 0).toFixed(2)).replace('.', ','));
+  };
+
+  const saveValueEdit = async () => {
+    const lead = leads.find(l => l.id === editingValueId);
+    if (!lead) { setEditingValueId(null); return; }
+    const parsed = Number(String(editingValueText).replace(/\./g, '').replace(',', '.'));
+    if (!Number.isFinite(parsed) || parsed < 0) { showToast('Valor inválido.', 'error'); return; }
+    const original = Number(lead.value || 0);
+    try {
+      await updateOrderValue(lead._raw?.id || lead.id, parsed);
+      setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, value: parsed } : l));
+      const diff = parsed - original;
+      const msg = diff === 0
+        ? 'Valor atualizado.'
+        : diff < 0
+          ? `Desconto de ${formatBRL(Math.abs(diff))} aplicado.`
+          : `Acréscimo de ${formatBRL(diff)} aplicado.`;
+      showToast(msg);
+      setEditingValueId(null);
+    } catch (err) {
+      console.log('[VALUE_EDIT_ERROR]', err);
+      showToast('Erro ao atualizar valor.', 'error');
     }
   };
 
