@@ -2579,7 +2579,10 @@ function App() {
               <div className="space-y-4">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Selecione o Tamanho</p>
                 <div className="grid grid-cols-4 gap-2">
-                  {(selectedProduct.sizes || []).map((s, idx) => {
+                  {(selectedProduct.sizes || []).filter(s => {
+                    const stock = typeof s === 'string' ? selectedProduct.stock : s.stock;
+                    return Number(stock || 0) > 0;
+                  }).map((s, idx) => {
                     const sz = typeof s === 'string' ? s : s.size;
                     const stock = typeof s === 'string' ? selectedProduct.stock : s.stock;
                     const qty = selectedSizes[sz] || 0;
