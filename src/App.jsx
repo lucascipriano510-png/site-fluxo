@@ -1963,8 +1963,10 @@ function App() {
       if (p.stock <= 0) return false;
       const matchesCat = selectedCategory === 'TODOS' || p.category === selectedCategory;
       const matchesSub = selectedSubcategory === 'TODOS' || (p.subcategory || '').toUpperCase() === selectedSubcategory;
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = !q || (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q) || (p.subcategory || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
+      const q = searchQuery.toLowerCase().trim();
+      const haystack = `${p.name || ''} ${p.subcategory || ''} ${p.category || ''} ${p.sku || ''}`.toLowerCase();
+      const tokens = q.split(/\s+/).filter(Boolean);
+      const matchesSearch = tokens.length === 0 || tokens.every(t => haystack.includes(t));
       const matchesSize = selectedSize === 'TODOS' || (Array.isArray(p.sizes) && p.sizes.some(s => {
         const sName = typeof s === 'string' ? s : s.size;
         const sStock = typeof s === 'string' ? (p.stock || 0) : Number(s.stock || 0);
