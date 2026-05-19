@@ -2033,10 +2033,11 @@ function App() {
       const haystack = `${p.name || ''} ${p.subcategory || ''} ${p.category || ''} ${p.sku || ''}`.toLowerCase();
       const tokens = q.split(/\s+/).filter(Boolean);
       const matchesSearch = tokens.length === 0 || tokens.every(t => haystack.includes(t));
-      const matchesSize = selectedSize === 'TODOS' || (Array.isArray(p.sizes) && p.sizes.some(s => {
-        const sName = typeof s === 'string' ? s : s.size;
+      const sizeNorm = String(selectedSize || '').trim().toUpperCase();
+      const matchesSize = sizeNorm === 'TODOS' || (Array.isArray(p.sizes) && p.sizes.some(s => {
+        const sName = String((typeof s === 'string' ? s : s.size) || '').trim().toUpperCase();
         const sStock = typeof s === 'string' ? (p.stock || 0) : Number(s.stock || 0);
-        return sName === selectedSize && sStock > 0;
+        return sName === sizeNorm && sStock > 0;
       }));
       const matchesCollection = !activeCollectionFilter || p.collection_name === activeCollectionFilter;
       return matchesCat && matchesSub && matchesSearch && matchesSize && matchesCollection;
