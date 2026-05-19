@@ -2180,7 +2180,7 @@ function App() {
       // Respeita também o filtro de coleção ativo (banner)
       if (activeCollectionFilter && p.collection_name !== activeCollectionFilter) return;
       (p.sizes || []).forEach(s => {
-        const sName = typeof s === 'string' ? s : s.size;
+        const sName = String((typeof s === 'string' ? s : s.size) || '').trim().toUpperCase();
         const sStock = typeof s === 'string' ? (p.stock || 0) : Number(s.stock || 0);
         if (sName && sStock > 0) set.add(sName);
       });
