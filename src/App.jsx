@@ -2056,15 +2056,22 @@ function App() {
     return ['TODOS', ...Array.from(set)];
   }, [products, selectedCategory, activeCollectionFilter]);
 
-  // Se a subcategoria selecionada deixar de existir após trocar de categoria, reseta
+  // Se a subcategoria selecionada deixar de existir após trocar de categoria, reseta.
+  // Só depois que produtos carregarem — evita matar sub vinda da URL.
   useEffect(() => {
+    if (!products || products.length === 0) return;
     if (selectedSubcategory !== 'TODOS' && !availableSubcategories.includes(selectedSubcategory)) {
       setSelectedSubcategory('TODOS');
     }
-  }, [availableSubcategories, selectedSubcategory]);
+  }, [availableSubcategories, selectedSubcategory, products]);
 
-  // Ao trocar de categoria, sempre limpa a subcategoria
-  useEffect(() => { setSelectedSubcategory('TODOS'); }, [selectedCategory]);
+  // Ao trocar de categoria, sempre limpa a subcategoria — exceto no primeiro render
+  // (preserva ?sub=... da URL).
+  const _isFirstCategoryChange = React.useRef(true);
+  useEffect(() => {
+    if (_isFirstCategoryChange.current) { _isFirstCategoryChange.current = false; return; }
+    setSelectedSubcategory('TODOS');
+  }, [selectedCategory]);
 
   // Sincroniza filtros com a URL (query params) sem recarregar a página.
   // Usa history.replaceState para não poluir o histórico e debounce na busca.
