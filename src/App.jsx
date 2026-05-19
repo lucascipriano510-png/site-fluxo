@@ -2056,15 +2056,22 @@ function App() {
     return ['TODOS', ...Array.from(set)];
   }, [products, selectedCategory, activeCollectionFilter]);
 
-  // Se a subcategoria selecionada deixar de existir após trocar de categoria, reseta
+  // Se a subcategoria selecionada deixar de existir após trocar de categoria, reseta.
+  // Só depois que produtos carregarem — evita matar sub vinda da URL.
   useEffect(() => {
+    if (!products || products.length === 0) return;
     if (selectedSubcategory !== 'TODOS' && !availableSubcategories.includes(selectedSubcategory)) {
       setSelectedSubcategory('TODOS');
     }
-  }, [availableSubcategories, selectedSubcategory]);
+  }, [availableSubcategories, selectedSubcategory, products]);
 
-  // Ao trocar de categoria, sempre limpa a subcategoria
-  useEffect(() => { setSelectedSubcategory('TODOS'); }, [selectedCategory]);
+  // Ao trocar de categoria, sempre limpa a subcategoria — exceto no primeiro render
+  // (preserva ?sub=... da URL).
+  const _isFirstCategoryChange = React.useRef(true);
+  useEffect(() => {
+    if (_isFirstCategoryChange.current) { _isFirstCategoryChange.current = false; return; }
+    setSelectedSubcategory('TODOS');
+  }, [selectedCategory]);
 
   // Sincroniza filtros com a URL (query params) sem recarregar a página.
   // Usa history.replaceState para não poluir o histórico e debounce na busca.
@@ -2181,11 +2188,29 @@ function App() {
   }, [products, selectedCategory, selectedSubcategory, activeCollectionFilter]);
 
   // Se a categoria mudar e o tamanho selecionado não existir mais, volta para "TODOS"
+  // IMPORTANTE: só roda depois que os produtos carregarem — evita resetar um filtro
+  // vindo da URL (?tamanho=GG) antes do catálogo estar disponível.
   useEffect(() => {
+    if (!products || products.length === 0) return;
     if (selectedSize !== 'TODOS' && !availableSizes.includes(selectedSize)) {
       setSelectedSize('TODOS');
     }
-  }, [availableSizes, selectedSize]);
+  }, [availableSizes, selectedSize, products]);
+
+  // Quando a página é aberta com filtros na URL, rola até a vitrine após o catálogo carregar.
+  const _didScrollToFiltered = React.useRef(false);
+  useEffect(() => {
+    if (_didScrollToFiltered.current) return;
+    if (typeof window === 'undefined') return;
+    if (!products || products.length === 0) return;
+    const sp = new URLSearchParams(window.location.search);
+    const hasFilter = sp.has('tamanho') || sp.has('categoria') || sp.has('sub') || sp.has('busca');
+    if (!hasFilter) return;
+    _didScrollToFiltered.current = true;
+    setTimeout(() => {
+      document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+  }, [products]);
 
   const handleSearchMyOrders = async () => {
     const phone = String(myOrdersPhone || '').replace(/\D/g, '');
