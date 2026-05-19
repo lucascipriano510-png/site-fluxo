@@ -1665,10 +1665,21 @@ function App() {
     return () => { alive = false; sub?.subscription?.unsubscribe?.(); };
   }, []);
 
-  const [selectedCategory, setSelectedCategory] = useState('TODOS');
-  const [selectedSubcategory, setSelectedSubcategory] = useState('TODOS');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSize, setSelectedSize] = useState('TODOS');
+  // Lê filtros iniciais da URL (?tamanho=GG&categoria=VESTUÁRIO&sub=CAMISETAS&busca=...)
+  const _initialUrlFilters = (() => {
+    if (typeof window === 'undefined') return {};
+    const sp = new URLSearchParams(window.location.search);
+    return {
+      categoria: (sp.get('categoria') || 'TODOS').toUpperCase(),
+      sub: (sp.get('sub') || 'TODOS').toUpperCase(),
+      tamanho: (sp.get('tamanho') || 'TODOS').toUpperCase(),
+      busca: sp.get('busca') || '',
+    };
+  })();
+  const [selectedCategory, setSelectedCategory] = useState(_initialUrlFilters.categoria || 'TODOS');
+  const [selectedSubcategory, setSelectedSubcategory] = useState(_initialUrlFilters.sub || 'TODOS');
+  const [searchQuery, setSearchQuery] = useState(_initialUrlFilters.busca || '');
+  const [selectedSize, setSelectedSize] = useState(_initialUrlFilters.tamanho || 'TODOS');
    const [currentPage, setCurrentPage] = useState(() => {
     // Restaura a página a partir do path /paginaN (preferido) ou /pagina/N (fallback legado),
     // depois ?page=N (legado) ou sessionStorage.
