@@ -2066,6 +2066,44 @@ function App() {
   // Ao trocar de categoria, sempre limpa a subcategoria
   useEffect(() => { setSelectedSubcategory('TODOS'); }, [selectedCategory]);
 
+  // Sincroniza filtros com a URL (query params) sem recarregar a página.
+  // Usa history.replaceState para não poluir o histórico e debounce na busca.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handle = setTimeout(() => {
+      try {
+        const url = new URL(window.location.href);
+        const sp = url.searchParams;
+        const setOrDel = (k, v, def) => {
+          if (v && v !== def) sp.set(k, v); else sp.delete(k);
+        };
+        setOrDel('categoria', selectedCategory, 'TODOS');
+        setOrDel('sub', selectedSubcategory, 'TODOS');
+        setOrDel('tamanho', selectedSize, 'TODOS');
+        setOrDel('busca', (searchQuery || '').trim(), '');
+        const newSearch = sp.toString();
+        const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '') + url.hash;
+        const current = window.location.pathname + window.location.search + window.location.hash;
+        if (newUrl !== current) window.history.replaceState(null, '', newUrl);
+      } catch {}
+    }, 200);
+    return () => clearTimeout(handle);
+  }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery]);
+
+  // Reage ao botão voltar/avançar do navegador para refletir os filtros da URL
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPop = () => {
+      const sp = new URLSearchParams(window.location.search);
+      setSelectedCategory((sp.get('categoria') || 'TODOS').toUpperCase());
+      setSelectedSubcategory((sp.get('sub') || 'TODOS').toUpperCase());
+      setSelectedSize((sp.get('tamanho') || 'TODOS').toUpperCase());
+      setSearchQuery(sp.get('busca') || '');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
