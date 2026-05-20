@@ -866,7 +866,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
             </div>
              <div className="col-span-2 space-y-1">
                <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Categoria</label>
-	              <input name="category" defaultValue={editMode?.category} placeholder="Categoria (ex: VESTUÁRIO)" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase" required />
+	              <input name="category" defaultValue={editMode?.category} placeholder={isKit ? 'KITS (automático)' : 'Categoria (ex: VESTUÁRIO)'} disabled={isKit} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase disabled:opacity-50" required={!isKit} />
 	            </div>
 	            <div className="col-span-2 space-y-1">
 	               <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Subcategoria (Opcional)</label>
