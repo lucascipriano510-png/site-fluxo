@@ -1415,6 +1415,210 @@ const AdminConfig = ({ config, setConfig, showToast }) => {
 };
 
 // ==========================================
+// 3.5. KIT MODAL (Bundle Builder / Shop the Look)
+// ==========================================
+const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, setIsCartModalOpen, onClose, setZoomImage, showToast }) => {
+  const componentIds = kitItemsByKit[kit.id] || [];
+  const components = componentIds
+    .map(pid => (products || []).find(p => p.id === pid))
+    .filter(Boolean);
+
+  // Galeria: imagem principal + gallery[]
+  const gallery = [kit.image, ...((Array.isArray(kit.gallery) ? kit.gallery : []) || [])].filter(Boolean);
+  const [activeImage, setActiveImage] = useState(gallery[0] || kit.image);
+
+  // Estado por componente: { included: bool, size: string }
+  const [picks, setPicks] = useState(() => {
+    const init = {};
+    components.forEach(c => {
+      const hasStock = (c.sizes || []).some(s => Number(typeof s === 'string' ? c.stock : s.stock) > 0);
+      init[c.id] = { included: hasStock, size: '' };
+    });
+    return init;
+  });
+  const [missingFlash, setMissingFlash] = useState({});
+
+  const includedItems = components.filter(c => picks[c.id]?.included);
+  const total = includedItems.reduce((acc, c) => acc + Number(c.price || 0), 0);
+  const sumOriginal = components.reduce((acc, c) => acc + Number(c.price || 0), 0);
+
+  const togglePick = (id) => setPicks(p => ({ ...p, [id]: { ...(p[id] || {}), included: !p[id]?.included } }));
+  const setSize = (id, size) => setPicks(p => ({ ...p, [id]: { ...(p[id] || { included: true }), size } }));
+
+  const handleAddKitToCart = () => {
+    if (includedItems.length === 0) {
+      showToast('Selecione ao menos uma peça do kit.', 'error');
+      return;
+    }
+    const missing = {};
+    includedItems.forEach(c => { if (!picks[c.id]?.size) missing[c.id] = true; });
+    if (Object.keys(missing).length > 0) {
+      setMissingFlash(missing);
+      setTimeout(() => setMissingFlash({}), 1500);
+      showToast('Escolha o tamanho de todas as peças marcadas.', 'error');
+      return;
+    }
+    // Adiciona cada sub-produto individualmente
+    let updatedCart = [...cart];
+    includedItems.forEach(c => {
+      const sizeName = picks[c.id].size;
+      const itemKey = `${c.id}-${sizeName || 'U'}`;
+      const existingIdx = updatedCart.findIndex(it => it.itemKey === itemKey);
+      if (existingIdx >= 0) {
+        updatedCart[existingIdx] = { ...updatedCart[existingIdx], quantity: updatedCart[existingIdx].quantity + 1 };
+      } else {
+        updatedCart.push({ ...c, size: sizeName, quantity: 1, itemKey, fromKitId: kit.id, fromKitName: kit.name });
+      }
+    });
+    setCart(updatedCart);
+    setCartBounce(true);
+    setTimeout(() => setCartBounce(false), 400);
+    setIsCartModalOpen(true);
+    onClose();
+  };
+
+  if (components.length === 0) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+        <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
+        <div className="relative bg-zinc-950 max-w-sm w-full p-8 rounded-3xl border border-white/10 text-center">
+          <Zap className="mx-auto text-amber-400 mb-3" />
+          <h3 className="text-white font-black uppercase text-sm mb-2">Kit em preparação</h3>
+          <p className="text-zinc-400 text-xs">Este kit ainda não tem peças vinculadas.</p>
+          <button onClick={onClose} className="mt-6 w-full py-3 rounded-2xl bg-white text-zinc-950 font-black text-[11px] uppercase tracking-widest">Fechar</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end justify-center">
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
+      <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[94vh] flex flex-col">
+        {/* GALERIA */}
+        <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950">
+          <button onClick={() => setZoomImage(activeImage)} className="block w-full aspect-square overflow-hidden touch-manipulation group" aria-label="Ampliar foto">
+            <img src={activeImage} className="w-full h-full object-cover transition-transform duration-500 group-active:scale-105" alt={kit.name} />
+          </button>
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full backdrop-blur-md" />
+          <button onClick={onClose} className="absolute top-4 right-4 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform">
+            <X size={18}/>
+          </button>
+          <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1 shadow-[0_4px_15px_rgba(251,191,36,0.4)]">
+            <Zap size={10} className="fill-zinc-950" /> KIT
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-b from-transparent to-zinc-950 pointer-events-none" />
+        </div>
+
+        {/* THUMBS */}
+        {gallery.length > 1 && (
+          <div className="px-5 pt-3 pb-1 flex gap-2 overflow-x-auto no-scrollbar">
+            {gallery.map((g, i) => (
+              <button key={i} onClick={() => setActiveImage(g)} className={`shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${activeImage === g ? 'border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]' : 'border-white/10 opacity-70'}`}>
+                <img src={g} className="w-full h-full object-cover" alt="" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* INFO */}
+        <div className="px-7 pt-4 pb-2 shrink-0">
+          <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest">REF: {kit.sku}</span>
+          <h2 className="text-xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{kit.name}</h2>
+          <p className="text-[10px] text-zinc-500 uppercase font-black mt-2 tracking-widest flex items-center gap-1.5">
+            <Layers size={11} className="text-amber-400" /> Monte seu look — {includedItems.length}/{components.length} peças
+          </p>
+        </div>
+
+        {/* CONSTRUTOR DO KIT — scroll vertical */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-3 space-y-3">
+          {components.map(c => {
+            const included = picks[c.id]?.included;
+            const chosenSize = picks[c.id]?.size || '';
+            const sizes = (c.sizes || []).map(s => ({
+              name: String((typeof s === 'string' ? s : s.size) || '').trim().toUpperCase(),
+              stock: typeof s === 'string' ? Number(c.stock || 0) : Number(s.stock || 0),
+            })).filter(s => s.name);
+            const isMissing = !!missingFlash[c.id];
+            return (
+              <div key={c.id} className={`relative rounded-2xl border transition-all p-3 ${included ? (isMissing ? 'bg-red-500/10 border-red-500 animate-pulse' : 'bg-zinc-900/70 border-white/10') : 'bg-zinc-900/30 border-white/5 opacity-50'}`}>
+                <div className="flex gap-3">
+                  <img src={c.image} className={`w-16 h-20 rounded-xl object-cover shrink-0 border border-white/10 ${!included ? 'grayscale' : ''}`} alt={c.name} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-black text-white text-[11px] uppercase leading-tight line-clamp-2">{c.name}</h4>
+                      <button
+                        onClick={() => togglePick(c.id)}
+                        className={`shrink-0 w-6 h-6 rounded-md border-2 grid place-items-center transition-all ${included ? 'bg-emerald-500 border-emerald-500 text-zinc-950' : 'bg-transparent border-zinc-600 text-transparent'}`}
+                        aria-label={included ? 'Remover do kit' : 'Adicionar ao kit'}
+                      >
+                        <Check size={14} strokeWidth={3} />
+                      </button>
+                    </div>
+                    <p className={`font-black text-sm mt-1 ${included ? 'text-emerald-400' : 'text-zinc-500 line-through'}`}>{formatBRL(c.price || 0)}</p>
+                    {included && (
+                      <div className="flex gap-1.5 mt-2 flex-wrap">
+                        {sizes.length === 0 && (
+                          <span className="text-[9px] text-zinc-500 uppercase font-bold">Sem tamanhos</span>
+                        )}
+                        {sizes.map(s => {
+                          const disabled = s.stock <= 0;
+                          const active = chosenSize === s.name;
+                          return (
+                            <button
+                              key={s.name}
+                              disabled={disabled}
+                              onClick={() => setSize(c.id, s.name)}
+                              className={`px-2.5 py-1 rounded-md border text-[10px] font-black uppercase transition-all touch-manipulation ${
+                                active
+                                  ? 'bg-white text-zinc-950 border-white'
+                                  : disabled
+                                    ? 'bg-zinc-950 text-zinc-700 border-white/5 opacity-50'
+                                    : 'bg-zinc-950 text-zinc-300 border-white/10 hover:border-white/30'
+                              }`}
+                            >
+                              {s.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* RODAPÉ TOTAL + CTA */}
+        <div className="px-6 pt-3 pb-5 border-t border-white/10 bg-zinc-950 shrink-0">
+          <div className="flex items-end justify-between mb-3">
+            <div>
+              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Total do Kit</p>
+              <p className="text-2xl font-black text-white tracking-tighter">{formatBRL(total)}</p>
+              {includedItems.length < components.length && sumOriginal > total && (
+                <p className="text-[9px] text-zinc-600 line-through font-bold">{formatBRL(sumOriginal)} completo</p>
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Peças</p>
+              <p className="text-lg font-black text-amber-400">{includedItems.length}</p>
+            </div>
+          </div>
+          <button
+            onClick={handleAddKitToCart}
+            disabled={includedItems.length === 0}
+            className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 touch-manipulation ${includedItems.length === 0 ? 'bg-zinc-900 text-zinc-700' : 'bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-zinc-950 shadow-[0_10px_30px_rgba(251,146,60,0.35)] active:scale-[0.98]'}`}
+          >
+            <ShoppingBag size={14}/> Adicionar Kit à Sacola
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
 // 4. APLICATIVO PRINCIPAL (ROOT COMPONENT)
 // ==========================================
 function App() {
