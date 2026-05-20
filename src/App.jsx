@@ -881,17 +881,95 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
 	                 ))}
 	               </select>
 	            </div>
-            <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-white/5 space-y-3 mt-2">
-               <label className="text-[9px] font-black text-emerald-500 uppercase flex items-center gap-1"><Layers size={12}/> Grade de Tamanhos</label>
-               {formSizes.map((item, idx) => (
-                 <div key={idx} className="flex gap-2 items-center animate-in">
-                   <input placeholder="Tam." className="w-1/2 p-3 bg-zinc-900 border border-white/5 rounded-xl font-bold text-sm text-white uppercase outline-none" value={item.size} onChange={(e) => handleSizeChange(idx, 'size', e.target.value)} required />
-                   <input type="number" placeholder="Qtd" className="w-1/2 p-3 bg-zinc-900 border border-white/5 rounded-xl font-bold text-sm text-white outline-none" value={item.stock} onChange={(e) => handleSizeChange(idx, 'stock', e.target.value)} required />
-                   <button type="button" onClick={() => removeSize(idx)} className="p-3 text-red-500 bg-red-500/5 rounded-xl transition-colors border border-red-500/10"><X size={16}/></button>
-                 </div>
-               ))}
-               <button type="button" onClick={addSize} className="w-full py-3 mt-2 border border-dashed border-white/10 rounded-xl text-[10px] font-black uppercase text-zinc-500 hover:text-white transition-all">+ Adicionar</button>
+            {/* TOGGLE — É um Kit? */}
+            <div className="col-span-2 flex items-center gap-3 bg-gradient-to-r from-amber-500/10 to-pink-500/10 p-4 rounded-2xl border border-amber-400/30 mt-2 cursor-pointer" onClick={() => setIsKit(v => !v)}>
+              <div className={`w-11 h-6 rounded-full p-0.5 transition-all ${isKit ? 'bg-gradient-to-r from-amber-400 to-pink-500' : 'bg-zinc-800'}`}>
+                <div className={`w-5 h-5 rounded-full bg-white transition-transform ${isKit ? 'translate-x-5' : ''}`} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-black uppercase text-white flex items-center gap-1.5"><Zap size={12} className="text-amber-400 fill-amber-400" /> É um KIT (Bundle)</p>
+                <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wide">{isKit ? 'Estoque/tamanhos vêm dos itens vinculados' : 'Produto único com tamanhos próprios'}</p>
+              </div>
             </div>
+
+            {!isKit && (
+              <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-white/5 space-y-3 mt-2">
+                 <label className="text-[9px] font-black text-emerald-500 uppercase flex items-center gap-1"><Layers size={12}/> Grade de Tamanhos</label>
+                 {formSizes.map((item, idx) => (
+                   <div key={idx} className="flex gap-2 items-center animate-in">
+                     <input placeholder="Tam." className="w-1/2 p-3 bg-zinc-900 border border-white/5 rounded-xl font-bold text-sm text-white uppercase outline-none" value={item.size} onChange={(e) => handleSizeChange(idx, 'size', e.target.value)} required />
+                     <input type="number" placeholder="Qtd" className="w-1/2 p-3 bg-zinc-900 border border-white/5 rounded-xl font-bold text-sm text-white outline-none" value={item.stock} onChange={(e) => handleSizeChange(idx, 'stock', e.target.value)} required />
+                     <button type="button" onClick={() => removeSize(idx)} className="p-3 text-red-500 bg-red-500/5 rounded-xl transition-colors border border-red-500/10"><X size={16}/></button>
+                   </div>
+                 ))}
+                 <button type="button" onClick={addSize} className="w-full py-3 mt-2 border border-dashed border-white/10 rounded-xl text-[10px] font-black uppercase text-zinc-500 hover:text-white transition-all">+ Adicionar</button>
+              </div>
+            )}
+
+            {isKit && (
+              <>
+                {/* GALERIA */}
+                <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-amber-400/20 space-y-3 mt-2">
+                  <label className="text-[9px] font-black text-amber-400 uppercase flex items-center gap-1"><ImagePlus size={12}/> Galeria do Kit ({galleryUrls.length})</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {galleryUrls.map((url, i) => (
+                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
+                        <img src={url} className="w-full h-full object-cover" alt="" />
+                        <button type="button" onClick={() => removeGalleryUrl(url)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><X size={10}/></button>
+                      </div>
+                    ))}
+                    <label className="aspect-square rounded-xl border-2 border-dashed border-white/15 grid place-items-center cursor-pointer hover:border-amber-400/50 transition-colors">
+                      <Upload size={16} className="text-amber-400" />
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryFiles} />
+                    </label>
+                  </div>
+                  {isUploadingGallery && <p className="text-[9px] text-amber-400 font-bold uppercase">Enviando imagens...</p>}
+                </div>
+
+                {/* MULTI-SELECT DE PRODUTOS */}
+                <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-amber-400/20 space-y-3 mt-2">
+                  <label className="text-[9px] font-black text-amber-400 uppercase flex items-center gap-1"><Layers size={12}/> Peças do Kit ({kitComponentIds.length})</label>
+                  <input
+                    value={kitSearch}
+                    onChange={(e) => setKitSearch(e.target.value)}
+                    placeholder="Buscar por nome ou SKU..."
+                    className="w-full p-3 bg-zinc-900 border border-white/5 rounded-xl text-sm text-white outline-none focus:border-amber-400/50"
+                  />
+                  <div className="max-h-72 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+                    {(products || [])
+                      .filter(p => !p.is_kit && (
+                        !kitSearch.trim() ||
+                        (p.name || '').toLowerCase().includes(kitSearch.toLowerCase()) ||
+                        (p.sku || '').toLowerCase().includes(kitSearch.toLowerCase())
+                      ))
+                      .map(p => {
+                        const selected = kitComponentIds.includes(p.id);
+                        return (
+                          <button
+                            type="button"
+                            key={p.id}
+                            onClick={() => toggleKitComponent(p.id)}
+                            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all text-left ${selected ? 'bg-amber-400/10 border-amber-400/60' : 'bg-zinc-900 border-white/5 hover:border-white/15'}`}
+                          >
+                            <div className={`w-5 h-5 rounded grid place-items-center border-2 shrink-0 ${selected ? 'bg-amber-400 border-amber-400' : 'border-zinc-600'}`}>
+                              {selected && <Check size={12} className="text-zinc-950" strokeWidth={3}/>}
+                            </div>
+                            <img src={p.image} className="w-10 h-10 rounded-lg object-cover border border-white/5" alt="" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-black uppercase text-white truncate">{p.name}</p>
+                              <p className="text-[9px] text-zinc-500 font-bold">{p.sku} · {formatBRL(p.price || 0)}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    {(products || []).filter(p => !p.is_kit).length === 0 && (
+                      <p className="text-[10px] text-zinc-500 text-center py-4">Nenhum produto disponível.</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="col-span-2 flex items-center gap-3 bg-zinc-950 p-4 rounded-2xl border border-white/5 mt-2 cursor-pointer" onClick={() => document.getElementById('f-check').click()}>
               <input type="checkbox" name="featured" id="f-check" defaultChecked={editMode?.featured} className="w-5 h-5 accent-emerald-500" />
               <label className="text-[11px] font-black uppercase text-white">Destaque na Home</label>
