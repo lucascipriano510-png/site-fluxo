@@ -14,7 +14,7 @@ import {
   Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, ImagePlus,
   GripVertical, Instagram, ShieldQuestion, Globe, HelpCircle, ScanLine, Scan
 } from 'lucide-react';
-import { fetchProducts, upsertProduct, deleteProduct as deleteProductRemote, fetchBanners, upsertBanner, deleteBanner as deleteBannerRemote, uploadImage } from './lib/supabase';
+import { fetchProducts, upsertProduct, deleteProduct as deleteProductRemote, fetchBanners, upsertBanner, deleteBanner as deleteBannerRemote, uploadImage, fetchAllKitItems, fetchKitItems, saveKitItems } from './lib/supabase';
 import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, updateOrderValue, restoreOrderStock } from './lib/orders';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
@@ -365,6 +365,13 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
   const [formSizes, setFormSizes] = useState([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
+  // ===== KIT (Bundle Builder) =====
+  const [isKit, setIsKit] = useState(false);
+  const [galleryUrls, setGalleryUrls] = useState([]);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const [kitComponentIds, setKitComponentIds] = useState([]);
+  const [kitSearch, setKitSearch] = useState('');
+
   const [showScanner, setShowScanner] = useState(false);
   const [scannedProduct, setScannedProduct] = useState(null);
   const [scannedSize, setScannedSize] = useState('');
@@ -381,16 +388,57 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
             const stockPerSize = Math.floor((editMode.stock || 0) / editMode.sizes.length);
             normalizedSizes = editMode.sizes.map(s => ({ size: s, stock: stockPerSize }));
          } else {
-            normalizedSizes = editMode.sizes; 
+            normalizedSizes = editMode.sizes;
          }
       }
       setFormSizes(normalizedSizes.length > 0 ? normalizedSizes : [{ size: 'U', stock: editMode.stock || 0 }]);
+      setIsKit(!!editMode.is_kit);
+      setGalleryUrls(Array.isArray(editMode.gallery) ? editMode.gallery : []);
+      // Carrega componentes do kit do banco
+      if (editMode.is_kit && editMode.id) {
+        fetchKitItems(editMode.id)
+          .then(rows => setKitComponentIds(rows.map(r => r.product_id)))
+          .catch(() => setKitComponentIds([]));
+      } else {
+        setKitComponentIds([]);
+      }
     } else if (editMode === 'new') {
       setPreviewImage('');
       setFormSizes([{ size: 'P', stock: 5 }, { size: 'M', stock: 5 }]);
+      setIsKit(false);
+      setGalleryUrls([]);
+      setKitComponentIds([]);
     }
+    setKitSearch('');
     setProductImageFile(null);
   }, [editMode]);
+
+  const handleGalleryFiles = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setIsUploadingGallery(true);
+    try {
+      const urls = [];
+      for (const f of files) {
+        const url = await uploadImage(f);
+        if (url) urls.push(url);
+      }
+      setGalleryUrls(prev => [...prev, ...urls]);
+      showToast(`${urls.length} imagem(ns) adicionada(s)`);
+    } catch (err) {
+      showToast('Erro ao subir galeria: ' + err.message, 'error');
+    } finally {
+      setIsUploadingGallery(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeGalleryUrl = (url) => setGalleryUrls(prev => prev.filter(u => u !== url));
+
+  const toggleKitComponent = (pid) => {
+    setKitComponentIds(prev => prev.includes(pid) ? prev.filter(x => x !== pid) : [...prev, pid]);
+  };
+
 
   useEffect(() => {
     if (showScanner && cameraActive) {
@@ -544,22 +592,34 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
 
       const computedStock = formSizes.reduce((acc, curr) => acc + (parseInt(curr.stock) || 0), 0);
       const fd = new FormData(e.target);
+      const productId = editMode === 'new' ? Date.now() : editMode.id;
       const data = {
-        id: editMode === 'new' ? Date.now() : editMode.id,
+        id: productId,
         sku: fd.get('sku').toUpperCase(),
         name: fd.get('name'),
         price: parseFloat(fd.get('price')),
-        category: fd.get('category').toUpperCase(),
+        category: isKit ? 'KITS' : fd.get('category').toUpperCase(),
         subcategory: (fd.get('subcategory') || '').toString().trim().toUpperCase() || null,
         collection_name: fd.get('collection_name') || null,
         image: imageUrl,
-        stock: computedStock, 
+        stock: isKit ? 0 : computedStock,
         sales: editMode === 'new' ? 0 : editMode.sales,
-        sizes: formSizes.filter(s => s.size && s.size.trim() !== ''),
-        featured: fd.get('featured') === 'on'
+        sizes: isKit ? [] : formSizes.filter(s => s.size && s.size.trim() !== ''),
+        featured: fd.get('featured') === 'on',
+        is_kit: isKit,
+        gallery: isKit ? galleryUrls : [],
       };
       const updatedProducts = editMode === 'new' ? [data, ...products] : products.map(p => p.id === data.id ? data : p);
       setProducts(updatedProducts);
+      // Persiste componentes do kit
+      if (isKit) {
+        try {
+          await saveKitItems(productId, kitComponentIds);
+        } catch (err) {
+          console.warn('[kit_items] falha ao salvar:', err?.message);
+          showToast('Produto salvo, mas falhou ao salvar componentes do kit.', 'error');
+        }
+      }
       showToast('Produto salvo com sucesso!');
       setEditMode(null);
       setPreviewImage('');
@@ -806,7 +866,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
             </div>
              <div className="col-span-2 space-y-1">
                <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Categoria</label>
-	              <input name="category" defaultValue={editMode?.category} placeholder="Categoria (ex: VESTUÁRIO)" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase" required />
+	              <input name="category" defaultValue={editMode?.category} placeholder={isKit ? 'KITS (automático)' : 'Categoria (ex: VESTUÁRIO)'} disabled={isKit} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase disabled:opacity-50" required={!isKit} />
 	            </div>
 	            <div className="col-span-2 space-y-1">
 	               <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Subcategoria (Opcional)</label>
@@ -821,17 +881,95 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
 	                 ))}
 	               </select>
 	            </div>
-            <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-white/5 space-y-3 mt-2">
-               <label className="text-[9px] font-black text-emerald-500 uppercase flex items-center gap-1"><Layers size={12}/> Grade de Tamanhos</label>
-               {formSizes.map((item, idx) => (
-                 <div key={idx} className="flex gap-2 items-center animate-in">
-                   <input placeholder="Tam." className="w-1/2 p-3 bg-zinc-900 border border-white/5 rounded-xl font-bold text-sm text-white uppercase outline-none" value={item.size} onChange={(e) => handleSizeChange(idx, 'size', e.target.value)} required />
-                   <input type="number" placeholder="Qtd" className="w-1/2 p-3 bg-zinc-900 border border-white/5 rounded-xl font-bold text-sm text-white outline-none" value={item.stock} onChange={(e) => handleSizeChange(idx, 'stock', e.target.value)} required />
-                   <button type="button" onClick={() => removeSize(idx)} className="p-3 text-red-500 bg-red-500/5 rounded-xl transition-colors border border-red-500/10"><X size={16}/></button>
-                 </div>
-               ))}
-               <button type="button" onClick={addSize} className="w-full py-3 mt-2 border border-dashed border-white/10 rounded-xl text-[10px] font-black uppercase text-zinc-500 hover:text-white transition-all">+ Adicionar</button>
+            {/* TOGGLE — É um Kit? */}
+            <div className="col-span-2 flex items-center gap-3 bg-gradient-to-r from-amber-500/10 to-pink-500/10 p-4 rounded-2xl border border-amber-400/30 mt-2 cursor-pointer" onClick={() => setIsKit(v => !v)}>
+              <div className={`w-11 h-6 rounded-full p-0.5 transition-all ${isKit ? 'bg-gradient-to-r from-amber-400 to-pink-500' : 'bg-zinc-800'}`}>
+                <div className={`w-5 h-5 rounded-full bg-white transition-transform ${isKit ? 'translate-x-5' : ''}`} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-black uppercase text-white flex items-center gap-1.5"><Zap size={12} className="text-amber-400 fill-amber-400" /> É um KIT (Bundle)</p>
+                <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wide">{isKit ? 'Estoque/tamanhos vêm dos itens vinculados' : 'Produto único com tamanhos próprios'}</p>
+              </div>
             </div>
+
+            {!isKit && (
+              <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-white/5 space-y-3 mt-2">
+                 <label className="text-[9px] font-black text-emerald-500 uppercase flex items-center gap-1"><Layers size={12}/> Grade de Tamanhos</label>
+                 {formSizes.map((item, idx) => (
+                   <div key={idx} className="flex gap-2 items-center animate-in">
+                     <input placeholder="Tam." className="w-1/2 p-3 bg-zinc-900 border border-white/5 rounded-xl font-bold text-sm text-white uppercase outline-none" value={item.size} onChange={(e) => handleSizeChange(idx, 'size', e.target.value)} required />
+                     <input type="number" placeholder="Qtd" className="w-1/2 p-3 bg-zinc-900 border border-white/5 rounded-xl font-bold text-sm text-white outline-none" value={item.stock} onChange={(e) => handleSizeChange(idx, 'stock', e.target.value)} required />
+                     <button type="button" onClick={() => removeSize(idx)} className="p-3 text-red-500 bg-red-500/5 rounded-xl transition-colors border border-red-500/10"><X size={16}/></button>
+                   </div>
+                 ))}
+                 <button type="button" onClick={addSize} className="w-full py-3 mt-2 border border-dashed border-white/10 rounded-xl text-[10px] font-black uppercase text-zinc-500 hover:text-white transition-all">+ Adicionar</button>
+              </div>
+            )}
+
+            {isKit && (
+              <>
+                {/* GALERIA */}
+                <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-amber-400/20 space-y-3 mt-2">
+                  <label className="text-[9px] font-black text-amber-400 uppercase flex items-center gap-1"><ImagePlus size={12}/> Galeria do Kit ({galleryUrls.length})</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {galleryUrls.map((url, i) => (
+                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
+                        <img src={url} className="w-full h-full object-cover" alt="" />
+                        <button type="button" onClick={() => removeGalleryUrl(url)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><X size={10}/></button>
+                      </div>
+                    ))}
+                    <label className="aspect-square rounded-xl border-2 border-dashed border-white/15 grid place-items-center cursor-pointer hover:border-amber-400/50 transition-colors">
+                      <Upload size={16} className="text-amber-400" />
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryFiles} />
+                    </label>
+                  </div>
+                  {isUploadingGallery && <p className="text-[9px] text-amber-400 font-bold uppercase">Enviando imagens...</p>}
+                </div>
+
+                {/* MULTI-SELECT DE PRODUTOS */}
+                <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-amber-400/20 space-y-3 mt-2">
+                  <label className="text-[9px] font-black text-amber-400 uppercase flex items-center gap-1"><Layers size={12}/> Peças do Kit ({kitComponentIds.length})</label>
+                  <input
+                    value={kitSearch}
+                    onChange={(e) => setKitSearch(e.target.value)}
+                    placeholder="Buscar por nome ou SKU..."
+                    className="w-full p-3 bg-zinc-900 border border-white/5 rounded-xl text-sm text-white outline-none focus:border-amber-400/50"
+                  />
+                  <div className="max-h-72 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+                    {(products || [])
+                      .filter(p => !p.is_kit && (
+                        !kitSearch.trim() ||
+                        (p.name || '').toLowerCase().includes(kitSearch.toLowerCase()) ||
+                        (p.sku || '').toLowerCase().includes(kitSearch.toLowerCase())
+                      ))
+                      .map(p => {
+                        const selected = kitComponentIds.includes(p.id);
+                        return (
+                          <button
+                            type="button"
+                            key={p.id}
+                            onClick={() => toggleKitComponent(p.id)}
+                            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all text-left ${selected ? 'bg-amber-400/10 border-amber-400/60' : 'bg-zinc-900 border-white/5 hover:border-white/15'}`}
+                          >
+                            <div className={`w-5 h-5 rounded grid place-items-center border-2 shrink-0 ${selected ? 'bg-amber-400 border-amber-400' : 'border-zinc-600'}`}>
+                              {selected && <Check size={12} className="text-zinc-950" strokeWidth={3}/>}
+                            </div>
+                            <img src={p.image} className="w-10 h-10 rounded-lg object-cover border border-white/5" alt="" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-black uppercase text-white truncate">{p.name}</p>
+                              <p className="text-[9px] text-zinc-500 font-bold">{p.sku} · {formatBRL(p.price || 0)}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    {(products || []).filter(p => !p.is_kit).length === 0 && (
+                      <p className="text-[10px] text-zinc-500 text-center py-4">Nenhum produto disponível.</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="col-span-2 flex items-center gap-3 bg-zinc-950 p-4 rounded-2xl border border-white/5 mt-2 cursor-pointer" onClick={() => document.getElementById('f-check').click()}>
               <input type="checkbox" name="featured" id="f-check" defaultChecked={editMode?.featured} className="w-5 h-5 accent-emerald-500" />
               <label className="text-[11px] font-black uppercase text-white">Destaque na Home</label>
@@ -1415,6 +1553,210 @@ const AdminConfig = ({ config, setConfig, showToast }) => {
 };
 
 // ==========================================
+// 3.5. KIT MODAL (Bundle Builder / Shop the Look)
+// ==========================================
+const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, setIsCartModalOpen, onClose, setZoomImage, showToast }) => {
+  const componentIds = kitItemsByKit[kit.id] || [];
+  const components = componentIds
+    .map(pid => (products || []).find(p => p.id === pid))
+    .filter(Boolean);
+
+  // Galeria: imagem principal + gallery[]
+  const gallery = [kit.image, ...((Array.isArray(kit.gallery) ? kit.gallery : []) || [])].filter(Boolean);
+  const [activeImage, setActiveImage] = useState(gallery[0] || kit.image);
+
+  // Estado por componente: { included: bool, size: string }
+  const [picks, setPicks] = useState(() => {
+    const init = {};
+    components.forEach(c => {
+      const hasStock = (c.sizes || []).some(s => Number(typeof s === 'string' ? c.stock : s.stock) > 0);
+      init[c.id] = { included: hasStock, size: '' };
+    });
+    return init;
+  });
+  const [missingFlash, setMissingFlash] = useState({});
+
+  const includedItems = components.filter(c => picks[c.id]?.included);
+  const total = includedItems.reduce((acc, c) => acc + Number(c.price || 0), 0);
+  const sumOriginal = components.reduce((acc, c) => acc + Number(c.price || 0), 0);
+
+  const togglePick = (id) => setPicks(p => ({ ...p, [id]: { ...(p[id] || {}), included: !p[id]?.included } }));
+  const setSize = (id, size) => setPicks(p => ({ ...p, [id]: { ...(p[id] || { included: true }), size } }));
+
+  const handleAddKitToCart = () => {
+    if (includedItems.length === 0) {
+      showToast('Selecione ao menos uma peça do kit.', 'error');
+      return;
+    }
+    const missing = {};
+    includedItems.forEach(c => { if (!picks[c.id]?.size) missing[c.id] = true; });
+    if (Object.keys(missing).length > 0) {
+      setMissingFlash(missing);
+      setTimeout(() => setMissingFlash({}), 1500);
+      showToast('Escolha o tamanho de todas as peças marcadas.', 'error');
+      return;
+    }
+    // Adiciona cada sub-produto individualmente
+    let updatedCart = [...cart];
+    includedItems.forEach(c => {
+      const sizeName = picks[c.id].size;
+      const itemKey = `${c.id}-${sizeName || 'U'}`;
+      const existingIdx = updatedCart.findIndex(it => it.itemKey === itemKey);
+      if (existingIdx >= 0) {
+        updatedCart[existingIdx] = { ...updatedCart[existingIdx], quantity: updatedCart[existingIdx].quantity + 1 };
+      } else {
+        updatedCart.push({ ...c, size: sizeName, quantity: 1, itemKey, fromKitId: kit.id, fromKitName: kit.name });
+      }
+    });
+    setCart(updatedCart);
+    setCartBounce(true);
+    setTimeout(() => setCartBounce(false), 400);
+    setIsCartModalOpen(true);
+    onClose();
+  };
+
+  if (components.length === 0) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+        <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
+        <div className="relative bg-zinc-950 max-w-sm w-full p-8 rounded-3xl border border-white/10 text-center">
+          <Zap className="mx-auto text-amber-400 mb-3" />
+          <h3 className="text-white font-black uppercase text-sm mb-2">Kit em preparação</h3>
+          <p className="text-zinc-400 text-xs">Este kit ainda não tem peças vinculadas.</p>
+          <button onClick={onClose} className="mt-6 w-full py-3 rounded-2xl bg-white text-zinc-950 font-black text-[11px] uppercase tracking-widest">Fechar</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end justify-center">
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
+      <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[94vh] flex flex-col">
+        {/* GALERIA */}
+        <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950">
+          <button onClick={() => setZoomImage(activeImage)} className="block w-full aspect-square overflow-hidden touch-manipulation group" aria-label="Ampliar foto">
+            <img src={activeImage} className="w-full h-full object-cover transition-transform duration-500 group-active:scale-105" alt={kit.name} />
+          </button>
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full backdrop-blur-md" />
+          <button onClick={onClose} className="absolute top-4 right-4 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform">
+            <X size={18}/>
+          </button>
+          <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1 shadow-[0_4px_15px_rgba(251,191,36,0.4)]">
+            <Zap size={10} className="fill-zinc-950" /> KIT
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-b from-transparent to-zinc-950 pointer-events-none" />
+        </div>
+
+        {/* THUMBS */}
+        {gallery.length > 1 && (
+          <div className="px-5 pt-3 pb-1 flex gap-2 overflow-x-auto no-scrollbar">
+            {gallery.map((g, i) => (
+              <button key={i} onClick={() => setActiveImage(g)} className={`shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${activeImage === g ? 'border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]' : 'border-white/10 opacity-70'}`}>
+                <img src={g} className="w-full h-full object-cover" alt="" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* INFO */}
+        <div className="px-7 pt-4 pb-2 shrink-0">
+          <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest">REF: {kit.sku}</span>
+          <h2 className="text-xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{kit.name}</h2>
+          <p className="text-[10px] text-zinc-500 uppercase font-black mt-2 tracking-widest flex items-center gap-1.5">
+            <Layers size={11} className="text-amber-400" /> Monte seu look — {includedItems.length}/{components.length} peças
+          </p>
+        </div>
+
+        {/* CONSTRUTOR DO KIT — scroll vertical */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-3 space-y-3">
+          {components.map(c => {
+            const included = picks[c.id]?.included;
+            const chosenSize = picks[c.id]?.size || '';
+            const sizes = (c.sizes || []).map(s => ({
+              name: String((typeof s === 'string' ? s : s.size) || '').trim().toUpperCase(),
+              stock: typeof s === 'string' ? Number(c.stock || 0) : Number(s.stock || 0),
+            })).filter(s => s.name);
+            const isMissing = !!missingFlash[c.id];
+            return (
+              <div key={c.id} className={`relative rounded-2xl border transition-all p-3 ${included ? (isMissing ? 'bg-red-500/10 border-red-500 animate-pulse' : 'bg-zinc-900/70 border-white/10') : 'bg-zinc-900/30 border-white/5 opacity-50'}`}>
+                <div className="flex gap-3">
+                  <img src={c.image} className={`w-16 h-20 rounded-xl object-cover shrink-0 border border-white/10 ${!included ? 'grayscale' : ''}`} alt={c.name} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-black text-white text-[11px] uppercase leading-tight line-clamp-2">{c.name}</h4>
+                      <button
+                        onClick={() => togglePick(c.id)}
+                        className={`shrink-0 w-6 h-6 rounded-md border-2 grid place-items-center transition-all ${included ? 'bg-emerald-500 border-emerald-500 text-zinc-950' : 'bg-transparent border-zinc-600 text-transparent'}`}
+                        aria-label={included ? 'Remover do kit' : 'Adicionar ao kit'}
+                      >
+                        <Check size={14} strokeWidth={3} />
+                      </button>
+                    </div>
+                    <p className={`font-black text-sm mt-1 ${included ? 'text-emerald-400' : 'text-zinc-500 line-through'}`}>{formatBRL(c.price || 0)}</p>
+                    {included && (
+                      <div className="flex gap-1.5 mt-2 flex-wrap">
+                        {sizes.length === 0 && (
+                          <span className="text-[9px] text-zinc-500 uppercase font-bold">Sem tamanhos</span>
+                        )}
+                        {sizes.map(s => {
+                          const disabled = s.stock <= 0;
+                          const active = chosenSize === s.name;
+                          return (
+                            <button
+                              key={s.name}
+                              disabled={disabled}
+                              onClick={() => setSize(c.id, s.name)}
+                              className={`px-2.5 py-1 rounded-md border text-[10px] font-black uppercase transition-all touch-manipulation ${
+                                active
+                                  ? 'bg-white text-zinc-950 border-white'
+                                  : disabled
+                                    ? 'bg-zinc-950 text-zinc-700 border-white/5 opacity-50'
+                                    : 'bg-zinc-950 text-zinc-300 border-white/10 hover:border-white/30'
+                              }`}
+                            >
+                              {s.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* RODAPÉ TOTAL + CTA */}
+        <div className="px-6 pt-3 pb-5 border-t border-white/10 bg-zinc-950 shrink-0">
+          <div className="flex items-end justify-between mb-3">
+            <div>
+              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Total do Kit</p>
+              <p className="text-2xl font-black text-white tracking-tighter">{formatBRL(total)}</p>
+              {includedItems.length < components.length && sumOriginal > total && (
+                <p className="text-[9px] text-zinc-600 line-through font-bold">{formatBRL(sumOriginal)} completo</p>
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Peças</p>
+              <p className="text-lg font-black text-amber-400">{includedItems.length}</p>
+            </div>
+          </div>
+          <button
+            onClick={handleAddKitToCart}
+            disabled={includedItems.length === 0}
+            className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 touch-manipulation ${includedItems.length === 0 ? 'bg-zinc-900 text-zinc-700' : 'bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-zinc-950 shadow-[0_10px_30px_rgba(251,146,60,0.35)] active:scale-[0.98]'}`}
+          >
+            <ShoppingBag size={14}/> Adicionar Kit à Sacola
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
 // 4. APLICATIVO PRINCIPAL (ROOT COMPONENT)
 // ==========================================
 function App() {
@@ -1436,6 +1778,27 @@ function App() {
     };
     load();
     const t = setInterval(load, 5000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
+
+  // ======= KITS: relação kit_id -> [product_id] =======
+  const [kitItemsByKit, setKitItemsByKit] = useState({});
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const rows = await fetchAllKitItems();
+        if (!alive) return;
+        const map = {};
+        rows.forEach(r => {
+          if (!map[r.kit_id]) map[r.kit_id] = [];
+          map[r.kit_id].push(r.product_id);
+        });
+        setKitItemsByKit(map);
+      } catch (e) { /* tabela pode não existir ainda */ }
+    };
+    load();
+    const t = setInterval(load, 10000);
     return () => { alive = false; clearInterval(t); };
   }, []);
 
@@ -1674,12 +2037,14 @@ function App() {
       sub: (sp.get('sub') || 'TODOS').toUpperCase(),
       tamanho: (sp.get('tamanho') || 'TODOS').toUpperCase(),
       busca: sp.get('busca') || '',
+      kits: sp.get('kits') === '1',
     };
   })();
   const [selectedCategory, setSelectedCategory] = useState(_initialUrlFilters.categoria || 'TODOS');
   const [selectedSubcategory, setSelectedSubcategory] = useState(_initialUrlFilters.sub || 'TODOS');
   const [searchQuery, setSearchQuery] = useState(_initialUrlFilters.busca || '');
   const [selectedSize, setSelectedSize] = useState(_initialUrlFilters.tamanho || 'TODOS');
+  const [kitsOnly, setKitsOnly] = useState(!!_initialUrlFilters.kits);
    const [currentPage, setCurrentPage] = useState(() => {
     // Restaura a página a partir do path /paginaN (preferido) ou /pagina/N (fallback legado),
     // depois ?page=N (legado) ou sessionStorage.
@@ -1841,11 +2206,13 @@ function App() {
     setIsAdmin(false);
   };
 
-  const categories = useMemo(() => ['TODOS', ...new Set((products || []).map(p => p.category))], [products]);
+  const categories = useMemo(() => ['TODOS', ...new Set((products || []).filter(p => !p.is_kit).map(p => p.category))], [products]);
   const subtotal = useMemo(() => (cart || []).reduce((acc, item) => acc + (item.price * item.quantity), 0), [cart]);
 
   const handleProductClick = (product) => {
-    if (!product || product.stock <= 0) return;
+    if (!product) return;
+    // Kits podem ser abertos mesmo sem estoque próprio (estoque vem dos componentes)
+    if (!product.is_kit && product.stock <= 0) return;
     setSelectedProduct(product);
     setSelectedSizes({});
   };
@@ -2026,6 +2393,16 @@ function App() {
 
   const filteredProducts = useMemo(() => {
     return (products || []).filter(p => {
+      // Modo KITS: só exibe produtos marcados como kit (e ignora estoque/tamanho/categoria)
+      if (kitsOnly) {
+        if (!p.is_kit) return false;
+        const q = searchQuery.toLowerCase().trim();
+        const haystack = `${p.name || ''} ${p.sku || ''}`.toLowerCase();
+        const tokens = q.split(/\s+/).filter(Boolean);
+        return tokens.length === 0 || tokens.every(t => haystack.includes(t));
+      }
+      // Catálogo normal: esconde kits (eles ficam só na seção KITS)
+      if (p.is_kit) return false;
       if (p.stock <= 0) return false;
       const matchesCat = selectedCategory === 'TODOS' || p.category === selectedCategory;
       const matchesSub = selectedSubcategory === 'TODOS' || (p.subcategory || '').toUpperCase() === selectedSubcategory;
@@ -2042,7 +2419,7 @@ function App() {
       const matchesCollection = !activeCollectionFilter || p.collection_name === activeCollectionFilter;
       return matchesCat && matchesSub && matchesSearch && matchesSize && matchesCollection;
     });
-  }, [selectedCategory, selectedSubcategory, searchQuery, selectedSize, products, activeCollectionFilter]);
+  }, [kitsOnly, selectedCategory, selectedSubcategory, searchQuery, selectedSize, products, activeCollectionFilter]);
 
   // Subcategorias disponíveis dentro da categoria atual (ignora produtos sem estoque)
   const availableSubcategories = useMemo(() => {
@@ -2089,6 +2466,7 @@ function App() {
         setOrDel('sub', selectedSubcategory, 'TODOS');
         setOrDel('tamanho', selectedSize, 'TODOS');
         setOrDel('busca', (searchQuery || '').trim(), '');
+        setOrDel('kits', kitsOnly ? '1' : '', '');
         const newSearch = sp.toString();
         const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '') + url.hash;
         const current = window.location.pathname + window.location.search + window.location.hash;
@@ -2096,7 +2474,7 @@ function App() {
       } catch {}
     }, 200);
     return () => clearTimeout(handle);
-  }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery]);
+  }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery, kitsOnly]);
 
   // Reage ao botão voltar/avançar do navegador para refletir os filtros da URL
   useEffect(() => {
@@ -2107,6 +2485,7 @@ function App() {
       setSelectedSubcategory((sp.get('sub') || 'TODOS').toUpperCase());
       setSelectedSize((sp.get('tamanho') || 'TODOS').toUpperCase());
       setSearchQuery(sp.get('busca') || '');
+      setKitsOnly(sp.get('kits') === '1');
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -2205,7 +2584,7 @@ function App() {
     if (typeof window === 'undefined') return;
     if (!products || products.length === 0) return;
     const sp = new URLSearchParams(window.location.search);
-    const hasFilter = sp.has('tamanho') || sp.has('categoria') || sp.has('sub') || sp.has('busca');
+    const hasFilter = sp.has('tamanho') || sp.has('categoria') || sp.has('sub') || sp.has('busca') || sp.has('kits');
     if (!hasFilter) return;
     _didScrollToFiltered.current = true;
     setTimeout(() => {
@@ -2378,12 +2757,27 @@ function App() {
         </div>
         
         <div id="catalog-section" className="flex gap-3 overflow-x-auto no-scrollbar pb-1 mask-linear touch-pan-x">
-          {categories.map(cat => (
+          {/* Botão destacado de KITS — sempre primeiro */}
+          {(products || []).some(p => p.is_kit) && (
+            <button
+              key="__kits__"
+              onClick={() => { setKitsOnly(v => !v); }}
+              data-testid="category-filter-KITS"
+              className={`relative px-4 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border-2 transition-all touch-manipulation flex items-center gap-1.5 ${kitsOnly
+                ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-zinc-950 border-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.45)]'
+                : 'bg-zinc-950 text-amber-400 border-amber-400/50 hover:border-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.18)]'}`}
+            >
+              <Zap size={12} className={kitsOnly ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'} />
+              KITS
+            </button>
+          )}
+          {!kitsOnly && categories.map(cat => (
             <button key={cat} onClick={() => setSelectedCategory(cat)} data-testid={`category-filter-${cat}`} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedCategory === cat ? 'bg-white text-zinc-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-transparent text-zinc-500 border-white/10 hover:border-white/30'}`}>{cat}</button>
           ))}
         </div>
 
-        {selectedCategory !== 'TODOS' && availableSubcategories.length > 1 && (
+
+        {!kitsOnly && selectedCategory !== 'TODOS' && availableSubcategories.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear touch-pan-x items-center" data-testid="subcategory-bar">
             {availableSubcategories.map(sub => (
               <button key={sub} onClick={() => setSelectedSubcategory(sub)} data-testid={`subcategory-filter-${sub}`} className={`px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSubcategory === sub ? 'bg-white/90 text-zinc-950 border-white' : 'bg-transparent text-zinc-500 border-white/10 hover:text-white hover:border-white/30'}`}>{sub === 'TODOS' ? 'Todas subcategorias' : sub}</button>
@@ -2401,7 +2795,7 @@ function App() {
           </div>
         )}
 
-        {availableSizes.length > 1 && (
+        {!kitsOnly && availableSizes.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear touch-pan-x items-center">
             {availableSizes.map(sz => (
               <button key={sz} onClick={() => setSelectedSize(sz)} data-testid={`size-filter-${sz}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSize === sz ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>{sz === 'TODOS' ? 'Todos tamanhos' : sz}</button>
@@ -2610,7 +3004,22 @@ function App() {
         </div>
       )}
 
-      {selectedProduct && (
+      {selectedProduct && selectedProduct.is_kit && (
+        <KitModal
+          kit={selectedProduct}
+          products={products}
+          kitItemsByKit={kitItemsByKit}
+          cart={cart}
+          setCart={setCart}
+          setCartBounce={setCartBounce}
+          setIsCartModalOpen={setIsCartModalOpen}
+          setZoomImage={setZoomImage}
+          showToast={showToast}
+          onClose={() => { setSelectedProduct(null); setSelectedSizes({}); }}
+        />
+      )}
+
+      {selectedProduct && !selectedProduct.is_kit && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center">
           <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} />
           <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
