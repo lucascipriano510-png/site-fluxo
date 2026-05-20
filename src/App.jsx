@@ -1695,12 +1695,14 @@ function App() {
       sub: (sp.get('sub') || 'TODOS').toUpperCase(),
       tamanho: (sp.get('tamanho') || 'TODOS').toUpperCase(),
       busca: sp.get('busca') || '',
+      kits: sp.get('kits') === '1',
     };
   })();
   const [selectedCategory, setSelectedCategory] = useState(_initialUrlFilters.categoria || 'TODOS');
   const [selectedSubcategory, setSelectedSubcategory] = useState(_initialUrlFilters.sub || 'TODOS');
   const [searchQuery, setSearchQuery] = useState(_initialUrlFilters.busca || '');
   const [selectedSize, setSelectedSize] = useState(_initialUrlFilters.tamanho || 'TODOS');
+  const [kitsOnly, setKitsOnly] = useState(!!_initialUrlFilters.kits);
    const [currentPage, setCurrentPage] = useState(() => {
     // Restaura a página a partir do path /paginaN (preferido) ou /pagina/N (fallback legado),
     // depois ?page=N (legado) ou sessionStorage.
