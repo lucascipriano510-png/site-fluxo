@@ -1864,11 +1864,13 @@ function App() {
     setIsAdmin(false);
   };
 
-  const categories = useMemo(() => ['TODOS', ...new Set((products || []).map(p => p.category))], [products]);
+  const categories = useMemo(() => ['TODOS', ...new Set((products || []).filter(p => !p.is_kit).map(p => p.category))], [products]);
   const subtotal = useMemo(() => (cart || []).reduce((acc, item) => acc + (item.price * item.quantity), 0), [cart]);
 
   const handleProductClick = (product) => {
-    if (!product || product.stock <= 0) return;
+    if (!product) return;
+    // Kits podem ser abertos mesmo sem estoque próprio (estoque vem dos componentes)
+    if (!product.is_kit && product.stock <= 0) return;
     setSelectedProduct(product);
     setSelectedSizes({});
   };
