@@ -2453,7 +2453,7 @@ function App() {
           </div>
         )}
 
-        {availableSizes.length > 1 && (
+        {!kitsOnly && availableSizes.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear touch-pan-x items-center">
             {availableSizes.map(sz => (
               <button key={sz} onClick={() => setSelectedSize(sz)} data-testid={`size-filter-${sz}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSize === sz ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>{sz === 'TODOS' ? 'Todos tamanhos' : sz}</button>
