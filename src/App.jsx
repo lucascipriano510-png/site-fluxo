@@ -2415,10 +2415,25 @@ function App() {
         </div>
         
         <div id="catalog-section" className="flex gap-3 overflow-x-auto no-scrollbar pb-1 mask-linear touch-pan-x">
-          {categories.map(cat => (
+          {/* Botão destacado de KITS — sempre primeiro */}
+          {(products || []).some(p => p.is_kit) && (
+            <button
+              key="__kits__"
+              onClick={() => { setKitsOnly(v => !v); }}
+              data-testid="category-filter-KITS"
+              className={`relative px-4 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border-2 transition-all touch-manipulation flex items-center gap-1.5 ${kitsOnly
+                ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-zinc-950 border-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.45)]'
+                : 'bg-zinc-950 text-amber-400 border-amber-400/50 hover:border-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.18)]'}`}
+            >
+              <Zap size={12} className={kitsOnly ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'} />
+              KITS
+            </button>
+          )}
+          {!kitsOnly && categories.map(cat => (
             <button key={cat} onClick={() => setSelectedCategory(cat)} data-testid={`category-filter-${cat}`} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedCategory === cat ? 'bg-white text-zinc-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-transparent text-zinc-500 border-white/10 hover:border-white/30'}`}>{cat}</button>
           ))}
         </div>
+
 
         {selectedCategory !== 'TODOS' && availableSubcategories.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear touch-pan-x items-center" data-testid="subcategory-bar">
