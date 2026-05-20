@@ -2242,7 +2242,7 @@ function App() {
     if (typeof window === 'undefined') return;
     if (!products || products.length === 0) return;
     const sp = new URLSearchParams(window.location.search);
-    const hasFilter = sp.has('tamanho') || sp.has('categoria') || sp.has('sub') || sp.has('busca');
+    const hasFilter = sp.has('tamanho') || sp.has('categoria') || sp.has('sub') || sp.has('busca') || sp.has('kits');
     if (!hasFilter) return;
     _didScrollToFiltered.current = true;
     setTimeout(() => {
