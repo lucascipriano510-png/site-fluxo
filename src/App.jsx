@@ -1439,6 +1439,27 @@ function App() {
     return () => { alive = false; clearInterval(t); };
   }, []);
 
+  // ======= KITS: relação kit_id -> [product_id] =======
+  const [kitItemsByKit, setKitItemsByKit] = useState({});
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const rows = await fetchAllKitItems();
+        if (!alive) return;
+        const map = {};
+        rows.forEach(r => {
+          if (!map[r.kit_id]) map[r.kit_id] = [];
+          map[r.kit_id].push(r.product_id);
+        });
+        setKitItemsByKit(map);
+      } catch (e) { /* tabela pode não existir ainda */ }
+    };
+    load();
+    const t = setInterval(load, 10000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
+
   // Wrapper: ao mudar produtos local, sincroniza com Supabase (diff: upsert/delete)
   const setProducts = (updater) => {
     setProductsRaw((prev) => {
