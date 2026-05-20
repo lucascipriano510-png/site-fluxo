@@ -592,22 +592,34 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
 
       const computedStock = formSizes.reduce((acc, curr) => acc + (parseInt(curr.stock) || 0), 0);
       const fd = new FormData(e.target);
+      const productId = editMode === 'new' ? Date.now() : editMode.id;
       const data = {
-        id: editMode === 'new' ? Date.now() : editMode.id,
+        id: productId,
         sku: fd.get('sku').toUpperCase(),
         name: fd.get('name'),
         price: parseFloat(fd.get('price')),
-        category: fd.get('category').toUpperCase(),
+        category: isKit ? 'KITS' : fd.get('category').toUpperCase(),
         subcategory: (fd.get('subcategory') || '').toString().trim().toUpperCase() || null,
         collection_name: fd.get('collection_name') || null,
         image: imageUrl,
-        stock: computedStock, 
+        stock: isKit ? 0 : computedStock,
         sales: editMode === 'new' ? 0 : editMode.sales,
-        sizes: formSizes.filter(s => s.size && s.size.trim() !== ''),
-        featured: fd.get('featured') === 'on'
+        sizes: isKit ? [] : formSizes.filter(s => s.size && s.size.trim() !== ''),
+        featured: fd.get('featured') === 'on',
+        is_kit: isKit,
+        gallery: isKit ? galleryUrls : [],
       };
       const updatedProducts = editMode === 'new' ? [data, ...products] : products.map(p => p.id === data.id ? data : p);
       setProducts(updatedProducts);
+      // Persiste componentes do kit
+      if (isKit) {
+        try {
+          await saveKitItems(productId, kitComponentIds);
+        } catch (err) {
+          console.warn('[kit_items] falha ao salvar:', err?.message);
+          showToast('Produto salvo, mas falhou ao salvar componentes do kit.', 'error');
+        }
+      }
       showToast('Produto salvo com sucesso!');
       setEditMode(null);
       setPreviewImage('');
