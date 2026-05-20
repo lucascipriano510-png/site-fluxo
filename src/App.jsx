@@ -2866,7 +2866,22 @@ function App() {
         </div>
       )}
 
-      {selectedProduct && (
+      {selectedProduct && selectedProduct.is_kit && (
+        <KitModal
+          kit={selectedProduct}
+          products={products}
+          kitItemsByKit={kitItemsByKit}
+          cart={cart}
+          setCart={setCart}
+          setCartBounce={setCartBounce}
+          setIsCartModalOpen={setIsCartModalOpen}
+          setZoomImage={setZoomImage}
+          showToast={showToast}
+          onClose={() => { setSelectedProduct(null); setSelectedSizes({}); }}
+        />
+      )}
+
+      {selectedProduct && !selectedProduct.is_kit && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center">
           <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} />
           <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
