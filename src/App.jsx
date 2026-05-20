@@ -2122,6 +2122,7 @@ function App() {
         setOrDel('sub', selectedSubcategory, 'TODOS');
         setOrDel('tamanho', selectedSize, 'TODOS');
         setOrDel('busca', (searchQuery || '').trim(), '');
+        setOrDel('kits', kitsOnly ? '1' : '', '');
         const newSearch = sp.toString();
         const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '') + url.hash;
         const current = window.location.pathname + window.location.search + window.location.hash;
@@ -2129,7 +2130,7 @@ function App() {
       } catch {}
     }, 200);
     return () => clearTimeout(handle);
-  }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery]);
+  }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery, kitsOnly]);
 
   // Reage ao botão voltar/avançar do navegador para refletir os filtros da URL
   useEffect(() => {
@@ -2140,6 +2141,7 @@ function App() {
       setSelectedSubcategory((sp.get('sub') || 'TODOS').toUpperCase());
       setSelectedSize((sp.get('tamanho') || 'TODOS').toUpperCase());
       setSearchQuery(sp.get('busca') || '');
+      setKitsOnly(sp.get('kits') === '1');
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
