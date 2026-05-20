@@ -365,6 +365,13 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
   const [formSizes, setFormSizes] = useState([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
+  // ===== KIT (Bundle Builder) =====
+  const [isKit, setIsKit] = useState(false);
+  const [galleryUrls, setGalleryUrls] = useState([]);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const [kitComponentIds, setKitComponentIds] = useState([]);
+  const [kitSearch, setKitSearch] = useState('');
+
   const [showScanner, setShowScanner] = useState(false);
   const [scannedProduct, setScannedProduct] = useState(null);
   const [scannedSize, setScannedSize] = useState('');
@@ -381,16 +388,57 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
             const stockPerSize = Math.floor((editMode.stock || 0) / editMode.sizes.length);
             normalizedSizes = editMode.sizes.map(s => ({ size: s, stock: stockPerSize }));
          } else {
-            normalizedSizes = editMode.sizes; 
+            normalizedSizes = editMode.sizes;
          }
       }
       setFormSizes(normalizedSizes.length > 0 ? normalizedSizes : [{ size: 'U', stock: editMode.stock || 0 }]);
+      setIsKit(!!editMode.is_kit);
+      setGalleryUrls(Array.isArray(editMode.gallery) ? editMode.gallery : []);
+      // Carrega componentes do kit do banco
+      if (editMode.is_kit && editMode.id) {
+        fetchKitItems(editMode.id)
+          .then(rows => setKitComponentIds(rows.map(r => r.product_id)))
+          .catch(() => setKitComponentIds([]));
+      } else {
+        setKitComponentIds([]);
+      }
     } else if (editMode === 'new') {
       setPreviewImage('');
       setFormSizes([{ size: 'P', stock: 5 }, { size: 'M', stock: 5 }]);
+      setIsKit(false);
+      setGalleryUrls([]);
+      setKitComponentIds([]);
     }
+    setKitSearch('');
     setProductImageFile(null);
   }, [editMode]);
+
+  const handleGalleryFiles = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setIsUploadingGallery(true);
+    try {
+      const urls = [];
+      for (const f of files) {
+        const url = await uploadImage(f);
+        if (url) urls.push(url);
+      }
+      setGalleryUrls(prev => [...prev, ...urls]);
+      showToast(`${urls.length} imagem(ns) adicionada(s)`);
+    } catch (err) {
+      showToast('Erro ao subir galeria: ' + err.message, 'error');
+    } finally {
+      setIsUploadingGallery(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeGalleryUrl = (url) => setGalleryUrls(prev => prev.filter(u => u !== url));
+
+  const toggleKitComponent = (pid) => {
+    setKitComponentIds(prev => prev.includes(pid) ? prev.filter(x => x !== pid) : [...prev, pid]);
+  };
+
 
   useEffect(() => {
     if (showScanner && cameraActive) {
