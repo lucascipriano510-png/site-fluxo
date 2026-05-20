@@ -2049,6 +2049,16 @@ function App() {
 
   const filteredProducts = useMemo(() => {
     return (products || []).filter(p => {
+      // Modo KITS: só exibe produtos marcados como kit (e ignora estoque/tamanho/categoria)
+      if (kitsOnly) {
+        if (!p.is_kit) return false;
+        const q = searchQuery.toLowerCase().trim();
+        const haystack = `${p.name || ''} ${p.sku || ''}`.toLowerCase();
+        const tokens = q.split(/\s+/).filter(Boolean);
+        return tokens.length === 0 || tokens.every(t => haystack.includes(t));
+      }
+      // Catálogo normal: esconde kits (eles ficam só na seção KITS)
+      if (p.is_kit) return false;
       if (p.stock <= 0) return false;
       const matchesCat = selectedCategory === 'TODOS' || p.category === selectedCategory;
       const matchesSub = selectedSubcategory === 'TODOS' || (p.subcategory || '').toUpperCase() === selectedSubcategory;
@@ -2065,7 +2075,7 @@ function App() {
       const matchesCollection = !activeCollectionFilter || p.collection_name === activeCollectionFilter;
       return matchesCat && matchesSub && matchesSearch && matchesSize && matchesCollection;
     });
-  }, [selectedCategory, selectedSubcategory, searchQuery, selectedSize, products, activeCollectionFilter]);
+  }, [kitsOnly, selectedCategory, selectedSubcategory, searchQuery, selectedSize, products, activeCollectionFilter]);
 
   // Subcategorias disponíveis dentro da categoria atual (ignora produtos sem estoque)
   const availableSubcategories = useMemo(() => {
