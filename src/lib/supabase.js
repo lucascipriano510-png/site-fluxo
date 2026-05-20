@@ -30,6 +30,8 @@ export async function upsertProduct(product) {
     sizes: Array.isArray(product.sizes) ? product.sizes : [],
     featured: !!product.featured,
     collection_name: product.collection_name || null,
+    is_kit: !!product.is_kit,
+    gallery: Array.isArray(product.gallery) ? product.gallery : [],
     updated_at: new Date().toISOString(),
   };
   const { data, error } = await supabase
@@ -40,6 +42,52 @@ export async function upsertProduct(product) {
   if (error) throw error;
   return data;
 }
+
+// ===== KIT ITEMS =====
+
+export async function fetchKitItems(kitId) {
+  const { data, error } = await supabase
+    .from('kit_items')
+    .select('*')
+    .eq('kit_id', kitId)
+    .order('position', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchAllKitItems() {
+  const { data, error } = await supabase
+    .from('kit_items')
+    .select('*')
+    .order('position', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+// Substitui todos os componentes de um Kit pela lista informada.
+export async function saveKitItems(kitId, productIds = []) {
+  // limpa relações atuais
+  const { error: delErr } = await supabase
+    .from('kit_items')
+    .delete()
+    .eq('kit_id', kitId);
+  if (delErr) throw delErr;
+
+  if (!productIds.length) return [];
+
+  const rows = productIds.map((pid, idx) => ({
+    kit_id: kitId,
+    product_id: pid,
+    position: idx,
+  }));
+  const { data, error } = await supabase
+    .from('kit_items')
+    .insert(rows)
+    .select();
+  if (error) throw error;
+  return data || [];
+}
+
 
 // Remove um produto pelo id.
 export async function deleteProduct(id) {
