@@ -659,7 +659,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       const data = {
         id: productId,
         sku: fd.get('sku').toUpperCase(),
-        name: fd.get('name'),
+        name: isKit ? `Kit ${fd.get('sku').toUpperCase()}` : fd.get('name'),
         price: parseFloat(fd.get('price')),
         category: isKit ? 'KITS' : fd.get('category').toUpperCase(),
         subcategory: (fd.get('subcategory') || '').toString().trim().toUpperCase() || null,
@@ -918,10 +918,12 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
             <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
           </div>
           <div className="grid grid-cols-2 gap-3 mt-4">
-            <div className="col-span-2 space-y-1">
-               <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Nome</label>
-               <input name="name" defaultValue={editMode?.name} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" required />
-            </div>
+            {!isKit && (
+              <div className="col-span-2 space-y-1">
+                <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Nome</label>
+                <input name="name" defaultValue={editMode?.name} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" required />
+              </div>
+            )}
             <div className="space-y-1">
                <label className="text-[9px] font-black text-zinc-500 uppercase px-2 flex items-center gap-1.5">
                  SKU {editMode === 'new' && <span className="text-emerald-500 text-[8px] tracking-widest">AUTO</span>}
@@ -1780,96 +1782,104 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
         style={{ maxHeight: visualFrame.height ? `calc(${visualFrame.height}px - 10px)` : 'calc(100dvh - 10px)', overscrollBehavior: 'contain', touchAction: 'pan-y' }}
       >
 
-        {/* GALERIA com zoom inline (hover desktop / press-hold mobile) */}
-        <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
-          <div
-            className="relative block w-full aspect-square overflow-hidden select-none cursor-zoom-in"
-            style={{ touchAction: zoomActive ? 'none' : 'pan-y' }}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-            onMouseMove={onMouseMove}
-            onClick={onImageClick}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-            onTouchCancel={onTouchEnd}
-            aria-label="Foto do kit — toque para ampliar, segure para zoom"
-          >
-            <img
-              src={activeImage}
-              className={`w-full h-full object-cover transition-opacity duration-200 ${zoomActive ? 'opacity-0' : 'opacity-100'}`}
-              alt={kit.name}
-              draggable={false}
-            />
-            <div
-              className={`absolute inset-0 transition-opacity duration-200 ${zoomActive ? 'opacity-100' : 'opacity-0'}`}
-              style={{
-                backgroundImage: `url(${activeImage})`,
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: '220%',
-                backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
-              }}
-            />
-            {!zoomActive && (
-              <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-1 pointer-events-none md:hidden">
-                <ZoomIn size={9}/> Segure para ampliar
-              </div>
-            )}
-          </div>
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full backdrop-blur-md pointer-events-none" />
-          <button onClick={onClose} className="absolute top-4 right-4 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform z-10">
-            <X size={18}/>
-          </button>
-          <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1 shadow-[0_4px_15px_rgba(251,191,36,0.4)] pointer-events-none">
-            <Zap size={10} className="fill-zinc-950" /> KIT
-          </div>
+        {/* Drag handle — overlay fixo sobre o modal */}
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full backdrop-blur-md pointer-events-none z-10" />
+        {/* Fechar — overlay fixo */}
+        <button onClick={onClose} className="absolute top-4 right-4 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform z-10">
+          <X size={18}/>
+        </button>
+        {/* Badge KIT — overlay fixo */}
+        <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1 shadow-[0_4px_15px_rgba(251,191,36,0.4)] pointer-events-none z-10">
+          <Zap size={10} className="fill-zinc-950" /> KIT
         </div>
 
-        {/* THUMBS — sempre visível, scroll só horizontal */}
-        {gallery.length > 1 && (
-          <div
-            className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto overflow-y-hidden no-scrollbar bg-zinc-950 border-b border-white/5"
-            style={{ touchAction: 'pan-x', overscrollBehavior: 'contain' }}
-          >
-            {gallery.map((g, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveImage(g)}
-                className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${activeImage === g ? 'border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)] scale-105' : 'border-white/10 opacity-70 hover:opacity-100'}`}
-              >
-                <img src={g} className="w-full h-full object-cover" alt="" draggable={false} />
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* BARRA DE PROGRESSO — sempre visível, fora do scroll */}
-        <div className="shrink-0 px-5 py-3 bg-zinc-900/80 border-b border-white/5 flex items-center gap-3">
-          <Layers size={13} className="text-amber-400 shrink-0" />
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Itens no kit</span>
-              <span className="text-[10px] font-black text-amber-400">{includedItems.length} / {components.length} peças</span>
-            </div>
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber-400 to-pink-500 rounded-full transition-all duration-300"
-                style={{ width: `${components.length > 0 ? (includedItems.length / components.length) * 100 : 0}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* CONSTRUTOR DO KIT — INFO + itens rolam juntos; sem pull-to-refresh */}
+        {/* TUDO num único scroll — rola de qualquer ponto da tela */}
         <div
           className="flex-1 overflow-y-auto custom-scrollbar"
           style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
         >
-          {/* INFO (rola junto) */}
+          {/* GALERIA com zoom inline */}
+          <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 pt-14">
+            <div
+              className="relative block w-full aspect-[4/3] overflow-hidden select-none cursor-zoom-in"
+              style={{ touchAction: zoomActive ? 'none' : 'pan-y' }}
+              onMouseEnter={onMouseEnter}
+              onMouseLeave={onMouseLeave}
+              onMouseMove={onMouseMove}
+              onClick={onImageClick}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+              onTouchCancel={onTouchEnd}
+              aria-label="Foto do kit — toque para ampliar, segure para zoom"
+            >
+              <img
+                src={activeImage}
+                className={`w-full h-full object-cover transition-opacity duration-200 ${zoomActive ? 'opacity-0' : 'opacity-100'}`}
+                alt={kit.sku}
+                draggable={false}
+              />
+              <div
+                className={`absolute inset-0 transition-opacity duration-200 ${zoomActive ? 'opacity-100' : 'opacity-0'}`}
+                style={{
+                  backgroundImage: `url(${activeImage})`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '220%',
+                  backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
+                }}
+              />
+              {!zoomActive && (
+                <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-1 pointer-events-none md:hidden">
+                  <ZoomIn size={9}/> Segure para ampliar
+                </div>
+              )}
+            </div>
+            {/* Hint de scroll */}
+            <div className="flex flex-col items-center py-3 gap-0.5 pointer-events-none select-none">
+              <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Role para selecionar as peças</span>
+              <span className="text-zinc-600 text-base animate-bounce leading-none">↓</span>
+            </div>
+          </div>
+
+          {/* THUMBS */}
+          {gallery.length > 1 && (
+            <div
+              className="px-4 py-3 flex gap-2 overflow-x-auto overflow-y-hidden no-scrollbar bg-zinc-950 border-b border-white/5"
+              style={{ touchAction: 'pan-x', overscrollBehavior: 'contain' }}
+            >
+              {gallery.map((g, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveImage(g)}
+                  className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${activeImage === g ? 'border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)] scale-105' : 'border-white/10 opacity-70 hover:opacity-100'}`}
+                >
+                  <img src={g} className="w-full h-full object-cover" alt="" draggable={false} />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* BARRA DE PROGRESSO */}
+          <div className="px-5 py-3 bg-zinc-900/80 border-b border-white/5 flex items-center gap-3">
+            <Layers size={13} className="text-amber-400 shrink-0" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Itens no kit</span>
+                <span className="text-[10px] font-black text-amber-400">{includedItems.length} / {components.length} peças</span>
+              </div>
+              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-400 to-pink-500 rounded-full transition-all duration-300"
+                  style={{ width: `${components.length > 0 ? (includedItems.length / components.length) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* INFO + PRODUTOS */}
           <div className="px-7 pt-4 pb-2">
             <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest">REF: {kit.sku}</span>
-            <h2 className="text-xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{kit.name}</h2>
-            <p className="text-[9px] text-zinc-500 uppercase font-black mt-1 tracking-widest">Marque as peças que deseja e escolha o tamanho de cada uma.</p>
+            <p className="text-[9px] text-zinc-500 uppercase font-black mt-3 tracking-widest">Marque as peças que deseja e escolha o tamanho de cada uma.</p>
           </div>
 
           <div className="px-5 py-3 space-y-2">
@@ -1960,7 +1970,6 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
           })}
           </div>
         </div>
-
 
         {/* RODAPÉ TOTAL + CTA */}
         <div className="px-6 pt-3 pb-5 border-t border-white/10 bg-zinc-950 shrink-0">
@@ -2308,6 +2317,10 @@ function App() {
   const [myOrdersLoading, setMyOrdersLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedSizes, setSelectedSizes] = useState({});
+  // Captura ?produto= no mount para deeplink — lido antes de qualquer efeito de sync apagar o param
+  const initialUrlProduto = useRef(
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('produto') : null
+  );
   const [activeProductImage, setActiveProductImage] = useState(null);
   useEffect(() => {
     if (selectedProduct && !selectedProduct.is_kit) {
@@ -2755,12 +2768,13 @@ function App() {
     } catch {}
   }, [selectedProduct, productsLoaded]);
 
-  // Abre produto automaticamente a partir do parâmetro ?produto=SKU na URL (deep link).
+  // Abre produto automaticamente via deeplink (?produto=SKU).
+  // Usa ref capturado no mount para não depender da URL atual (que o efeito de sync pode ter alterado).
   useEffect(() => {
     if (!productsLoaded || !(products || []).length) return;
-    const sp = new URLSearchParams(window.location.search);
-    const sku = sp.get('produto');
+    const sku = initialUrlProduto.current;
     if (!sku || selectedProduct) return;
+    initialUrlProduto.current = null; // evita re-trigger
     const found = (products || []).find(p => (p.sku || '').toUpperCase() === sku.toUpperCase());
     if (found && (found.is_kit || (found.stock || 0) > 0)) {
       setSelectedProduct(found);
@@ -3419,11 +3433,21 @@ function App() {
         <div className="fixed inset-x-0 z-[100] flex items-end justify-center overflow-hidden" style={viewportOverlayStyle}>
           <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} />
           <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: viewportPanelMaxHeight }}>
-            {/* HERO IMAGE — grande, clicável para zoom */}
-            <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
+            {/* Drag handle — overlay fixo */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full backdrop-blur-md z-10 pointer-events-none" />
+            {/* Fechar — overlay fixo */}
+            <button
+              onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }}
+              className="absolute top-4 right-4 z-10 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform"
+            >
+              <X size={18}/>
+            </button>
+
+            {/* HERO IMAGE — menor para produtos ficarem visíveis abaixo */}
+            <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 pt-12 shrink-0">
               <button
                 onClick={() => setZoomImage(heroImg)}
-                className="block w-full aspect-square overflow-hidden touch-manipulation group"
+                className="block w-full aspect-[4/3] overflow-hidden touch-manipulation group"
                 aria-label="Ampliar foto"
               >
                 <img
@@ -3432,21 +3456,12 @@ function App() {
                   alt={selectedProduct.name}
                 />
               </button>
-              {/* Drag handle flutuante */}
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full backdrop-blur-md" />
-              {/* Botão fechar flutuante */}
-              <button
-                onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }}
-                className="absolute top-4 right-4 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform"
-              >
-                <X size={18}/>
-              </button>
               {/* Hint de zoom */}
               <div className="absolute bottom-4 right-4 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 flex items-center gap-1.5 pointer-events-none">
                 <Search size={10}/> Toque para ampliar
               </div>
-              {/* Fade na base para emendar com conteúdo */}
-              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-b from-transparent to-zinc-950 pointer-events-none" />
+              {/* Fade na base */}
+              <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-b from-transparent to-zinc-950 pointer-events-none" />
             </div>
 
             {/* THUMBS — quando houver mais de 1 imagem */}
