@@ -1670,7 +1670,11 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center">
       <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
-      <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[94vh] flex flex-col">
+      <div
+        className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[94vh] flex flex-col"
+        style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+      >
+
         {/* GALERIA com zoom inline (hover desktop / press-hold mobile) */}
         <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
           <div
