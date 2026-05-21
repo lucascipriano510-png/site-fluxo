@@ -269,8 +269,8 @@ const AdminDashboard = ({ leads, products }) => {
     return days;
   }, [concludedLeads]);
   
-  const lowStockProducts = (products || []).filter(p => p.stock > 0 && p.stock <= 3);
-  const outOfStockProducts = (products || []).filter(p => p.stock === 0);
+  const lowStockProducts = (products || []).filter(p => !p.is_kit && p.stock > 0 && p.stock <= 3);
+  const outOfStockProducts = (products || []).filter(p => !p.is_kit && p.stock === 0);
 
   const statusColors = { 'NOVO': 'text-blue-500 bg-blue-500/10', 'EM ATENDIMENTO': 'text-amber-500 bg-amber-500/10', 'CONCLUÍDO': 'text-emerald-500 bg-emerald-500/10', 'CANCELADO': 'text-red-500 bg-red-500/10' };
 
