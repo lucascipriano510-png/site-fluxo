@@ -1622,27 +1622,25 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
     }
   };
 
-  // ===== LOCK BODY SCROLL enquanto o modal estiver aberto =====
-  // impede a barra de URL do iOS de aparecer/atrapalhar
+  // Mantém o modal dentro da área realmente visível do navegador móvel.
+  // Isso evita o efeito da barra de URL cobrir os controles quando ela expande/retrai.
+  const [visualFrame, setVisualFrame] = useState({ top: 0, height: 0 });
   useEffect(() => {
-    const scrollY = window.scrollY;
-    const body = document.body;
-    const prev = {
-      position: body.style.position,
-      top: body.style.top,
-      width: body.style.width,
-      overflow: body.style.overflow,
+    const updateFrame = () => {
+      const vv = window.visualViewport;
+      setVisualFrame({
+        top: vv ? vv.offsetTop : 0,
+        height: vv ? vv.height : window.innerHeight,
+      });
     };
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.width = '100%';
-    body.style.overflow = 'hidden';
+    updateFrame();
+    window.visualViewport?.addEventListener('resize', updateFrame);
+    window.visualViewport?.addEventListener('scroll', updateFrame);
+    window.addEventListener('resize', updateFrame);
     return () => {
-      body.style.position = prev.position;
-      body.style.top = prev.top;
-      body.style.width = prev.width;
-      body.style.overflow = prev.overflow;
-      window.scrollTo(0, scrollY);
+      window.visualViewport?.removeEventListener('resize', updateFrame);
+      window.visualViewport?.removeEventListener('scroll', updateFrame);
+      window.removeEventListener('resize', updateFrame);
     };
   }, []);
 
@@ -1711,18 +1709,21 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center">
+    <div
+      className="fixed inset-x-0 z-[100] flex items-end justify-center overflow-hidden"
+      style={{ top: visualFrame.top, height: visualFrame.height || '100dvh' }}
+    >
       <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
       <div
-        className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[94vh] flex flex-col"
-        style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+        className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden flex flex-col"
+        style={{ maxHeight: `calc(${visualFrame.height || window.innerHeight}px - 10px)`, overscrollBehavior: 'contain', touchAction: 'pan-y' }}
       >
 
         {/* GALERIA com zoom inline (hover desktop / press-hold mobile) */}
         <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
           <div
             className="relative block w-full aspect-square overflow-hidden select-none cursor-zoom-in"
-            style={{ touchAction: 'none' }}
+            style={{ touchAction: zoomActive ? 'none' : 'pan-y' }}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             onMouseMove={onMouseMove}
