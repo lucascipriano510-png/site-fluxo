@@ -1746,7 +1746,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
             <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest">REF: {kit.sku}</span>
             <h2 className="text-xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{kit.name}</h2>
             <p className="text-[10px] text-zinc-500 uppercase font-black mt-2 tracking-widest flex items-center gap-1.5">
-              <Layers size={11} className="text-amber-400" /> Monte seu look — {includedItems.length}/{components.length} peças
+              <Layers size={11} className="text-amber-400" /> Monte seu kit — {includedItems.length}/{components.length} peças
             </p>
           </div>
 
