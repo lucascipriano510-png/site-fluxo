@@ -664,7 +664,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
         sizes: isKit ? [] : formSizes.filter(s => s.size && s.size.trim() !== ''),
         featured: fd.get('featured') === 'on',
         is_kit: isKit,
-        gallery: isKit ? galleryUrls : [],
+        gallery: galleryUrls,
       };
       const updatedProducts = editMode === 'new' ? [data, ...products] : products.map(p => p.id === data.id ? data : p);
       setProducts(updatedProducts);
@@ -963,26 +963,31 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
               </div>
             )}
 
+            {/* GALERIA — sempre disponível (imagens adicionais além da principal) */}
+            <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-white/5 space-y-3 mt-2">
+              <label className="text-[9px] font-black text-emerald-500 uppercase flex items-center gap-1">
+                <ImagePlus size={12}/> {isKit ? `Galeria do Kit (${galleryUrls.length})` : `Fotos extras (${galleryUrls.length})`}
+              </label>
+              <p className="text-[9px] text-zinc-500 font-bold">
+                {isKit ? 'Imagens auxiliares mostrando cada peça.' : 'Ângulos diferentes da peça. A foto principal permanece em destaque.'}
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {galleryUrls.map((url, i) => (
+                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
+                    <img src={url} className="w-full h-full object-cover" alt="" />
+                    <button type="button" onClick={() => removeGalleryUrl(url)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><X size={10}/></button>
+                  </div>
+                ))}
+                <label className="aspect-square rounded-xl border-2 border-dashed border-white/15 grid place-items-center cursor-pointer hover:border-emerald-500/50 transition-colors">
+                  <Upload size={16} className="text-emerald-500" />
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryFiles} />
+                </label>
+              </div>
+              {isUploadingGallery && <p className="text-[9px] text-emerald-400 font-bold uppercase">Enviando imagens...</p>}
+            </div>
+
             {isKit && (
               <>
-                {/* GALERIA */}
-                <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-amber-400/20 space-y-3 mt-2">
-                  <label className="text-[9px] font-black text-amber-400 uppercase flex items-center gap-1"><ImagePlus size={12}/> Galeria do Kit ({galleryUrls.length})</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {galleryUrls.map((url, i) => (
-                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
-                        <img src={url} className="w-full h-full object-cover" alt="" />
-                        <button type="button" onClick={() => removeGalleryUrl(url)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><X size={10}/></button>
-                      </div>
-                    ))}
-                    <label className="aspect-square rounded-xl border-2 border-dashed border-white/15 grid place-items-center cursor-pointer hover:border-amber-400/50 transition-colors">
-                      <Upload size={16} className="text-amber-400" />
-                      <input type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryFiles} />
-                    </label>
-                  </div>
-                  {isUploadingGallery && <p className="text-[9px] text-amber-400 font-bold uppercase">Enviando imagens...</p>}
-                </div>
-
                 {/* MULTI-SELECT DE PRODUTOS */}
                 <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-amber-400/20 space-y-3 mt-2">
                   <label className="text-[9px] font-black text-amber-400 uppercase flex items-center gap-1"><Layers size={12}/> Peças do Kit ({kitComponentIds.length})</label>
@@ -2242,6 +2247,12 @@ function App() {
   const [myOrdersLoading, setMyOrdersLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedSizes, setSelectedSizes] = useState({});
+  const [activeProductImage, setActiveProductImage] = useState(null);
+  useEffect(() => {
+    if (selectedProduct && !selectedProduct.is_kit) {
+      setActiveProductImage(selectedProduct.image);
+    }
+  }, [selectedProduct]);
   const [zoomImage, setZoomImage] = useState(null);
   const [showCart, setShowCart] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
@@ -2975,6 +2986,80 @@ function App() {
           </div>
         )}
 
+        {/* DESTAQUES — vitrine de peças marcadas como destaque, só em modo padrão */}
+        {(() => {
+          const isDefaultView = !kitsOnly
+            && selectedCategory === 'TODOS'
+            && (selectedSize === 'TODOS' || !selectedSize)
+            && !searchQuery.trim()
+            && !activeCollectionFilter
+            && currentPage === 1;
+          if (!isDefaultView) return null;
+          const featured = (products || []).filter(p => p.featured && !p.is_kit && (p.stock || 0) > 0);
+          if (featured.length === 0) return null;
+          return (
+            <section className="relative -mx-6 px-6 py-6 mt-2 animate-in" data-testid="featured-section">
+              {/* glow de fundo */}
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl" />
+              </div>
+              <div className="relative flex items-end justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-400">Selecionado a dedo</span>
+                  </div>
+                  <h2 className="text-xl font-black uppercase tracking-tight text-white mt-1 flex items-center gap-2">
+                    <Flame size={18} className="text-emerald-400" /> Em destaque
+                  </h2>
+                </div>
+                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  {featured.length} {featured.length === 1 ? 'peça' : 'peças'}
+                </span>
+              </div>
+              <div
+                className="relative flex gap-4 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-2 -mx-2 px-2"
+                style={{ touchAction: 'pan-x', overscrollBehavior: 'contain', scrollPaddingLeft: '8px' }}
+                data-testid="featured-rail"
+              >
+                {featured.map((product, idx) => (
+                  <motion.button
+                    key={product.id}
+                    type="button"
+                    onClick={() => handleProductClick(product)}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '80px' }}
+                    transition={{ duration: 0.4, delay: idx * 0.05 }}
+                    className="group relative shrink-0 w-[68%] max-w-[260px] snap-start rounded-[28px] overflow-hidden border border-white/10 bg-gradient-to-b from-zinc-900 to-zinc-950 shadow-[0_18px_40px_rgba(0,0,0,0.45)] active:scale-[0.98] transition-transform text-left touch-manipulation"
+                    data-testid={`featured-card-${product.id}`}
+                  >
+                    <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-emerald-400 to-emerald-500 text-zinc-950 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-[0_4px_15px_rgba(16,185,129,0.45)] flex items-center gap-1">
+                      <Flame size={9} className="fill-zinc-950" /> Destaque
+                    </div>
+                    <div className="aspect-[4/5] relative overflow-hidden">
+                      <ProductImage src={product.image} alt={product.name} priority={idx < 2} />
+                      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent pointer-events-none" />
+                      <div className="absolute bottom-3 left-4 right-4">
+                        <p className="text-[8px] font-black uppercase tracking-[0.25em] text-emerald-300/90">{product.category}</p>
+                        <h3 className="text-white font-black uppercase text-sm leading-tight line-clamp-2 mt-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]">{product.name}</h3>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3 bg-zinc-950/80 border-t border-white/5">
+                      <span className="text-white font-black text-base tracking-tight">{formatBRL(product.price || 0)}</span>
+                      <span className="bg-white text-zinc-950 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-md group-active:scale-95 transition-transform">
+                        Ver <ChevronRight size={11} />
+                      </span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </section>
+          );
+        })()}
+
+
+
         {filteredProducts.length > 0 && (
           <div className="flex items-center justify-between pt-1 animate-in">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/90">Peças Disponíveis</span>
@@ -3191,19 +3276,22 @@ function App() {
         />
       )}
 
-      {selectedProduct && !selectedProduct.is_kit && (
+      {selectedProduct && !selectedProduct.is_kit && (() => {
+        const productGallery = [selectedProduct.image, ...((Array.isArray(selectedProduct.gallery) ? selectedProduct.gallery : []) || [])].filter(Boolean);
+        const heroImg = activeProductImage || selectedProduct.image;
+        return (
         <div className="fixed inset-x-0 z-[100] flex items-end justify-center overflow-hidden" style={viewportOverlayStyle}>
           <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} />
           <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: viewportPanelMaxHeight }}>
             {/* HERO IMAGE — grande, clicável para zoom */}
-            <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950">
+            <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
               <button
-                onClick={() => setZoomImage(selectedProduct.image)}
+                onClick={() => setZoomImage(heroImg)}
                 className="block w-full aspect-square overflow-hidden touch-manipulation group"
                 aria-label="Ampliar foto"
               >
                 <img
-                  src={selectedProduct.image}
+                  src={heroImg}
                   className="w-full h-full object-cover transition-transform duration-500 group-active:scale-105"
                   alt={selectedProduct.name}
                 />
@@ -3224,6 +3312,24 @@ function App() {
               {/* Fade na base para emendar com conteúdo */}
               <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-b from-transparent to-zinc-950 pointer-events-none" />
             </div>
+
+            {/* THUMBS — quando houver mais de 1 imagem */}
+            {productGallery.length > 1 && (
+              <div
+                className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto overflow-y-hidden no-scrollbar bg-zinc-950 border-b border-white/5"
+                style={{ touchAction: 'pan-x', overscrollBehavior: 'contain' }}
+              >
+                {productGallery.map((g, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveProductImage(g)}
+                    className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-70 hover:opacity-100'}`}
+                  >
+                    <img src={g} className="w-full h-full object-cover" alt="" draggable={false} />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* CONTEÚDO scrollável */}
             <div className="flex-1 overflow-y-auto px-7 pt-5 pb-8">
@@ -3268,7 +3374,8 @@ function App() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* MODAL — Adicionado ao Carrinho */}
       {isCartModalOpen && (
