@@ -81,6 +81,40 @@ const useVisualViewportFrame = () => {
   return frame;
 };
 
+const useScrollBounceGuard = () => {
+  useEffect(() => {
+    let startY = 0;
+    const getScrollable = (target) => {
+      let el = target instanceof Element ? target : null;
+      while (el && el !== document.body && el !== document.documentElement) {
+        const style = window.getComputedStyle(el);
+        const canScroll = /(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight;
+        if (canScroll) return el;
+        el = el.parentElement;
+      }
+      return document.scrollingElement || document.documentElement;
+    };
+    const onTouchStart = (event) => {
+      if (event.touches.length !== 1) return;
+      startY = event.touches[0].clientY;
+    };
+    const onTouchMove = (event) => {
+      if (event.touches.length !== 1) return;
+      const scrollable = getScrollable(event.target);
+      const deltaY = event.touches[0].clientY - startY;
+      const atTop = scrollable.scrollTop <= 0;
+      const atBottom = scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 1;
+      if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) event.preventDefault();
+    };
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchmove', onTouchMove);
+    };
+  }, []);
+};
+
 class AdminTabErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
