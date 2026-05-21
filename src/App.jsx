@@ -1721,15 +1721,17 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
         {/* GALERIA com zoom inline (hover desktop / press-hold mobile) */}
         <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
           <div
-            className="relative block w-full aspect-square overflow-hidden touch-manipulation select-none cursor-zoom-in"
+            className="relative block w-full aspect-square overflow-hidden select-none cursor-zoom-in"
+            style={{ touchAction: 'none' }}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             onMouseMove={onMouseMove}
+            onClick={onImageClick}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
             onTouchCancel={onTouchEnd}
-            aria-label="Foto do kit — segure para ampliar"
+            aria-label="Foto do kit — toque para ampliar, segure para zoom"
           >
             <img
               src={activeImage}
