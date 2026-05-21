@@ -3426,7 +3426,7 @@ function App() {
       )}
 
 	      {showMyOrders && (
-	        <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6" data-testid="modal-my-orders">
+	        <div className="fixed inset-x-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 overflow-hidden" style={viewportOverlayStyle} data-testid="modal-my-orders">
 	          <div className="bg-zinc-950 w-full max-w-sm rounded-[32px] p-8 space-y-5 shadow-2xl border border-white/10 animate-in relative overflow-hidden max-h-[90vh] flex flex-col">
 	            <button onClick={() => { setShowMyOrders(false); setMyOrdersResults(null); setMyOrdersPhone(''); }} className="absolute top-5 right-5 text-zinc-500 bg-zinc-900 p-2 rounded-full touch-manipulation z-10" data-testid="btn-close-my-orders"><X size={16}/></button>
 	            <div className="text-center space-y-2 shrink-0">
