@@ -1670,7 +1670,11 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center">
       <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
-      <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[94vh] flex flex-col">
+      <div
+        className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[94vh] flex flex-col"
+        style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+      >
+
         {/* GALERIA com zoom inline (hover desktop / press-hold mobile) */}
         <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
           <div
@@ -1732,17 +1736,21 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
           </div>
         )}
 
-        {/* INFO */}
-        <div className="px-7 pt-4 pb-2 shrink-0">
-          <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest">REF: {kit.sku}</span>
-          <h2 className="text-xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{kit.name}</h2>
-          <p className="text-[10px] text-zinc-500 uppercase font-black mt-2 tracking-widest flex items-center gap-1.5">
-            <Layers size={11} className="text-amber-400" /> Monte seu look — {includedItems.length}/{components.length} peças
-          </p>
-        </div>
+        {/* CONSTRUTOR DO KIT — INFO + itens rolam juntos; sem pull-to-refresh */}
+        <div
+          className="flex-1 overflow-y-auto custom-scrollbar"
+          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        >
+          {/* INFO (rola junto) */}
+          <div className="px-7 pt-4 pb-2">
+            <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest">REF: {kit.sku}</span>
+            <h2 className="text-xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{kit.name}</h2>
+            <p className="text-[10px] text-zinc-500 uppercase font-black mt-2 tracking-widest flex items-center gap-1.5">
+              <Layers size={11} className="text-amber-400" /> Monte seu look — {includedItems.length}/{components.length} peças
+            </p>
+          </div>
 
-        {/* CONSTRUTOR DO KIT — scroll vertical */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-3 space-y-3">
+          <div className="px-5 py-3 space-y-3">
           {components.map(c => {
             const included = picks[c.id]?.included;
             const chosenSize = picks[c.id]?.size || '';
@@ -1799,7 +1807,9 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
               </div>
             );
           })}
+          </div>
         </div>
+
 
         {/* RODAPÉ TOTAL + CTA */}
         <div className="px-6 pt-3 pb-5 border-t border-white/10 bg-zinc-950 shrink-0">
