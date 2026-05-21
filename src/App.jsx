@@ -1826,6 +1826,23 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
           </div>
         )}
 
+        {/* BARRA DE PROGRESSO — sempre visível, fora do scroll */}
+        <div className="shrink-0 px-5 py-3 bg-zinc-900/80 border-b border-white/5 flex items-center gap-3">
+          <Layers size={13} className="text-amber-400 shrink-0" />
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Itens no kit</span>
+              <span className="text-[10px] font-black text-amber-400">{includedItems.length} / {components.length} peças</span>
+            </div>
+            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber-400 to-pink-500 rounded-full transition-all duration-300"
+                style={{ width: `${components.length > 0 ? (includedItems.length / components.length) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* CONSTRUTOR DO KIT — INFO + itens rolam juntos; sem pull-to-refresh */}
         <div
           className="flex-1 overflow-y-auto custom-scrollbar"
@@ -1835,13 +1852,16 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
           <div className="px-7 pt-4 pb-2">
             <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest">REF: {kit.sku}</span>
             <h2 className="text-xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{kit.name}</h2>
-            <p className="text-[10px] text-zinc-500 uppercase font-black mt-2 tracking-widest flex items-center gap-1.5">
-              <Layers size={11} className="text-amber-400" /> Monte seu kit — {includedItems.length}/{components.length} peças
-            </p>
+            <p className="text-[9px] text-zinc-500 uppercase font-black mt-1 tracking-widest">Marque as peças que deseja e escolha o tamanho de cada uma.</p>
           </div>
 
-          <div className="px-5 py-3 space-y-3">
-          {components.map(c => {
+          <div className="px-5 py-3 space-y-2">
+          {/* Itens incluídos aparecem primeiro */}
+          {[...components].sort((a, b) => {
+            const ia = picks[a.id]?.included ? 0 : 1;
+            const ib = picks[b.id]?.included ? 0 : 1;
+            return ia - ib;
+          }).map(c => {
             const included = picks[c.id]?.included;
             const chosenSize = picks[c.id]?.size || '';
             const sizes = (c.sizes || []).map(s => ({
@@ -1850,47 +1870,71 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
             })).filter(s => s.name);
             const isMissing = !!missingFlash[c.id];
             return (
-              <div key={c.id} className={`relative rounded-2xl border transition-all p-3 ${included ? (isMissing ? 'bg-red-500/10 border-red-500 animate-pulse' : 'bg-zinc-900/70 border-white/10') : 'bg-zinc-900/30 border-white/5 opacity-50'}`}>
+              <div key={c.id} className={`relative rounded-2xl border transition-all duration-200 p-3 ${included ? (isMissing ? 'bg-red-500/10 border-red-500 animate-pulse' : 'bg-zinc-900 border-emerald-500/30') : 'bg-zinc-900/20 border-white/5'}`}>
+                {/* Linha de status */}
+                {included && (
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500/50 to-transparent rounded-t-2xl pointer-events-none" />
+                )}
                 <div className="flex gap-3">
-                  <img src={c.image} className={`w-16 h-20 rounded-xl object-cover shrink-0 border border-white/10 ${!included ? 'grayscale' : ''}`} alt={c.name} />
+                  <div className="relative shrink-0">
+                    <img src={c.image} className={`w-16 h-20 rounded-xl object-cover border ${included ? 'border-emerald-500/30' : 'border-white/5 grayscale opacity-50'}`} alt={c.name} />
+                    {included && chosenSize && (
+                      <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-zinc-950 text-[8px] font-black px-1.5 py-0.5 rounded-md leading-none">{chosenSize}</div>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-black text-white text-[11px] uppercase leading-tight line-clamp-2">{c.name}</h4>
+                      <h4 className={`font-black text-[11px] uppercase leading-tight line-clamp-2 ${included ? 'text-white' : 'text-zinc-600'}`}>{c.name}</h4>
                       <button
                         onClick={() => togglePick(c.id)}
-                        className={`shrink-0 w-6 h-6 rounded-md border-2 grid place-items-center transition-all ${included ? 'bg-emerald-500 border-emerald-500 text-zinc-950' : 'bg-transparent border-zinc-600 text-transparent'}`}
+                        className={`shrink-0 w-7 h-7 rounded-lg border-2 grid place-items-center transition-all touch-manipulation ${included ? 'bg-emerald-500 border-emerald-500 text-zinc-950 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-zinc-800 border-zinc-600 text-zinc-600 hover:border-zinc-400'}`}
                         aria-label={included ? 'Remover do kit' : 'Adicionar ao kit'}
                       >
-                        <Check size={14} strokeWidth={3} />
+                        {included ? <Check size={14} strokeWidth={3} /> : <Plus size={13} strokeWidth={2.5} />}
                       </button>
                     </div>
-                    <p className={`font-black text-sm mt-1 ${included ? 'text-emerald-400' : 'text-zinc-500 line-through'}`}>{formatBRL(c.price || 0)}</p>
+                    <p className={`font-black text-sm mt-1 ${included ? 'text-emerald-400' : 'text-zinc-600'}`}>{formatBRL(c.price || 0)}</p>
                     {included && (
-                      <div className="flex gap-1.5 mt-2 flex-wrap">
-                        {sizes.length === 0 && (
-                          <span className="text-[9px] text-zinc-500 uppercase font-bold">Sem tamanhos</span>
+                      <>
+                        {sizes.length > 0 && (
+                          <p className="text-[9px] font-black text-zinc-500 uppercase mt-2 mb-1">
+                            {chosenSize ? '✓ Tamanho selecionado' : '⚠ Escolha o tamanho'}
+                          </p>
                         )}
-                        {sizes.map(s => {
-                          const disabled = s.stock <= 0;
-                          const active = chosenSize === s.name;
-                          return (
-                            <button
-                              key={s.name}
-                              disabled={disabled}
-                              onClick={() => setSize(c.id, s.name)}
-                              className={`px-2.5 py-1 rounded-md border text-[10px] font-black uppercase transition-all touch-manipulation ${
-                                active
-                                  ? 'bg-white text-zinc-950 border-white'
-                                  : disabled
-                                    ? 'bg-zinc-950 text-zinc-700 border-white/5 opacity-50'
-                                    : 'bg-zinc-950 text-zinc-300 border-white/10 hover:border-white/30'
-                              }`}
-                            >
-                              {s.name}
-                            </button>
-                          );
-                        })}
-                      </div>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {sizes.length === 0 && (
+                            <span className="text-[9px] text-zinc-500 uppercase font-bold">Sem tamanhos</span>
+                          )}
+                          {sizes.map(s => {
+                            const disabled = s.stock <= 0;
+                            const active = chosenSize === s.name;
+                            return (
+                              <button
+                                key={s.name}
+                                disabled={disabled}
+                                onClick={() => setSize(c.id, s.name)}
+                                className={`px-2.5 py-1 rounded-md border text-[10px] font-black uppercase transition-all touch-manipulation ${
+                                  active
+                                    ? 'bg-white text-zinc-950 border-white shadow-[0_0_8px_rgba(255,255,255,0.2)]'
+                                    : disabled
+                                      ? 'bg-zinc-950 text-zinc-700 border-white/5 opacity-40 cursor-not-allowed'
+                                      : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:border-zinc-500'
+                                }`}
+                              >
+                                {s.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                    {!included && (
+                      <button
+                        onClick={() => togglePick(c.id)}
+                        className="mt-2 text-[9px] font-black text-zinc-500 uppercase tracking-widest hover:text-zinc-300 transition-colors touch-manipulation"
+                      >
+                        + Adicionar ao kit
+                      </button>
                     )}
                   </div>
                 </div>
@@ -2669,10 +2713,41 @@ function App() {
       setSelectedSize((sp.get('tamanho') || 'TODOS').toUpperCase());
       setSearchQuery(sp.get('busca') || '');
       setKitsOnly(sp.get('kits') === '1');
+      // Fecha modal de produto se o parâmetro sumiu da URL
+      if (!sp.get('produto')) { setSelectedProduct(null); setSelectedSizes({}); }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
+
+  // Sincroniza produto aberto com a URL (?produto=SKU) para deep linking.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const url = new URL(window.location.href);
+      if (selectedProduct?.sku) {
+        url.searchParams.set('produto', selectedProduct.sku);
+      } else {
+        url.searchParams.delete('produto');
+      }
+      const newUrl = url.pathname + (url.search ? url.search : '') + url.hash;
+      const current = window.location.pathname + window.location.search + window.location.hash;
+      if (newUrl !== current) window.history.replaceState(null, '', newUrl);
+    } catch {}
+  }, [selectedProduct]);
+
+  // Abre produto automaticamente a partir do parâmetro ?produto=SKU na URL (deep link).
+  useEffect(() => {
+    if (!productsLoaded || !(products || []).length) return;
+    const sp = new URLSearchParams(window.location.search);
+    const sku = sp.get('produto');
+    if (!sku || selectedProduct) return;
+    const found = (products || []).find(p => p.sku === sku);
+    if (found && (found.is_kit || (found.stock || 0) > 0)) {
+      setSelectedProduct(found);
+      setSelectedSizes({});
+    }
+  }, [productsLoaded, products]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
   const paginatedProducts = useMemo(() => {
@@ -2847,13 +2922,26 @@ function App() {
       <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-2xl border-b border-white/5 px-6 py-2 flex justify-between items-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20">
         <button className="p-2 text-zinc-400 hover:text-white shrink-0 touch-manipulation" onClick={() => document.getElementById('search-input').focus()} data-testid="btn-header-search"><Search size={22} /></button>
         
-        <div className="cursor-default select-none flex-1 flex flex-col items-center justify-center mx-2 h-full relative overflow-hidden pointer-events-none">
+        <button
+          className="select-none flex-1 flex flex-col items-center justify-center mx-2 h-full relative overflow-hidden touch-manipulation active:opacity-80 transition-opacity"
+          onClick={() => {
+            setSelectedCategory('TODOS');
+            setSelectedSubcategory('TODOS');
+            setSelectedSize('TODOS');
+            setSearchQuery('');
+            setKitsOnly(false);
+            setActiveCollectionFilter(null);
+            setCurrentPage(1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          aria-label="Voltar ao início"
+        >
           {config.logoUrl ? (
              <img src={config.logoUrl} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto max-w-full object-contain mix-blend-screen transition-transform" />
           ) : (
              <h1 className="logo-font text-xl text-white font-black italic uppercase text-center">{config.brandName}</h1>
           )}
-        </div>
+        </button>
 
         <div className="flex items-center gap-1 shrink-0">
           <button onClick={() => setShowMyOrders(true)} data-testid="btn-header-my-orders" className="p-2 text-zinc-400 hover:text-emerald-500 transition-colors touch-manipulation" title="Meus Pedidos">
@@ -2952,6 +3040,14 @@ function App() {
             >
               <Zap size={12} className={kitsOnly ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'} />
               KITS
+            </button>
+          )}
+          {kitsOnly && (
+            <button
+              onClick={() => setKitsOnly(false)}
+              className="relative px-3 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation flex items-center gap-1 shrink-0 text-amber-400 border-amber-400/25 bg-amber-400/5 hover:bg-amber-400/10 hover:border-amber-400/50 active:scale-95"
+            >
+              <ChevronLeft size={12} /> Voltar
             </button>
           )}
           {!kitsOnly && categories.map(cat => (
@@ -3162,25 +3258,46 @@ function App() {
            </div>
 
            {totalPages > 1 && (
-             <div className="flex items-center justify-between gap-3 pt-8 pb-2 animate-in" data-testid="pagination-controls">
+             <div className="flex items-center justify-center gap-1.5 pt-8 pb-2 animate-in flex-wrap" data-testid="pagination-controls">
                <button
-                onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
+                 onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
                  disabled={currentPage <= 1}
-                 className="flex-1 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 bg-zinc-900/60 text-white hover:bg-white hover:text-zinc-950 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-zinc-900/60 disabled:hover:text-white touch-manipulation"
+                 className="w-10 h-10 rounded-xl text-base font-black border border-white/10 bg-zinc-900/60 text-white hover:bg-white hover:text-zinc-950 transition-all active:scale-95 disabled:opacity-25 disabled:cursor-not-allowed touch-manipulation flex items-center justify-center"
                  data-testid="pagination-prev"
                >
-                 ← Anterior
+                 ←
                </button>
-               <div className="text-[10px] font-black uppercase tracking-widest text-zinc-400 whitespace-nowrap px-2" data-testid="pagination-info">
-                 <span className="text-white">{currentPage}</span> <span className="text-zinc-600">/</span> {totalPages}
-               </div>
+               {(() => {
+                 const pages = [];
+                 const delta = 1;
+                 const left = Math.max(2, currentPage - delta);
+                 const right = Math.min(totalPages - 1, currentPage + delta);
+                 pages.push(1);
+                 if (left > 2) pages.push('...');
+                 for (let i = left; i <= right; i++) pages.push(i);
+                 if (right < totalPages - 1) pages.push('...');
+                 if (totalPages > 1) pages.push(totalPages);
+                 return pages.map((p, i) => {
+                   if (p === '...') return <span key={`el-${i}`} className="text-zinc-600 font-black text-xs w-6 text-center select-none">···</span>;
+                   return (
+                     <button
+                       key={p}
+                       onClick={() => { setCurrentPage(p); requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
+                       data-testid={`pagination-page-${p}`}
+                       className={`w-10 h-10 rounded-xl text-[11px] font-black border transition-all active:scale-95 touch-manipulation ${currentPage === p ? 'bg-white text-zinc-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-zinc-900/60 text-zinc-400 border-white/10 hover:border-white/30 hover:text-white'}`}
+                     >
+                       {p}
+                     </button>
+                   );
+                 });
+               })()}
                <button
-                onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
+                 onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
                  disabled={currentPage >= totalPages}
-                 className="flex-1 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 bg-zinc-900/60 text-white hover:bg-white hover:text-zinc-950 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-zinc-900/60 disabled:hover:text-white touch-manipulation"
+                 className="w-10 h-10 rounded-xl text-base font-black border border-white/10 bg-zinc-900/60 text-white hover:bg-white hover:text-zinc-950 transition-all active:scale-95 disabled:opacity-25 disabled:cursor-not-allowed touch-manipulation flex items-center justify-center"
                  data-testid="pagination-next"
                >
-                 Próxima →
+                 →
                </button>
              </div>
            )}
