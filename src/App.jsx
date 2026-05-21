@@ -3406,15 +3406,31 @@ function App() {
         
         ::-webkit-scrollbar { display: none; }
         
+        html {
+          background-color: #09090b;
+          overscroll-behavior-y: none;
+          overscroll-behavior-x: none;
+          overflow-x: hidden;
+          min-height: 100%;
+        }
+
         body { 
           font-family: 'Inter', sans-serif; 
           -webkit-tap-highlight-color: transparent; 
           background-color: #09090b; 
           overflow-x: hidden;
+          overscroll-behavior-y: none;
+          overscroll-behavior-x: none;
           touch-action: manipulation; 
           image-rendering: -webkit-optimize-contrast;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
+        }
+
+        #root, .app-shell {
+          min-height: 100dvh;
+          overscroll-behavior-y: none;
+          overscroll-behavior-x: none;
         }
 
         img {
