@@ -2223,6 +2223,7 @@ function App() {
   const [currentBannerSlide, setCurrentBannerSlide] = useState(0);
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
+  const visualFrame = useVisualViewportFrame();
 
   // Referência para o clique duplo
   const lastTapRef = useRef(0);
