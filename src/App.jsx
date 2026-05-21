@@ -1565,6 +1565,44 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
   const gallery = [kit.image, ...((Array.isArray(kit.gallery) ? kit.gallery : []) || [])].filter(Boolean);
   const [activeImage, setActiveImage] = useState(gallery[0] || kit.image);
 
+  // ===== ZOOM INLINE (hover desktop / long-press mobile) =====
+  const [zoomActive, setZoomActive] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const longPressRef = useRef(null);
+  const movedRef = useRef(false);
+  const updatePos = (clientX, clientY, rect) => {
+    const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
+    setZoomPos({ x, y });
+  };
+  const onMouseEnter = () => setZoomActive(true);
+  const onMouseLeave = () => setZoomActive(false);
+  const onMouseMove = (e) => updatePos(e.clientX, e.clientY, e.currentTarget.getBoundingClientRect());
+  const onTouchStart = (e) => {
+    movedRef.current = false;
+    const touch = e.touches[0];
+    const target = e.currentTarget;
+    longPressRef.current = setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      updatePos(touch.clientX, touch.clientY, rect);
+      setZoomActive(true);
+      if (navigator.vibrate) try { navigator.vibrate(15); } catch {}
+    }, 450);
+  };
+  const onTouchMove = (e) => {
+    if (zoomActive) {
+      const touch = e.touches[0];
+      updatePos(touch.clientX, touch.clientY, e.currentTarget.getBoundingClientRect());
+    } else {
+      movedRef.current = true;
+      clearTimeout(longPressRef.current);
+    }
+  };
+  const onTouchEnd = () => {
+    clearTimeout(longPressRef.current);
+    setZoomActive(false);
+  };
+
   // Estado por componente: { included: bool, size: string }
   const [picks, setPicks] = useState(() => {
     const init = {};
