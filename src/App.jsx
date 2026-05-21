@@ -269,8 +269,8 @@ const AdminDashboard = ({ leads, products }) => {
     return days;
   }, [concludedLeads]);
   
-  const lowStockProducts = (products || []).filter(p => p.stock > 0 && p.stock <= 3);
-  const outOfStockProducts = (products || []).filter(p => p.stock === 0);
+  const lowStockProducts = (products || []).filter(p => !p.is_kit && p.stock > 0 && p.stock <= 3);
+  const outOfStockProducts = (products || []).filter(p => !p.is_kit && p.stock === 0);
 
   const statusColors = { 'NOVO': 'text-blue-500 bg-blue-500/10', 'EM ATENDIMENTO': 'text-amber-500 bg-amber-500/10', 'CONCLUÍDO': 'text-emerald-500 bg-emerald-500/10', 'CANCELADO': 'text-red-500 bg-red-500/10' };
 
@@ -1565,6 +1565,44 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
   const gallery = [kit.image, ...((Array.isArray(kit.gallery) ? kit.gallery : []) || [])].filter(Boolean);
   const [activeImage, setActiveImage] = useState(gallery[0] || kit.image);
 
+  // ===== ZOOM INLINE (hover desktop / long-press mobile) =====
+  const [zoomActive, setZoomActive] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const longPressRef = useRef(null);
+  const movedRef = useRef(false);
+  const updatePos = (clientX, clientY, rect) => {
+    const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
+    setZoomPos({ x, y });
+  };
+  const onMouseEnter = () => setZoomActive(true);
+  const onMouseLeave = () => setZoomActive(false);
+  const onMouseMove = (e) => updatePos(e.clientX, e.clientY, e.currentTarget.getBoundingClientRect());
+  const onTouchStart = (e) => {
+    movedRef.current = false;
+    const touch = e.touches[0];
+    const target = e.currentTarget;
+    longPressRef.current = setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      updatePos(touch.clientX, touch.clientY, rect);
+      setZoomActive(true);
+      if (navigator.vibrate) try { navigator.vibrate(15); } catch {}
+    }, 450);
+  };
+  const onTouchMove = (e) => {
+    if (zoomActive) {
+      const touch = e.touches[0];
+      updatePos(touch.clientX, touch.clientY, e.currentTarget.getBoundingClientRect());
+    } else {
+      movedRef.current = true;
+      clearTimeout(longPressRef.current);
+    }
+  };
+  const onTouchEnd = () => {
+    clearTimeout(longPressRef.current);
+    setZoomActive(false);
+  };
+
   // Estado por componente: { included: bool, size: string }
   const [picks, setPicks] = useState(() => {
     const init = {};
@@ -1633,27 +1671,62 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
     <div className="fixed inset-0 z-[100] flex items-end justify-center">
       <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
       <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[94vh] flex flex-col">
-        {/* GALERIA */}
-        <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950">
-          <button onClick={() => setZoomImage(activeImage)} className="block w-full aspect-square overflow-hidden touch-manipulation group" aria-label="Ampliar foto">
-            <img src={activeImage} className="w-full h-full object-cover transition-transform duration-500 group-active:scale-105" alt={kit.name} />
-          </button>
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full backdrop-blur-md" />
-          <button onClick={onClose} className="absolute top-4 right-4 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform">
+        {/* GALERIA com zoom inline (hover desktop / press-hold mobile) */}
+        <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
+          <div
+            className="relative block w-full aspect-square overflow-hidden touch-manipulation select-none cursor-zoom-in"
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            onMouseMove={onMouseMove}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onTouchCancel={onTouchEnd}
+            aria-label="Foto do kit — segure para ampliar"
+          >
+            <img
+              src={activeImage}
+              className={`w-full h-full object-cover transition-opacity duration-200 ${zoomActive ? 'opacity-0' : 'opacity-100'}`}
+              alt={kit.name}
+              draggable={false}
+            />
+            <div
+              className={`absolute inset-0 transition-opacity duration-200 ${zoomActive ? 'opacity-100' : 'opacity-0'}`}
+              style={{
+                backgroundImage: `url(${activeImage})`,
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '220%',
+                backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
+              }}
+            />
+            {!zoomActive && (
+              <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-1 pointer-events-none md:hidden">
+                <ZoomIn size={9}/> Segure para ampliar
+              </div>
+            )}
+          </div>
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full backdrop-blur-md pointer-events-none" />
+          <button onClick={onClose} className="absolute top-4 right-4 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform z-10">
             <X size={18}/>
           </button>
-          <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1 shadow-[0_4px_15px_rgba(251,191,36,0.4)]">
+          <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1 shadow-[0_4px_15px_rgba(251,191,36,0.4)] pointer-events-none">
             <Zap size={10} className="fill-zinc-950" /> KIT
           </div>
-          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-b from-transparent to-zinc-950 pointer-events-none" />
         </div>
 
-        {/* THUMBS */}
+        {/* THUMBS — sempre visível, scroll só horizontal */}
         {gallery.length > 1 && (
-          <div className="px-5 pt-3 pb-1 flex gap-2 overflow-x-auto no-scrollbar">
+          <div
+            className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto overflow-y-hidden no-scrollbar bg-zinc-950 border-b border-white/5"
+            style={{ touchAction: 'pan-x', overscrollBehavior: 'contain' }}
+          >
             {gallery.map((g, i) => (
-              <button key={i} onClick={() => setActiveImage(g)} className={`shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${activeImage === g ? 'border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]' : 'border-white/10 opacity-70'}`}>
-                <img src={g} className="w-full h-full object-cover" alt="" />
+              <button
+                key={i}
+                onClick={() => setActiveImage(g)}
+                className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${activeImage === g ? 'border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)] scale-105' : 'border-white/10 opacity-70 hover:opacity-100'}`}
+              >
+                <img src={g} className="w-full h-full object-cover" alt="" draggable={false} />
               </button>
             ))}
           </div>
@@ -2823,7 +2896,7 @@ function App() {
            <>
            <div className="grid grid-cols-2 gap-4" data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
-               const isOutOfStock = product.stock <= 0;
+               const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
                   <motion.div
                     key={product.id}
@@ -2836,7 +2909,7 @@ function App() {
                     data-testid={`product-card-${product.id}`}
                   >
                     
-                    {!isOutOfStock && product.stock <= 3 && <div className="absolute top-2 left-2 z-10 bg-amber-500 text-zinc-950 text-[8px] font-black uppercase px-2 py-1 rounded-md animate-pulse" data-testid={`badge-last-pieces-${product.id}`}>Restam {product.stock}</div>}
+                    {!isOutOfStock && !product.is_kit && product.stock <= 3 && <div className="absolute top-2 left-2 z-10 bg-amber-500 text-zinc-950 text-[8px] font-black uppercase px-2 py-1 rounded-md animate-pulse" data-testid={`badge-last-pieces-${product.id}`}>Restam {product.stock}</div>}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
                     
                        <div className="aspect-[4/5] relative overflow-hidden">
