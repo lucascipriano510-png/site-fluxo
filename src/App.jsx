@@ -1647,25 +1647,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
 
   // Mantém o modal dentro da área realmente visível do navegador móvel.
   // Isso evita o efeito da barra de URL cobrir os controles quando ela expande/retrai.
-  const [visualFrame, setVisualFrame] = useState({ top: 0, height: 0 });
-  useEffect(() => {
-    const updateFrame = () => {
-      const vv = window.visualViewport;
-      setVisualFrame({
-        top: vv ? vv.offsetTop : 0,
-        height: vv ? vv.height : window.innerHeight,
-      });
-    };
-    updateFrame();
-    window.visualViewport?.addEventListener('resize', updateFrame);
-    window.visualViewport?.addEventListener('scroll', updateFrame);
-    window.addEventListener('resize', updateFrame);
-    return () => {
-      window.visualViewport?.removeEventListener('resize', updateFrame);
-      window.visualViewport?.removeEventListener('scroll', updateFrame);
-      window.removeEventListener('resize', updateFrame);
-    };
-  }, []);
+  const visualFrame = useVisualViewportFrame();
 
   // Estado por componente: { included: bool, size: string }
   const [picks, setPicks] = useState(() => {
