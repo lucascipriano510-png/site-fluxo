@@ -1716,7 +1716,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
       <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
       <div
         className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden flex flex-col"
-        style={{ maxHeight: `calc(${visualFrame.height || window.innerHeight}px - 10px)`, overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+        style={{ maxHeight: visualFrame.height ? `calc(${visualFrame.height}px - 10px)` : 'calc(100dvh - 10px)', overscrollBehavior: 'contain', touchAction: 'pan-y' }}
       >
 
         {/* GALERIA com zoom inline (hover desktop / press-hold mobile) */}
