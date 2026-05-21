@@ -1707,6 +1707,15 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
   // Isso evita o efeito da barra de URL cobrir os controles quando ela expande/retrai.
   const visualFrame = useVisualViewportFrame();
 
+  // Pré-carrega todas as imagens do kit assim que o modal abre para eliminar delay ao trocar fotos
+  useEffect(() => {
+    const urls = [
+      ...gallery.map(g => optimizeImage(g, 1200, 85)),
+      ...components.map(c => optimizeImage(c.image, 400, 80)),
+    ].filter(Boolean);
+    urls.forEach(url => { const img = new Image(); img.src = url; });
+  }, [kit.id]);
+
   // Estado por componente: { included: bool, size: string }
   const [picks, setPicks] = useState(() => {
     const init = {};
@@ -1814,7 +1823,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
               aria-label="Foto do kit — toque para ampliar, segure para zoom"
             >
               <img
-                src={optimizeImage(activeImage, 800)}
+                src={optimizeImage(activeImage, 1200, 85)}
                 className={`w-full h-full object-cover transition-opacity duration-200 ${zoomActive ? 'opacity-0' : 'opacity-100'}`}
                 alt={kit.sku}
                 draggable={false}
@@ -1823,7 +1832,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
               <div
                 className={`absolute inset-0 transition-opacity duration-200 ${zoomActive ? 'opacity-100' : 'opacity-0'}`}
                 style={{
-                  backgroundImage: `url(${optimizeImage(activeImage, 1200)})`,
+                  backgroundImage: `url(${optimizeImage(activeImage, 1400, 85)})`,
                   backgroundRepeat: 'no-repeat',
                   backgroundSize: '220%',
                   backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
@@ -1854,7 +1863,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
                   onClick={() => setActiveImage(g)}
                   className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${activeImage === g ? 'border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)] scale-105' : 'border-white/10 opacity-70 hover:opacity-100'}`}
                 >
-                  <img src={optimizeImage(g, 200)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
+                  <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>
@@ -1905,7 +1914,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
                 )}
                 <div className="flex gap-3">
                   <div className="relative shrink-0">
-                    <img src={optimizeImage(c.image, 300)} className={`w-16 h-20 rounded-xl object-cover border ${included ? 'border-emerald-500/30' : 'border-white/5 grayscale opacity-50'}`} alt={c.name} loading="lazy" decoding="async" />
+                    <img src={optimizeImage(c.image, 400, 80)} className={`w-16 h-20 rounded-xl object-cover border ${included ? 'border-emerald-500/30' : 'border-white/5 grayscale opacity-50'}`} alt={c.name} loading="lazy" decoding="async" />
                     {included && chosenSize && (
                       <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-zinc-950 text-[8px] font-black px-1.5 py-0.5 rounded-md leading-none">{chosenSize}</div>
                     )}
@@ -3452,7 +3461,7 @@ function App() {
                 aria-label="Ampliar foto"
               >
                 <img
-                  src={optimizeImage(heroImg, 800)}
+                  src={optimizeImage(heroImg, 1200, 85)}
                   className="w-full h-full object-cover transition-transform duration-500 group-active:scale-105"
                   alt={selectedProduct.name}
                   fetchPriority="high"
@@ -3478,7 +3487,7 @@ function App() {
                     onClick={() => setActiveProductImage(g)}
                     className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-70 hover:opacity-100'}`}
                   >
-                    <img src={optimizeImage(g, 200)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
+                    <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
                   </button>
                 ))}
               </div>
