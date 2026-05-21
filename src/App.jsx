@@ -2823,7 +2823,7 @@ function App() {
            <>
            <div className="grid grid-cols-2 gap-4" data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
-               const isOutOfStock = product.stock <= 0;
+               const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
                   <motion.div
                     key={product.id}
