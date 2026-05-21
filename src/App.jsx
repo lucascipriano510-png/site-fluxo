@@ -326,7 +326,6 @@ const AdminDashboard = ({ leads, products }) => {
     return days;
   }, [concludedLeads]);
   
-  const lowStockProducts = (products || []).filter(p => !p.is_kit && p.stock > 0 && p.stock <= 3);
   const outOfStockProducts = (products || []).filter(p => !p.is_kit && p.stock === 0);
 
   const statusColors = { 'NOVO': 'text-blue-500 bg-blue-500/10', 'EM ATENDIMENTO': 'text-amber-500 bg-amber-500/10', 'CONCLUÍDO': 'text-emerald-500 bg-emerald-500/10', 'CANCELADO': 'text-red-500 bg-red-500/10' };
@@ -392,32 +391,39 @@ const AdminDashboard = ({ leads, products }) => {
          )}
       </div>
 
-      {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
-        <div className="bg-zinc-900/50 p-6 rounded-[32px] border border-red-500/10 space-y-4">
-           <h4 className="font-black text-[11px] uppercase tracking-widest text-white flex items-center gap-2"><AlertTriangle size={14} className="text-amber-500"/> Alertas de Estoque</h4>
-           <div className="space-y-3">
-              {outOfStockProducts.map(p => (
-                <div key={p.id} className="flex justify-between items-center bg-red-500/10 px-4 py-3 rounded-2xl border border-red-500/20">
-                  <span className="text-[10px] font-bold text-white uppercase truncate pr-4">{p.name}</span>
-                  <span className="text-[9px] font-black bg-red-500 text-white px-2 py-1 rounded-full shrink-0">ESGOTADO</span>
-                </div>
-              ))}
-              {lowStockProducts.map(p => (
-                <div key={p.id} className="flex justify-between items-center bg-amber-500/10 px-4 py-3 rounded-2xl border border-amber-500/20">
-                  <span className="text-[10px] font-bold text-white uppercase truncate pr-4">{p.name}</span>
-                  <span className="text-[9px] font-black text-amber-500 shrink-0">Resta(m) {p.stock}</span>
-                </div>
-              ))}
-           </div>
-        </div>
-      )}
     </div>
   );
 };
 
 const AdminInventory = ({ products, setProducts, showToast, availableCollections, productImageFile, setProductImageFile, uploadImage }) => {
-  const [editMode, setEditMode] = useState(null); 
+  const [editMode, setEditMode] = useState(null);
   const [invSearch, setInvSearch] = useState('');
+
+  // Calcula próximo SKU sequencial com base nos SKUs puramente numéricos existentes
+  const nextSku = useMemo(() => {
+    const nums = (products || [])
+      .map(p => p.sku)
+      .filter(s => /^\d+$/.test(s || ''))
+      .map(s => parseInt(s, 10));
+    const max = nums.length > 0 ? Math.max(...nums) : 0;
+    return String(max + 1).padStart(4, '0');
+  }, [products]);
+
+  const handleReorganizeSkus = async () => {
+    if (!window.confirm(`Isso vai renumerar os SKUs de ${products.length} produto(s) em ordem sequencial (0001, 0002…). Continuar?`)) return;
+    const sorted = [...products].sort((a, b) => {
+      const aNum = /^\d+$/.test(a.sku || '') ? parseInt(a.sku, 10) : Infinity;
+      const bNum = /^\d+$/.test(b.sku || '') ? parseInt(b.sku, 10) : Infinity;
+      return aNum !== bNum ? aNum - bNum : (a.name || '').localeCompare(b.name || '');
+    });
+    const updated = sorted.map((p, i) => ({ ...p, sku: String(i + 1).padStart(4, '0') }));
+    let errors = 0;
+    for (const p of updated) {
+      try { await upsertProduct(p); } catch { errors++; }
+    }
+    setProducts(updated);
+    showToast(errors > 0 ? `Reorganizado com ${errors} erro(s).` : 'SKUs reorganizados com sucesso!', errors > 0 ? 'error' : 'success');
+  };
   const [previewImage, setPreviewImage] = useState('');
   const [formSizes, setFormSizes] = useState([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -882,6 +888,9 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-black italic uppercase text-white tracking-widest text-lg">Catálogo</h3>
           <div className="flex gap-2">
+            <button onClick={handleReorganizeSkus} className="bg-zinc-800 text-zinc-400 px-3 py-3 rounded-2xl font-black text-[9px] uppercase tracking-widest flex items-center gap-1.5 transition-transform active:scale-95 border border-white/5 hover:border-zinc-500 hover:text-white" title="Reorganizar SKUs sequencialmente">
+                <RefreshCcw size={12}/> SKUs
+            </button>
             <button onClick={() => setShowScanner(true)} className="bg-zinc-800 text-white px-4 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-transform active:scale-95 shadow-lg border border-white/5 hover:border-emerald-500">
                 <Scan size={14} className="text-emerald-500"/> POS
             </button>
@@ -914,8 +923,16 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
                <input name="name" defaultValue={editMode?.name} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" required />
             </div>
             <div className="space-y-1">
-               <label className="text-[9px] font-black text-zinc-500 uppercase px-2">SKU (Código Barras)</label>
-               <input name="sku" defaultValue={editMode?.sku} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" required />
+               <label className="text-[9px] font-black text-zinc-500 uppercase px-2 flex items-center gap-1.5">
+                 SKU {editMode === 'new' && <span className="text-emerald-500 text-[8px] tracking-widest">AUTO</span>}
+               </label>
+               <input
+                 name="sku"
+                 defaultValue={editMode === 'new' ? nextSku : editMode?.sku}
+                 readOnly={editMode === 'new'}
+                 className={`w-full p-4 bg-zinc-950 border rounded-2xl font-bold text-sm text-white outline-none ${editMode === 'new' ? 'border-emerald-500/30 text-emerald-400 cursor-not-allowed select-none' : 'border-white/5 focus:border-emerald-500/50'}`}
+                 required
+               />
             </div>
             <div className="space-y-1">
                <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Preço (R$)</label>
@@ -2721,8 +2738,10 @@ function App() {
   }, []);
 
   // Sincroniza produto aberto com a URL (?produto=SKU) para deep linking.
+  // Não apaga o param enquanto produtos ainda não carregaram (evita destruir deeplink antes de resolver).
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!productsLoaded && !selectedProduct) return;
     try {
       const url = new URL(window.location.href);
       if (selectedProduct?.sku) {
@@ -2734,7 +2753,7 @@ function App() {
       const current = window.location.pathname + window.location.search + window.location.hash;
       if (newUrl !== current) window.history.replaceState(null, '', newUrl);
     } catch {}
-  }, [selectedProduct]);
+  }, [selectedProduct, productsLoaded]);
 
   // Abre produto automaticamente a partir do parâmetro ?produto=SKU na URL (deep link).
   useEffect(() => {
@@ -2742,7 +2761,7 @@ function App() {
     const sp = new URLSearchParams(window.location.search);
     const sku = sp.get('produto');
     if (!sku || selectedProduct) return;
-    const found = (products || []).find(p => p.sku === sku);
+    const found = (products || []).find(p => (p.sku || '').toUpperCase() === sku.toUpperCase());
     if (found && (found.is_kit || (found.stock || 0) > 0)) {
       setSelectedProduct(found);
       setSelectedSizes({});
