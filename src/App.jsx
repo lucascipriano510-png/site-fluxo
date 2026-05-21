@@ -1779,7 +1779,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
       <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
       <div
         className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden flex flex-col"
-        style={{ maxHeight: visualFrame.height ? `calc(${visualFrame.height}px - 10px)` : 'calc(100dvh - 10px)', overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+        style={{ height: visualFrame.height ? `calc(${visualFrame.height}px - 10px)` : 'calc(100dvh - 10px)', overscrollBehavior: 'contain', touchAction: 'pan-y' }}
       >
 
         {/* Drag handle — overlay fixo sobre o modal */}
@@ -1814,15 +1814,16 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
               aria-label="Foto do kit — toque para ampliar, segure para zoom"
             >
               <img
-                src={activeImage}
+                src={optimizeImage(activeImage, 800)}
                 className={`w-full h-full object-cover transition-opacity duration-200 ${zoomActive ? 'opacity-0' : 'opacity-100'}`}
                 alt={kit.sku}
                 draggable={false}
+                fetchPriority="high"
               />
               <div
                 className={`absolute inset-0 transition-opacity duration-200 ${zoomActive ? 'opacity-100' : 'opacity-0'}`}
                 style={{
-                  backgroundImage: `url(${activeImage})`,
+                  backgroundImage: `url(${optimizeImage(activeImage, 1200)})`,
                   backgroundRepeat: 'no-repeat',
                   backgroundSize: '220%',
                   backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
@@ -1853,7 +1854,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
                   onClick={() => setActiveImage(g)}
                   className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${activeImage === g ? 'border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)] scale-105' : 'border-white/10 opacity-70 hover:opacity-100'}`}
                 >
-                  <img src={g} className="w-full h-full object-cover" alt="" draggable={false} />
+                  <img src={optimizeImage(g, 200)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>
@@ -1904,7 +1905,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
                 )}
                 <div className="flex gap-3">
                   <div className="relative shrink-0">
-                    <img src={c.image} className={`w-16 h-20 rounded-xl object-cover border ${included ? 'border-emerald-500/30' : 'border-white/5 grayscale opacity-50'}`} alt={c.name} />
+                    <img src={optimizeImage(c.image, 300)} className={`w-16 h-20 rounded-xl object-cover border ${included ? 'border-emerald-500/30' : 'border-white/5 grayscale opacity-50'}`} alt={c.name} loading="lazy" decoding="async" />
                     {included && chosenSize && (
                       <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-zinc-950 text-[8px] font-black px-1.5 py-0.5 rounded-md leading-none">{chosenSize}</div>
                     )}
@@ -3451,9 +3452,10 @@ function App() {
                 aria-label="Ampliar foto"
               >
                 <img
-                  src={heroImg}
+                  src={optimizeImage(heroImg, 800)}
                   className="w-full h-full object-cover transition-transform duration-500 group-active:scale-105"
                   alt={selectedProduct.name}
+                  fetchPriority="high"
                 />
               </button>
               {/* Hint de zoom */}
@@ -3476,7 +3478,7 @@ function App() {
                     onClick={() => setActiveProductImage(g)}
                     className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-70 hover:opacity-100'}`}
                   >
-                    <img src={g} className="w-full h-full object-cover" alt="" draggable={false} />
+                    <img src={optimizeImage(g, 200)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
                   </button>
                 ))}
               </div>
@@ -3573,7 +3575,7 @@ function App() {
             <X size={20}/>
           </button>
           <img
-            src={zoomImage}
+            src={optimizeImage(zoomImage, 1200, 90)}
             alt="Visualização ampliada"
             className="max-w-full max-h-full object-contain rounded-3xl shadow-[0_20px_80px_rgba(0,0,0,0.6)] animate-in"
             onClick={(e) => e.stopPropagation()}
