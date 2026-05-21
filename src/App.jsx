@@ -2697,7 +2697,7 @@ function App() {
 
   if (isAdmin) {
     return (
-      <div className="min-h-screen bg-zinc-950 font-sans text-zinc-100 pb-20 selection:bg-emerald-500 selection:text-zinc-950">
+      <div className="app-shell min-h-screen bg-zinc-950 font-sans text-zinc-100 pb-20 selection:bg-emerald-500 selection:text-zinc-950">
         <AdminHeader handleLogout={handleLogout} handleBackToStore={handleBackToStore} />
         <main className="max-w-md mx-auto">
           <AdminTabErrorBoundary resetKey={adminTab}>
@@ -2730,7 +2730,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 font-sans text-white pb-0 overflow-x-hidden selection:bg-emerald-500 selection:text-zinc-950">
+    <div className="app-shell min-h-screen bg-zinc-950 font-sans text-white pb-0 overflow-x-hidden selection:bg-emerald-500 selection:text-zinc-950">
       
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
@@ -3406,15 +3406,31 @@ function App() {
         
         ::-webkit-scrollbar { display: none; }
         
+        html {
+          background-color: #09090b;
+          overscroll-behavior-y: none;
+          overscroll-behavior-x: none;
+          overflow-x: hidden;
+          min-height: 100%;
+        }
+
         body { 
           font-family: 'Inter', sans-serif; 
           -webkit-tap-highlight-color: transparent; 
           background-color: #09090b; 
           overflow-x: hidden;
+          overscroll-behavior-y: none;
+          overscroll-behavior-x: none;
           touch-action: manipulation; 
           image-rendering: -webkit-optimize-contrast;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
+        }
+
+        #root, .app-shell {
+          min-height: 100dvh;
+          overscroll-behavior-y: none;
+          overscroll-behavior-x: none;
         }
 
         img {
