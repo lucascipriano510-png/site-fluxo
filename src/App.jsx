@@ -2259,6 +2259,8 @@ function App() {
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
   useScrollBounceGuard();
+  const viewportOverlayStyle = { top: visualFrame.top, height: visualFrame.height || '100dvh' };
+  const viewportPanelMaxHeight = visualFrame.height ? `calc(${visualFrame.height}px - 10px)` : 'calc(100dvh - 10px)';
 
   // Referência para o clique duplo
   const lastTapRef = useRef(0);
