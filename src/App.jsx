@@ -3300,7 +3300,8 @@ function App() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* MODAL — Adicionado ao Carrinho */}
       {isCartModalOpen && (
