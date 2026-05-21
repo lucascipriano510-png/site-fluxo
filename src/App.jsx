@@ -963,26 +963,31 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
               </div>
             )}
 
+            {/* GALERIA — sempre disponível (imagens adicionais além da principal) */}
+            <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-white/5 space-y-3 mt-2">
+              <label className="text-[9px] font-black text-emerald-500 uppercase flex items-center gap-1">
+                <ImagePlus size={12}/> {isKit ? `Galeria do Kit (${galleryUrls.length})` : `Fotos extras (${galleryUrls.length})`}
+              </label>
+              <p className="text-[9px] text-zinc-500 font-bold">
+                {isKit ? 'Imagens auxiliares mostrando cada peça.' : 'Ângulos diferentes da peça. A foto principal permanece em destaque.'}
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {galleryUrls.map((url, i) => (
+                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
+                    <img src={url} className="w-full h-full object-cover" alt="" />
+                    <button type="button" onClick={() => removeGalleryUrl(url)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><X size={10}/></button>
+                  </div>
+                ))}
+                <label className="aspect-square rounded-xl border-2 border-dashed border-white/15 grid place-items-center cursor-pointer hover:border-emerald-500/50 transition-colors">
+                  <Upload size={16} className="text-emerald-500" />
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryFiles} />
+                </label>
+              </div>
+              {isUploadingGallery && <p className="text-[9px] text-emerald-400 font-bold uppercase">Enviando imagens...</p>}
+            </div>
+
             {isKit && (
               <>
-                {/* GALERIA */}
-                <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-amber-400/20 space-y-3 mt-2">
-                  <label className="text-[9px] font-black text-amber-400 uppercase flex items-center gap-1"><ImagePlus size={12}/> Galeria do Kit ({galleryUrls.length})</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {galleryUrls.map((url, i) => (
-                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
-                        <img src={url} className="w-full h-full object-cover" alt="" />
-                        <button type="button" onClick={() => removeGalleryUrl(url)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><X size={10}/></button>
-                      </div>
-                    ))}
-                    <label className="aspect-square rounded-xl border-2 border-dashed border-white/15 grid place-items-center cursor-pointer hover:border-amber-400/50 transition-colors">
-                      <Upload size={16} className="text-amber-400" />
-                      <input type="file" accept="image/*" multiple className="hidden" onChange={handleGalleryFiles} />
-                    </label>
-                  </div>
-                  {isUploadingGallery && <p className="text-[9px] text-amber-400 font-bold uppercase">Enviando imagens...</p>}
-                </div>
-
                 {/* MULTI-SELECT DE PRODUTOS */}
                 <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-amber-400/20 space-y-3 mt-2">
                   <label className="text-[9px] font-black text-amber-400 uppercase flex items-center gap-1"><Layers size={12}/> Peças do Kit ({kitComponentIds.length})</label>
