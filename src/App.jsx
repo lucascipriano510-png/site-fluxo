@@ -58,6 +58,63 @@ const DEFAULT_CONFIG = {
   ]
 };
 
+const useVisualViewportFrame = () => {
+  const [frame, setFrame] = useState({ top: 0, height: 0 });
+  useEffect(() => {
+    const updateFrame = () => {
+      const vv = window.visualViewport;
+      setFrame({
+        top: vv ? vv.offsetTop : 0,
+        height: vv ? vv.height : window.innerHeight,
+      });
+    };
+    updateFrame();
+    window.visualViewport?.addEventListener('resize', updateFrame);
+    window.visualViewport?.addEventListener('scroll', updateFrame);
+    window.addEventListener('resize', updateFrame);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', updateFrame);
+      window.visualViewport?.removeEventListener('scroll', updateFrame);
+      window.removeEventListener('resize', updateFrame);
+    };
+  }, []);
+  return frame;
+};
+
+const useScrollBounceGuard = () => {
+  useEffect(() => {
+    let startY = 0;
+    const getScrollable = (target) => {
+      let el = target instanceof Element ? target : null;
+      while (el && el !== document.body && el !== document.documentElement) {
+        const style = window.getComputedStyle(el);
+        const canScroll = /(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight;
+        if (canScroll) return el;
+        el = el.parentElement;
+      }
+      return document.scrollingElement || document.documentElement;
+    };
+    const onTouchStart = (event) => {
+      if (event.touches.length !== 1) return;
+      startY = event.touches[0].clientY;
+    };
+    const onTouchMove = (event) => {
+      if (event.touches.length !== 1) return;
+      const scrollable = getScrollable(event.target);
+      const deltaY = event.touches[0].clientY - startY;
+      const atTop = scrollable.scrollTop <= 0;
+      const atBottom = scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 1;
+      if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) event.preventDefault();
+    };
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchmove', onTouchMove);
+    };
+  }, []);
+};
+
 class AdminTabErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -1622,29 +1679,9 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
     }
   };
 
-  // ===== LOCK BODY SCROLL enquanto o modal estiver aberto =====
-  // impede a barra de URL do iOS de aparecer/atrapalhar
-  useEffect(() => {
-    const scrollY = window.scrollY;
-    const body = document.body;
-    const prev = {
-      position: body.style.position,
-      top: body.style.top,
-      width: body.style.width,
-      overflow: body.style.overflow,
-    };
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.width = '100%';
-    body.style.overflow = 'hidden';
-    return () => {
-      body.style.position = prev.position;
-      body.style.top = prev.top;
-      body.style.width = prev.width;
-      body.style.overflow = prev.overflow;
-      window.scrollTo(0, scrollY);
-    };
-  }, []);
+  // Mantém o modal dentro da área realmente visível do navegador móvel.
+  // Isso evita o efeito da barra de URL cobrir os controles quando ela expande/retrai.
+  const visualFrame = useVisualViewportFrame();
 
   // Estado por componente: { included: bool, size: string }
   const [picks, setPicks] = useState(() => {
@@ -1711,18 +1748,21 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center">
+    <div
+      className="fixed inset-x-0 z-[100] flex items-end justify-center overflow-hidden"
+      style={{ top: visualFrame.top, height: visualFrame.height || '100dvh' }}
+    >
       <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
       <div
-        className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[94vh] flex flex-col"
-        style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+        className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden flex flex-col"
+        style={{ maxHeight: visualFrame.height ? `calc(${visualFrame.height}px - 10px)` : 'calc(100dvh - 10px)', overscrollBehavior: 'contain', touchAction: 'pan-y' }}
       >
 
         {/* GALERIA com zoom inline (hover desktop / press-hold mobile) */}
         <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
           <div
             className="relative block w-full aspect-square overflow-hidden select-none cursor-zoom-in"
-            style={{ touchAction: 'none' }}
+            style={{ touchAction: zoomActive ? 'none' : 'pan-y' }}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             onMouseMove={onMouseMove}
@@ -2217,6 +2257,10 @@ function App() {
   const [currentBannerSlide, setCurrentBannerSlide] = useState(0);
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
+  const visualFrame = useVisualViewportFrame();
+  useScrollBounceGuard();
+  const viewportOverlayStyle = { top: visualFrame.top, height: visualFrame.height || '100dvh' };
+  const viewportPanelMaxHeight = visualFrame.height ? `calc(${visualFrame.height}px - 10px)` : 'calc(100dvh - 10px)';
 
   // Referência para o clique duplo
   const lastTapRef = useRef(0);
@@ -3148,9 +3192,9 @@ function App() {
       )}
 
       {selectedProduct && !selectedProduct.is_kit && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center">
+        <div className="fixed inset-x-0 z-[100] flex items-end justify-center overflow-hidden" style={viewportOverlayStyle}>
           <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} />
-          <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+          <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: viewportPanelMaxHeight }}>
             {/* HERO IMAGE — grande, clicável para zoom */}
             <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950">
               <button
@@ -3228,7 +3272,7 @@ function App() {
 
       {/* MODAL — Adicionado ao Carrinho */}
       {isCartModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
+        <div className="fixed inset-x-0 z-[200] flex items-end sm:items-center justify-center overflow-hidden" style={viewportOverlayStyle}>
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCartModalOpen(false)} />
           <div className="relative w-full sm:max-w-md bg-zinc-950 border border-zinc-800 rounded-t-3xl sm:rounded-2xl px-6 pt-8 pb-7 animate-slide-up">
             <div className="flex justify-center mb-5">
@@ -3259,7 +3303,8 @@ function App() {
       {/* LIGHTBOX — Zoom em tela cheia */}
       {zoomImage && (
         <div
-          className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl flex items-center justify-center animate-in p-4"
+          className="fixed inset-x-0 z-[300] bg-black/95 backdrop-blur-xl flex items-center justify-center animate-in p-4 overflow-hidden"
+          style={viewportOverlayStyle}
           onClick={() => setZoomImage(null)}
         >
           <button
@@ -3282,7 +3327,7 @@ function App() {
       )}
 
       {showCart && (
-        <div className="fixed inset-0 z-[150] bg-zinc-950 overflow-y-auto animate-in">
+        <div className="fixed inset-x-0 z-[150] bg-zinc-950 overflow-y-auto animate-in" style={viewportOverlayStyle}>
           <div className="max-w-md mx-auto min-h-screen flex flex-col bg-zinc-950 relative">
             <div className="sticky top-0 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-6 flex justify-between items-center h-20 z-10">
               <h2 className="text-xl font-black uppercase text-white">Sua Sacola <span className="bg-white text-zinc-950 text-[10px] px-2 py-0.5 rounded-full ml-2">{cart.length}</span></h2>
@@ -3338,7 +3383,7 @@ function App() {
       )}
 
       {showLeadModal && (
-        <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6">
+        <div className="fixed inset-x-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 overflow-hidden" style={viewportOverlayStyle}>
           <div className="bg-zinc-950 w-full max-w-sm rounded-[32px] p-8 space-y-6 shadow-2xl border border-white/10 animate-in relative overflow-hidden">
             <button onClick={() => { setShowLeadModal(false); setCheckoutSuccess(false); }} className="absolute top-5 right-5 text-zinc-500 bg-zinc-900 p-2 rounded-full touch-manipulation"><X size={16}/></button>
             {checkoutSuccess ? (
@@ -3381,7 +3426,7 @@ function App() {
       )}
 
 	      {showMyOrders && (
-	        <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6" data-testid="modal-my-orders">
+	        <div className="fixed inset-x-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 overflow-hidden" style={viewportOverlayStyle} data-testid="modal-my-orders">
 	          <div className="bg-zinc-950 w-full max-w-sm rounded-[32px] p-8 space-y-5 shadow-2xl border border-white/10 animate-in relative overflow-hidden max-h-[90vh] flex flex-col">
 	            <button onClick={() => { setShowMyOrders(false); setMyOrdersResults(null); setMyOrdersPhone(''); }} className="absolute top-5 right-5 text-zinc-500 bg-zinc-900 p-2 rounded-full touch-manipulation z-10" data-testid="btn-close-my-orders"><X size={16}/></button>
 	            <div className="text-center space-y-2 shrink-0">
