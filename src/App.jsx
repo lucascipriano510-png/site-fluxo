@@ -3202,19 +3202,22 @@ function App() {
         />
       )}
 
-      {selectedProduct && !selectedProduct.is_kit && (
+      {selectedProduct && !selectedProduct.is_kit && (() => {
+        const productGallery = [selectedProduct.image, ...((Array.isArray(selectedProduct.gallery) ? selectedProduct.gallery : []) || [])].filter(Boolean);
+        const heroImg = activeProductImage || selectedProduct.image;
+        return (
         <div className="fixed inset-x-0 z-[100] flex items-end justify-center overflow-hidden" style={viewportOverlayStyle}>
           <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} />
           <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: viewportPanelMaxHeight }}>
             {/* HERO IMAGE — grande, clicável para zoom */}
-            <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950">
+            <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
               <button
-                onClick={() => setZoomImage(selectedProduct.image)}
+                onClick={() => setZoomImage(heroImg)}
                 className="block w-full aspect-square overflow-hidden touch-manipulation group"
                 aria-label="Ampliar foto"
               >
                 <img
-                  src={selectedProduct.image}
+                  src={heroImg}
                   className="w-full h-full object-cover transition-transform duration-500 group-active:scale-105"
                   alt={selectedProduct.name}
                 />
@@ -3235,6 +3238,24 @@ function App() {
               {/* Fade na base para emendar com conteúdo */}
               <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-b from-transparent to-zinc-950 pointer-events-none" />
             </div>
+
+            {/* THUMBS — quando houver mais de 1 imagem */}
+            {productGallery.length > 1 && (
+              <div
+                className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto overflow-y-hidden no-scrollbar bg-zinc-950 border-b border-white/5"
+                style={{ touchAction: 'pan-x', overscrollBehavior: 'contain' }}
+              >
+                {productGallery.map((g, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveProductImage(g)}
+                    className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-70 hover:opacity-100'}`}
+                  >
+                    <img src={g} className="w-full h-full object-cover" alt="" draggable={false} />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* CONTEÚDO scrollável */}
             <div className="flex-1 overflow-y-auto px-7 pt-5 pb-8">
