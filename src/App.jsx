@@ -664,7 +664,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
         sizes: isKit ? [] : formSizes.filter(s => s.size && s.size.trim() !== ''),
         featured: fd.get('featured') === 'on',
         is_kit: isKit,
-        gallery: isKit ? galleryUrls : [],
+        gallery: galleryUrls,
       };
       const updatedProducts = editMode === 'new' ? [data, ...products] : products.map(p => p.id === data.id ? data : p);
       setProducts(updatedProducts);
