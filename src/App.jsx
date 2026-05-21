@@ -2247,6 +2247,12 @@ function App() {
   const [myOrdersLoading, setMyOrdersLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedSizes, setSelectedSizes] = useState({});
+  const [activeProductImage, setActiveProductImage] = useState(null);
+  useEffect(() => {
+    if (selectedProduct && !selectedProduct.is_kit) {
+      setActiveProductImage(selectedProduct.image);
+    }
+  }, [selectedProduct]);
   const [zoomImage, setZoomImage] = useState(null);
   const [showCart, setShowCart] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
