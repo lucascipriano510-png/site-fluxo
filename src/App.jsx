@@ -2986,6 +2986,80 @@ function App() {
           </div>
         )}
 
+        {/* DESTAQUES — vitrine de peças marcadas como destaque, só em modo padrão */}
+        {(() => {
+          const isDefaultView = !kitsOnly
+            && selectedCategory === 'TODOS'
+            && (selectedSize === 'TODOS' || !selectedSize)
+            && !searchQuery.trim()
+            && !activeCollectionFilter
+            && currentPage === 1;
+          if (!isDefaultView) return null;
+          const featured = (products || []).filter(p => p.featured && !p.is_kit && (p.stock || 0) > 0);
+          if (featured.length === 0) return null;
+          return (
+            <section className="relative -mx-6 px-6 py-6 mt-2 animate-in" data-testid="featured-section">
+              {/* glow de fundo */}
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl" />
+              </div>
+              <div className="relative flex items-end justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-400">Selecionado a dedo</span>
+                  </div>
+                  <h2 className="text-xl font-black uppercase tracking-tight text-white mt-1 flex items-center gap-2">
+                    <Flame size={18} className="text-emerald-400" /> Em destaque
+                  </h2>
+                </div>
+                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  {featured.length} {featured.length === 1 ? 'peça' : 'peças'}
+                </span>
+              </div>
+              <div
+                className="relative flex gap-4 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-2 -mx-2 px-2"
+                style={{ touchAction: 'pan-x', overscrollBehavior: 'contain', scrollPaddingLeft: '8px' }}
+                data-testid="featured-rail"
+              >
+                {featured.map((product, idx) => (
+                  <motion.button
+                    key={product.id}
+                    type="button"
+                    onClick={() => handleProductClick(product)}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '80px' }}
+                    transition={{ duration: 0.4, delay: idx * 0.05 }}
+                    className="group relative shrink-0 w-[68%] max-w-[260px] snap-start rounded-[28px] overflow-hidden border border-white/10 bg-gradient-to-b from-zinc-900 to-zinc-950 shadow-[0_18px_40px_rgba(0,0,0,0.45)] active:scale-[0.98] transition-transform text-left touch-manipulation"
+                    data-testid={`featured-card-${product.id}`}
+                  >
+                    <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-emerald-400 to-emerald-500 text-zinc-950 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-[0_4px_15px_rgba(16,185,129,0.45)] flex items-center gap-1">
+                      <Flame size={9} className="fill-zinc-950" /> Destaque
+                    </div>
+                    <div className="aspect-[4/5] relative overflow-hidden">
+                      <ProductImage src={product.image} alt={product.name} priority={idx < 2} />
+                      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent pointer-events-none" />
+                      <div className="absolute bottom-3 left-4 right-4">
+                        <p className="text-[8px] font-black uppercase tracking-[0.25em] text-emerald-300/90">{product.category}</p>
+                        <h3 className="text-white font-black uppercase text-sm leading-tight line-clamp-2 mt-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]">{product.name}</h3>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3 bg-zinc-950/80 border-t border-white/5">
+                      <span className="text-white font-black text-base tracking-tight">{formatBRL(product.price || 0)}</span>
+                      <span className="bg-white text-zinc-950 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-md group-active:scale-95 transition-transform">
+                        Ver <ChevronRight size={11} />
+                      </span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </section>
+          );
+        })()}
+
+
+
         {filteredProducts.length > 0 && (
           <div className="flex items-center justify-between pt-1 animate-in">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/90">Peças Disponíveis</span>
