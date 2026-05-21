@@ -3303,7 +3303,8 @@ function App() {
       {/* LIGHTBOX — Zoom em tela cheia */}
       {zoomImage && (
         <div
-          className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl flex items-center justify-center animate-in p-4"
+          className="fixed inset-x-0 z-[300] bg-black/95 backdrop-blur-xl flex items-center justify-center animate-in p-4 overflow-hidden"
+          style={viewportOverlayStyle}
           onClick={() => setZoomImage(null)}
         >
           <button
@@ -3326,7 +3327,7 @@ function App() {
       )}
 
       {showCart && (
-        <div className="fixed inset-0 z-[150] bg-zinc-950 overflow-y-auto animate-in">
+        <div className="fixed inset-x-0 z-[150] bg-zinc-950 overflow-y-auto animate-in" style={viewportOverlayStyle}>
           <div className="max-w-md mx-auto min-h-screen flex flex-col bg-zinc-950 relative">
             <div className="sticky top-0 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-6 flex justify-between items-center h-20 z-10">
               <h2 className="text-xl font-black uppercase text-white">Sua Sacola <span className="bg-white text-zinc-950 text-[10px] px-2 py-0.5 rounded-full ml-2">{cart.length}</span></h2>
@@ -3382,7 +3383,7 @@ function App() {
       )}
 
       {showLeadModal && (
-        <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6">
+        <div className="fixed inset-x-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 overflow-hidden" style={viewportOverlayStyle}>
           <div className="bg-zinc-950 w-full max-w-sm rounded-[32px] p-8 space-y-6 shadow-2xl border border-white/10 animate-in relative overflow-hidden">
             <button onClick={() => { setShowLeadModal(false); setCheckoutSuccess(false); }} className="absolute top-5 right-5 text-zinc-500 bg-zinc-900 p-2 rounded-full touch-manipulation"><X size={16}/></button>
             {checkoutSuccess ? (
