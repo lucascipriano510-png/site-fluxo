@@ -2697,7 +2697,7 @@ function App() {
 
   if (isAdmin) {
     return (
-      <div className="min-h-screen bg-zinc-950 font-sans text-zinc-100 pb-20 selection:bg-emerald-500 selection:text-zinc-950">
+      <div className="app-shell min-h-screen bg-zinc-950 font-sans text-zinc-100 pb-20 selection:bg-emerald-500 selection:text-zinc-950">
         <AdminHeader handleLogout={handleLogout} handleBackToStore={handleBackToStore} />
         <main className="max-w-md mx-auto">
           <AdminTabErrorBoundary resetKey={adminTab}>
@@ -2730,7 +2730,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 font-sans text-white pb-0 overflow-x-hidden selection:bg-emerald-500 selection:text-zinc-950">
+    <div className="app-shell min-h-screen bg-zinc-950 font-sans text-white pb-0 overflow-x-hidden selection:bg-emerald-500 selection:text-zinc-950">
       
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
