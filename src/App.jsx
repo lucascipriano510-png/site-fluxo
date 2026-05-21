@@ -1565,11 +1565,14 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
   const gallery = [kit.image, ...((Array.isArray(kit.gallery) ? kit.gallery : []) || [])].filter(Boolean);
   const [activeImage, setActiveImage] = useState(gallery[0] || kit.image);
 
-  // ===== ZOOM INLINE (hover desktop / long-press mobile) =====
+  // ===== ZOOM INLINE (hover desktop / long-press mobile) + tap p/ abrir fullscreen =====
   const [zoomActive, setZoomActive] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const longPressRef = useRef(null);
   const movedRef = useRef(false);
+  const tapStartRef = useRef(0);
+  const tapStartPosRef = useRef({ x: 0, y: 0 });
+  const zoomTriggeredRef = useRef(false);
   const updatePos = (clientX, clientY, rect) => {
     const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
@@ -1578,30 +1581,70 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
   const onMouseEnter = () => setZoomActive(true);
   const onMouseLeave = () => setZoomActive(false);
   const onMouseMove = (e) => updatePos(e.clientX, e.clientY, e.currentTarget.getBoundingClientRect());
+  const onImageClick = () => {
+    // desktop: clique simples abre fullscreen
+    if (setZoomImage && activeImage) setZoomImage(activeImage);
+  };
   const onTouchStart = (e) => {
     movedRef.current = false;
+    zoomTriggeredRef.current = false;
     const touch = e.touches[0];
+    tapStartRef.current = Date.now();
+    tapStartPosRef.current = { x: touch.clientX, y: touch.clientY };
     const target = e.currentTarget;
     longPressRef.current = setTimeout(() => {
       const rect = target.getBoundingClientRect();
       updatePos(touch.clientX, touch.clientY, rect);
       setZoomActive(true);
+      zoomTriggeredRef.current = true;
       if (navigator.vibrate) try { navigator.vibrate(15); } catch {}
     }, 450);
   };
   const onTouchMove = (e) => {
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - tapStartPosRef.current.x);
+    const dy = Math.abs(touch.clientY - tapStartPosRef.current.y);
     if (zoomActive) {
-      const touch = e.touches[0];
       updatePos(touch.clientX, touch.clientY, e.currentTarget.getBoundingClientRect());
-    } else {
+    } else if (dx > 8 || dy > 8) {
       movedRef.current = true;
       clearTimeout(longPressRef.current);
     }
   };
   const onTouchEnd = () => {
     clearTimeout(longPressRef.current);
+    const elapsed = Date.now() - tapStartRef.current;
+    const wasZoom = zoomTriggeredRef.current;
     setZoomActive(false);
+    // tap curto sem mover => abre fullscreen
+    if (!wasZoom && !movedRef.current && elapsed < 300) {
+      if (setZoomImage && activeImage) setZoomImage(activeImage);
+    }
   };
+
+  // ===== LOCK BODY SCROLL enquanto o modal estiver aberto =====
+  // impede a barra de URL do iOS de aparecer/atrapalhar
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      body.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
 
   // Estado por componente: { included: bool, size: string }
   const [picks, setPicks] = useState(() => {
@@ -1678,15 +1721,17 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
         {/* GALERIA com zoom inline (hover desktop / press-hold mobile) */}
         <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 shrink-0">
           <div
-            className="relative block w-full aspect-square overflow-hidden touch-manipulation select-none cursor-zoom-in"
+            className="relative block w-full aspect-square overflow-hidden select-none cursor-zoom-in"
+            style={{ touchAction: 'none' }}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             onMouseMove={onMouseMove}
+            onClick={onImageClick}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
             onTouchCancel={onTouchEnd}
-            aria-label="Foto do kit — segure para ampliar"
+            aria-label="Foto do kit — toque para ampliar, segure para zoom"
           >
             <img
               src={activeImage}
