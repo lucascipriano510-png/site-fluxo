@@ -2258,6 +2258,7 @@ function App() {
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
+  useScrollBounceGuard();
 
   // Referência para o clique duplo
   const lastTapRef = useRef(0);
