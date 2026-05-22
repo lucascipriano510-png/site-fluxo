@@ -3319,7 +3319,7 @@ function App() {
                             {isLowStock && (
                               <p className="text-[7px] font-black uppercase tracking-widest text-red-400/80 mb-1.5">Últimas {product.stock} peças</p>
                             )}
-                            <h3 className="font-black text-zinc-300 text-[10px] uppercase line-clamp-2 leading-tight mb-2.5">{product.name}</h3>
+                            {!product.is_kit && <h3 className="font-black text-zinc-300 text-[10px] uppercase line-clamp-2 leading-tight mb-2.5">{product.name}</h3>}
                             <div className="flex items-center justify-between">
                               <span className="font-black text-sm text-white">{formatBRL(product.price || 0)}</span>
                               <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-white/60">
