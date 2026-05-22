@@ -2350,13 +2350,17 @@ function App() {
   const [whatsappLink, setWhatsappLink] = useState('');
   const [checkoutOrderNumber, setCheckoutOrderNumber] = useState('');
   const [currentBannerSlide, setCurrentBannerSlide] = useState(0);
-  const [bannerDrag, setBannerDrag] = useState(0);
   const bannerRef = useRef(null);
+  const bannerTrackRef = useRef(null);
   const bannerDragStateRef = useRef({ startX: 0, startY: 0, dx: 0, decided: false, horizontal: false, active: false });
   const currentBannerSlideRef = useRef(0);
   const activeBannersLengthRef = useRef(0);
   const featuredRailRef = useRef(null);
   const featuredPeekedRef = useRef(false);
+  // Gallery swipe nos cards do grid e destaque
+  const cardTouchRef = useRef({});
+  const cardRevertRef = useRef({});
+  const [cardImages, setCardImages] = useState({});
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
@@ -2407,11 +2411,19 @@ function App() {
   const nextBannerSlide = () => goToBannerSlide(currentBannerSlide + 1);
   const prevBannerSlide = () => goToBannerSlide(currentBannerSlide - 1);
 
-  // Touch swipe no banner — listener não-passivo para poder chamar preventDefault só no eixo horizontal
+  // Banner: swipe com manipulação direta do DOM (sem re-render durante drag) + fade de texto no scroll
   useEffect(() => {
-    const el = bannerRef.current;
-    if (!el) return;
+    const section = bannerRef.current;
+    if (!section) return;
     const s = bannerDragStateRef.current;
+
+    const applyTrackTransform = (slide, offsetPx, animated) => {
+      const track = bannerTrackRef.current;
+      if (!track) return;
+      track.style.transition = animated ? 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
+      track.style.transform = `translateX(calc(-${slide * 100}% + ${offsetPx}px))`;
+    };
+
     const onStart = (e) => {
       const t = e.touches[0];
       s.startX = t.clientX; s.startY = t.clientY;
@@ -2427,35 +2439,71 @@ function App() {
         s.decided = true;
         s.horizontal = Math.abs(dx) > Math.abs(dy) * 1.2;
       }
-      if (!s.horizontal) { s.active = false; return; } // libera scroll vertical
+      if (!s.horizontal) { s.active = false; return; }
       e.preventDefault();
       const slide = currentBannerSlideRef.current;
       const total = activeBannersLengthRef.current;
       const atEdge = (dx < 0 && slide >= total - 1) || (dx > 0 && slide <= 0);
       s.dx = dx * (atEdge ? 0.2 : 1);
-      setBannerDrag(s.dx);
+      applyTrackTransform(slide, s.dx, false);
     };
     const onEnd = () => {
       if (!s.active) return;
       s.active = false;
       const dx = s.dx; s.dx = 0;
-      setBannerDrag(0);
       const total = activeBannersLengthRef.current;
+      let newSlide = currentBannerSlideRef.current;
       if (s.horizontal && Math.abs(dx) > 55 && total > 1) {
-        setCurrentBannerSlide(prev => dx < 0 ? (prev + 1) % total : Math.max(0, prev - 1));
+        newSlide = dx < 0 ? (newSlide + 1) % total : Math.max(0, newSlide - 1);
+        setCurrentBannerSlide(newSlide);
       }
+      applyTrackTransform(newSlide, 0, true);
     };
-    el.addEventListener('touchstart', onStart, { passive: true });
-    el.addEventListener('touchmove', onMove, { passive: false });
-    el.addEventListener('touchend', onEnd, { passive: true });
-    el.addEventListener('touchcancel', onEnd, { passive: true });
+
+    // Fade de texto: conforme banner sobe na tela, texto some gradualmente
+    const onScroll = () => {
+      const rect = section.getBoundingClientRect();
+      const opacity = Math.max(0, Math.min(1, rect.top / 56));
+      section.style.setProperty('--banner-text-op', opacity);
+    };
+
+    section.addEventListener('touchstart', onStart, { passive: true });
+    section.addEventListener('touchmove', onMove, { passive: false });
+    section.addEventListener('touchend', onEnd, { passive: true });
+    section.addEventListener('touchcancel', onEnd, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      el.removeEventListener('touchstart', onStart);
-      el.removeEventListener('touchmove', onMove);
-      el.removeEventListener('touchend', onEnd);
-      el.removeEventListener('touchcancel', onEnd);
+      section.removeEventListener('touchstart', onStart);
+      section.removeEventListener('touchmove', onMove);
+      section.removeEventListener('touchend', onEnd);
+      section.removeEventListener('touchcancel', onEnd);
+      window.removeEventListener('scroll', onScroll);
     };
   }, []);
+
+  // Helpers para gallery swipe dos cards
+  const getCardGallery = (p) => [p.image, ...((Array.isArray(p.gallery) ? p.gallery : []))].filter(Boolean);
+  const getCardActiveImg = (p) => { const g = getCardGallery(p); return g[Math.min(cardImages[p.id] || 0, g.length - 1)] || p.image; };
+  const cardTouchStart = (p, e) => {
+    if (getCardGallery(p).length <= 1) return;
+    clearTimeout(cardRevertRef.current[p.id]);
+    const t = e.touches[0];
+    cardTouchRef.current[p.id] = { x: t.clientX, y: t.clientY, idx: cardImages[p.id] || 0, decided: false, h: false };
+  };
+  const cardTouchMove = (p, e) => {
+    const r = cardTouchRef.current[p.id]; if (!r) return;
+    const t = e.touches[0]; const dx = t.clientX - r.x; const dy = t.clientY - r.y;
+    if (!r.decided) { if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; r.decided = true; r.h = Math.abs(dx) > Math.abs(dy) * 0.8; }
+    if (!r.h) return;
+    const g = getCardGallery(p);
+    const ni = Math.max(0, Math.min(g.length - 1, r.idx + Math.round(dx / -55)));
+    setCardImages(prev => ({ ...prev, [p.id]: ni }));
+  };
+  const cardTouchEnd = (p, e) => {
+    const r = cardTouchRef.current[p.id]; delete cardTouchRef.current[p.id];
+    if (!r || !r.h) return;
+    cardRevertRef.current[p.id] = setTimeout(() => setCardImages(prev => { const n = { ...prev }; delete n[p.id]; return n; }), 2500);
+  };
 
   // Auto-peek na vitrine de destaques: quando a seção entra no viewport, revela levemente os próximos cards
   useEffect(() => {
@@ -3084,35 +3132,21 @@ function App() {
 
           {/* Trilho de slides */}
           <div
+            ref={bannerTrackRef}
             className="flex h-full"
-            style={{
-              transform: `translateX(calc(-${currentBannerSlide * 100}% + ${bannerDrag}px))`,
-              transition: bannerDrag !== 0 ? 'none' : 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
-              willChange: 'transform',
-            }}
+            style={{ transform: `translateX(-${currentBannerSlide * 100}%)`, transition: 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)', willChange: 'transform' }}
           >
             {activeBanners.map((banner, idx) => {
               const isActive = idx === currentBannerSlide;
               return (
                 <div key={idx} className="w-full h-full shrink-0 relative overflow-hidden">
-                  {/* Ken Burns — zoom suave na imagem ativa */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      transform: isActive ? 'scale(1.09)' : 'scale(1)',
-                      transition: isActive ? 'transform 10s ease-out' : 'transform 0.6s ease',
-                      transformOrigin: '55% 45%',
-                    }}
-                  >
+                  <div className="absolute inset-0" style={{ transform: isActive ? 'scale(1.09)' : 'scale(1)', transition: isActive ? 'transform 10s ease-out' : 'transform 0.6s ease', transformOrigin: '55% 45%' }}>
                     <BannerImage src={banner.image} alt={banner.title || 'Banner'} active={isActive} />
                   </div>
-
-                  {/* Gradientes */}
                   <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-zinc-950/75 to-transparent pointer-events-none" />
                   <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />
-
-                  {/* Conteúdo */}
-                  <div className="absolute inset-x-0 bottom-0 px-7 pb-12 flex flex-col">
+                  {/* Texto com fade proporcional ao scroll */}
+                  <div className="absolute inset-x-0 bottom-0 px-7 pb-12 flex flex-col" style={{ opacity: 'var(--banner-text-op, 1)', transition: 'opacity 0.08s linear' }}>
                     {banner.collection_name && (
                       <div className="flex items-center gap-2.5 mb-4">
                         <div className="h-px w-8 bg-white/40" />
@@ -3124,12 +3158,8 @@ function App() {
                     {banner.buttonText && (
                       <button
                         onClick={() => {
-                          if (banner.collection_name) {
-                            setActiveCollectionFilter(banner.collection_name);
-                            document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
-                          } else {
-                            document.getElementById('search-input')?.focus();
-                          }
+                          if (banner.collection_name) { setActiveCollectionFilter(banner.collection_name); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }
+                          else { document.getElementById('search-input')?.focus(); }
                         }}
                         className="self-start flex items-center gap-2 bg-white text-zinc-950 px-7 py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform shadow-[0_8px_30px_rgba(255,255,255,0.18)] touch-manipulation"
                       >
@@ -3235,106 +3265,79 @@ function App() {
           </div>
         )}
 
-        {/* DESTAQUES — vitrine de peças marcadas como destaque, só em modo padrão */}
+        {/* DESTAQUES */}
         {(() => {
-          const isDefaultView = !kitsOnly
-            && selectedCategory === 'TODOS'
-            && (selectedSize === 'TODOS' || !selectedSize)
-            && !searchQuery.trim()
-            && !activeCollectionFilter
-            && currentPage === 1;
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
           if (!isDefaultView) return null;
           const featured = (products || []).filter(p => p.featured && !p.is_kit && (p.stock || 0) > 0);
           if (featured.length === 0) return null;
           return (
             <section className="relative -mx-6 overflow-hidden animate-in" data-testid="featured-section">
-              {/* Glow */}
-              <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -top-8 left-1/4 w-64 h-64 rounded-full bg-amber-500/8 blur-3xl" />
-                <div className="absolute top-12 right-0 w-48 h-48 rounded-full bg-orange-500/6 blur-3xl" />
+              {/* Cabeçalho minimalista */}
+              <div className="flex items-center gap-4 px-6 pt-8 pb-6">
+                <div className="h-px flex-1 bg-white/8" />
+                <span className="text-[8px] font-black uppercase tracking-[0.45em] text-white/35 shrink-0">Em Destaque</span>
+                <div className="h-px flex-1 bg-white/8" />
               </div>
 
-              {/* Cabeçalho */}
-              <div className="relative flex items-end justify-between px-6 pt-6 pb-5">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-px w-5 bg-amber-400" />
-                    <span className="text-[8px] font-black uppercase tracking-[0.35em] text-amber-400">Curadoria exclusiva</span>
-                  </div>
-                  <h2 className="text-[1.7rem] font-black uppercase leading-[0.88] tracking-tight text-white">
-                    Vitrine<br /><span className="text-amber-400">em destaque</span>
-                  </h2>
-                </div>
-                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">
-                  {featured.length} {featured.length === 1 ? 'peça' : 'peças'}
-                </span>
-              </div>
-
-              {/* Rail horizontal */}
+              {/* Rail */}
               <div
                 ref={featuredRailRef}
-                className="relative flex gap-3.5 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-6 px-6"
+                className="flex gap-4 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-7 px-6"
                 style={{ touchAction: 'pan-x pan-y', overscrollBehavior: 'contain' }}
                 data-testid="featured-rail"
               >
-                {featured.map((product, idx) => (
-                  <motion.button
-                    key={product.id}
-                    type="button"
-                    onClick={() => handleProductClick(product)}
-                    initial={{ opacity: 0, y: 14 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: '80px' }}
-                    transition={{ duration: 0.45, delay: idx * 0.06 }}
-                    className="group relative shrink-0 w-[72%] max-w-[272px] snap-start rounded-[24px] overflow-hidden active:scale-[0.97] transition-transform text-left touch-manipulation shadow-[0_20px_50px_rgba(0,0,0,0.55)]"
-                    data-testid={`featured-card-${product.id}`}
-                  >
-                    <div className="aspect-[3/4] relative overflow-hidden bg-zinc-900">
-                      <ProductImage src={product.image} alt={product.name} priority={idx < 2} />
+                {featured.map((product, idx) => {
+                  const fg = getCardGallery(product);
+                  const fActiveImg = getCardActiveImg(product);
+                  const fActiveIdx = Math.min(cardImages[product.id] || 0, fg.length - 1);
+                  return (
+                    <motion.button
+                      key={product.id}
+                      type="button"
+                      onClick={() => handleProductClick(product)}
+                      onTouchStart={e => cardTouchStart(product, e)}
+                      onTouchMove={e => cardTouchMove(product, e)}
+                      onTouchEnd={e => cardTouchEnd(product, e)}
+                      initial={{ opacity: 0, y: 14 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '80px' }}
+                      transition={{ duration: 0.4, delay: idx * 0.06 }}
+                      className="shrink-0 w-[78%] max-w-[290px] snap-start text-left touch-manipulation active:scale-[0.97] transition-transform"
+                      data-testid={`featured-card-${product.id}`}
+                    >
+                      <div className="aspect-[2/3] relative rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_48px_rgba(0,0,0,0.6)]">
+                        <ProductImage src={fActiveImg} alt={product.name} priority={idx < 2} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/15 to-transparent pointer-events-none" />
 
-                      {/* Gradiente de leitura */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/30 to-zinc-950/10 pointer-events-none" />
+                        {/* Gallery dots */}
+                        {fg.length > 1 && (
+                          <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none z-10">
+                            {fg.map((_, i) => <div key={i} className={`h-0.5 rounded-full transition-all duration-200 ${i === fActiveIdx ? 'w-4 bg-white' : 'w-1.5 bg-white/35'}`} />)}
+                          </div>
+                        )}
 
-                      {/* Badge de estoque baixo */}
-                      {product.stock <= 3 && (
-                        <div className="absolute top-3 left-3 bg-amber-400/90 backdrop-blur-sm text-zinc-950 text-[7px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
-                          Últimas {product.stock}
-                        </div>
-                      )}
+                        {/* Badges */}
+                        {product.stock <= 3 && <div className="absolute top-3 left-3 bg-white/10 backdrop-blur-sm text-white/80 text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-white/10">Últimas {product.stock}</div>}
+                        {(product.sales || 0) >= 10 && product.stock > 3 && <div className="absolute top-3 right-3 bg-white/10 backdrop-blur-sm text-white/70 text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-white/10 flex items-center gap-1"><Flame size={7} />Top</div>}
 
-                      {/* Badge top seller */}
-                      {(product.sales || 0) >= 10 && (
-                        <div className="absolute top-3 right-3 bg-white/10 backdrop-blur-md text-white text-[7px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-white/15 flex items-center gap-1">
-                          <Flame size={8} /> Top
-                        </div>
-                      )}
-
-                      {/* Conteúdo inferior */}
-                      <div className="absolute inset-x-0 bottom-0 p-4">
-                        <p className="text-[7px] font-black uppercase tracking-[0.3em] text-white/40 mb-1">{product.category}</p>
-                        <h3 className="text-white font-black text-[13px] uppercase leading-tight line-clamp-2 drop-shadow-xl">{product.name}</h3>
-                        <div className="flex items-center justify-between mt-3">
-                          <span className="text-amber-400 font-black text-xl tracking-tight leading-none">{formatBRL(product.price || 0)}</span>
-                          <span className="bg-white/12 backdrop-blur-sm text-white text-[8px] font-black uppercase px-3.5 py-1.5 rounded-full border border-white/15 flex items-center gap-1 group-active:bg-white/20 transition-colors">
-                            Ver <ArrowRight size={9} />
-                          </span>
+                        {/* Info */}
+                        <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+                          <p className="text-[7px] font-black uppercase tracking-widest text-white/30 mb-1">{product.category}</p>
+                          <h3 className="text-white font-black text-[13px] uppercase leading-tight line-clamp-2">{product.name}</h3>
+                          <div className="flex items-center justify-between mt-3">
+                            <span className="text-emerald-400 font-black text-lg tracking-tight">{formatBRL(product.price || 0)}</span>
+                            <span className="w-8 h-8 rounded-full border border-white/15 flex items-center justify-center text-white/60">
+                              <Plus size={14} />
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.button>
-                ))}
-                {/* Padding final para o snap não cortar o último card */}
+                    </motion.button>
+                  );
+                })}
                 <div className="shrink-0 w-2" aria-hidden="true" />
               </div>
-
-              {/* Indicador de posição */}
-              {featured.length > 1 && (
-                <div className="flex justify-center gap-1.5 pb-5 -mt-3">
-                  {featured.map((_, idx) => (
-                    <div key={idx} className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
-                  ))}
-                </div>
-              )}
             </section>
           );
         })()}
@@ -3366,6 +3369,9 @@ function App() {
                   <motion.div
                     key={product.id}
                     onClick={() => handleProductClick(product)}
+                    onTouchStart={e => cardTouchStart(product, e)}
+                    onTouchMove={e => cardTouchMove(product, e)}
+                    onTouchEnd={e => cardTouchEnd(product, e)}
                       initial={{ opacity: 0.01, y: 20 }}
                        whileInView={{ opacity: 1, y: 0 }}
                        viewport={{ once: true, margin: "100px" }}
@@ -3373,13 +3379,17 @@ function App() {
                     className={`group relative bg-zinc-900/40 backdrop-blur-sm rounded-[24px] overflow-hidden border border-white/10 transition-all duration-300 flex flex-col shadow-lg touch-manipulation ${isOutOfStock ? 'opacity-80' : 'hover:border-white/20 hover:-translate-y-0.5 cursor-pointer active:scale-[0.98]'}`}
                     data-testid={`product-card-${product.id}`}
                   >
-                    
+                    {(() => { const gg = getCardGallery(product); const gIdx = Math.min(cardImages[product.id] || 0, gg.length - 1); return gg.length > 1 && (
+                      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1 z-20 pointer-events-none">
+                        {gg.map((_, i) => <div key={i} className={`h-0.5 rounded-full transition-all duration-200 ${i === gIdx ? 'w-3 bg-white' : 'w-1 bg-white/30'}`} />)}
+                      </div>
+                    ); })()}
                     {!isOutOfStock && !product.is_kit && product.stock <= 3 && <div className="absolute top-2 left-2 z-10 bg-amber-500 text-zinc-950 text-[8px] font-black uppercase px-2 py-1 rounded-md animate-pulse" data-testid={`badge-last-pieces-${product.id}`}>Restam {product.stock}</div>}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
-                    
+
                        <div className="aspect-[4/5] relative overflow-hidden">
                          <ProductImage
-                           src={product.image}
+                           src={getCardActiveImg(product)}
                            alt={product.name}
                            isOutOfStock={isOutOfStock}
                            priority={idx < 4}
