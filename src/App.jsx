@@ -178,7 +178,7 @@ const optimizeImage = (src, width = 600, quality = 70) => {
 const buildSrcSet = (src, widths = [400, 600, 900]) =>
   widths.map((w) => `${optimizeImage(src, w)} ${w}w`).join(', ');
 
-const ProductImage = ({ src, alt, isOutOfStock, priority = false }) => {
+const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesProp }) => {
   const [loaded, setLoaded] = React.useState(false);
   const [inView, setInView] = React.useState(priority);
   const wrapperRef = React.useRef(null);
@@ -215,7 +215,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false }) => {
         <img
           src={optimizeImage(src, 600)}
           srcSet={buildSrcSet(src)}
-          sizes="(max-width: 640px) 50vw, 300px"
+          sizes={sizesProp || "(max-width: 640px) 50vw, 300px"}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
@@ -3254,57 +3254,80 @@ function App() {
           if (featured.length === 0) return null;
           return (
             <section className="relative -mx-6 overflow-hidden animate-in" data-testid="featured-section">
-              {/* Cabeçalho minimalista */}
-              <div className="flex items-center gap-4 px-6 pt-8 pb-6">
-                <div className="h-px flex-1 bg-white/8" />
-                <span className="text-[8px] font-black uppercase tracking-[0.45em] text-white/35 shrink-0">Em Destaque</span>
-                <div className="h-px flex-1 bg-white/8" />
+              {/* Cabeçalho editorial */}
+              <div className="flex items-center gap-4 px-6 pt-8 pb-5">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-400/20 to-zinc-300/25" />
+                <div className="flex items-center gap-2">
+                  <span className="text-zinc-400/60 text-[8px] select-none">◆</span>
+                  <span className="text-[8px] font-black uppercase tracking-[0.45em] text-white/50 shrink-0">Em Destaque</span>
+                  <span className="text-zinc-400/60 text-[8px] select-none">◆</span>
+                </div>
+                <div className="h-px flex-1 bg-gradient-to-l from-transparent via-zinc-400/20 to-zinc-300/25" />
               </div>
 
               {/* Rail */}
               <div
                 ref={featuredRailRef}
-                className="flex gap-4 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-7 px-6"
+                className="flex gap-3.5 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-7 px-6"
                 style={{ touchAction: 'pan-x pan-y', overscrollBehavior: 'contain' }}
                 data-testid="featured-rail"
               >
                 {featured.map((product, idx) => {
                   const fg = [product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean);
+                  const isLowStock = (product.stock || 0) > 0 && product.stock <= 3;
                   return (
                     <motion.button
                       key={product.id}
                       type="button"
                       onClick={() => handleProductClick(product)}
-                      initial={{ opacity: 0, y: 14 }}
+                      initial={{ opacity: 0, y: 16 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, margin: '80px' }}
-                      transition={{ duration: 0.4, delay: idx * 0.06 }}
-                      className="shrink-0 w-[78%] max-w-[290px] snap-start text-left touch-manipulation active:scale-[0.97] transition-transform"
+                      transition={{ duration: 0.5, delay: idx * 0.07, ease: [0.16, 1, 0.3, 1] }}
+                      className="shrink-0 w-[62%] max-w-[240px] snap-start text-left touch-manipulation active:scale-[0.97] transition-transform"
                       data-testid={`featured-card-${product.id}`}
                     >
-                      <div className="aspect-[2/3] relative rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_48px_rgba(0,0,0,0.6)]">
-                        {/* Carrossel nativo */}
-                        <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
-                          {fg.map((imgSrc, i) => (
-                            <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
-                              <ProductImage src={imgSrc} alt={product.name} priority={idx < 2 && i === 0} />
-                            </div>
-                          ))}
-                        </div>
+                      {/* Borda gradiente platina */}
+                      <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/18 to-white/4">
+                        <div className="rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
 
-                        {/* Overlays */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/15 to-transparent pointer-events-none z-10" />
-                        {product.stock <= 3 && <div className="absolute top-3 left-3 z-20 bg-white/10 backdrop-blur-sm text-white/80 text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-white/10">Últimas {product.stock}</div>}
-                        {(product.sales || 0) >= 10 && product.stock > 3 && <div className="absolute top-3 right-3 z-20 bg-white/10 backdrop-blur-sm text-white/70 text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-white/10 flex items-center gap-1"><Flame size={7} />Top</div>}
-                        <div className="absolute inset-x-0 bottom-0 px-4 pb-4 z-20">
-                          <p className="text-[7px] font-black uppercase tracking-widest text-white/30 mb-1">{product.category}</p>
-                          <h3 className="text-white font-black text-[13px] uppercase leading-tight line-clamp-2">{product.name}</h3>
-                          <div className="flex items-center justify-between mt-3">
-                            <span className="text-emerald-400 font-black text-lg tracking-tight">{formatBRL(product.price || 0)}</span>
-                            <span className="w-8 h-8 rounded-full border border-white/15 flex items-center justify-center text-white/60 z-20">
-                              <Plus size={14} />
-                            </span>
+                          {/* Imagem limpa — sem overlay pesado, foto fala sozinha */}
+                          <div className="aspect-[3/4] relative overflow-hidden">
+                            <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                              {fg.map((imgSrc, i) => (
+                                <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
+                                  <ProductImage src={imgSrc} alt={product.name} priority={idx < 2 && i === 0} sizes="65vw" />
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Badge exclusividade — pequeno, canto superior */}
+                            <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm border border-white/20 rounded-full px-2 py-[3px]">
+                              <span className="w-[5px] h-[5px] rounded-full bg-zinc-300 shrink-0" />
+                              <span className="text-[6px] font-black uppercase tracking-[0.25em] text-zinc-300">Exclusivo</span>
+                            </div>
+
+                            {/* Fade suave para o painel — apenas para transição visual */}
+                            <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
                           </div>
+
+                          {/* Separador platina */}
+                          <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                          {/* Painel de info — mesmas cores dos cards normais */}
+                          <div className="px-3 pt-2.5 pb-3 bg-zinc-900">
+                            {isLowStock && (
+                              <p className="text-[7px] font-black uppercase tracking-widest text-red-400/80 mb-1.5">Últimas {product.stock} peças</p>
+                            )}
+                            <h3 className="font-black text-zinc-300 text-[10px] uppercase line-clamp-2 leading-tight mb-2.5">{product.name}</h3>
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-sm text-white">{formatBRL(product.price || 0)}</span>
+                              <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-white/60">
+                                <Plus size={13} />
+                              </span>
+                            </div>
+                          </div>
+
                         </div>
                       </div>
                     </motion.button>
