@@ -22,6 +22,8 @@ import { dispatchCAPIPurchase, dispatchCAPIRefund } from './lib/capi';
 import { initMetaPixel, trackEvent } from './lib/metaPixel';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip as ReTooltip, Cell } from 'recharts';
 import AdminRastreio from './components/AdminRastreio';
+import AdminCRM from './components/AdminCRM';
+import { criarAtendimentoFromPedido } from './lib/crm';
 
 // ==========================================
 // 1. CONFIGURAÇÃO E DADOS INICIAIS
@@ -2686,8 +2688,11 @@ function App() {
 
       console.log('[checkout] enviando pedido:', payload);
 
-      const { error } = await supabase.from('orders').insert([payload]);
+      const { data: newOrder, error } = await supabase.from('orders').insert([payload]).select().single();
       if (error) throw new Error(error.message);
+
+      // Fire-and-forget: registra no CRM sem bloquear o checkout
+      criarAtendimentoFromPedido({ ...payload, id: newOrder.id }).catch((e) => console.warn('[CRM]', e));
 
       // Monta mensagem WhatsApp
       const itemsText = itensNormalizados
@@ -3031,6 +3036,7 @@ function App() {
             {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} />}
             {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} />}
             {adminTab === 'rastreio' && <AdminRastreio />}
+            {adminTab === 'crm' && <AdminCRM showToast={showToast} config={config} />}
           </AdminTabErrorBoundary>
         </main>
         <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-zinc-900/95 backdrop-blur-xl px-4 py-4 rounded-3xl flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-50 border border-white/10">
@@ -3043,8 +3049,9 @@ function App() {
                 {newOrdersCount > 99 ? '99+' : newOrdersCount}
               </span>
             )}
-            <span className="text-[8px] font-black uppercase">CRM</span>
+            <span className="text-[8px] font-black uppercase">Pedidos</span>
           </button>
+          <button onClick={() => setAdminTab('crm')} className={`flex flex-col items-center gap-1 transition-colors ${adminTab === 'crm' ? 'text-emerald-500' : 'text-zinc-500'}`}><MessageCircle size={18}/><span className="text-[8px] font-black uppercase">Atend.</span></button>
           <button onClick={() => setAdminTab('banners')} className={`flex flex-col items-center gap-1 transition-colors ${adminTab === 'banners' ? 'text-emerald-500' : 'text-zinc-500'}`}><Megaphone size={18}/><span className="text-[8px] font-black uppercase">Promo</span></button>
           <button onClick={() => setAdminTab('config')} className={`flex flex-col items-center gap-1 transition-colors ${adminTab === 'config' ? 'text-emerald-500' : 'text-zinc-500'}`}><Settings size={18}/><span className="text-[8px] font-black uppercase">Setup</span></button>
           <button onClick={() => setAdminTab('rastreio')} className={`flex flex-col items-center gap-1 transition-colors ${adminTab === 'rastreio' ? 'text-emerald-500' : 'text-zinc-500'}`}><Database size={18}/><span className="text-[8px] font-black uppercase">CAPI</span></button>
