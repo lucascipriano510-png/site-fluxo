@@ -4,7 +4,7 @@ import {
   Plus, Minus, Trash2, X, Search, LayoutDashboard, 
   ShoppingBag, Home, Power, Package, 
   TrendingUp, Box, MessageCircle,
-  Zap, Share2, Info, Star, ChevronRight, ChevronLeft,
+  Zap, Share2, Info, Star, ChevronRight, ChevronLeft, ArrowRight,
   RefreshCcw, Layers, Settings, Tag, 
   AlertCircle, DollarSign, MapPin, Edit3, User, Phone, 
   CheckCircle2, Camera, Save, ArrowLeft, BarChart3,
@@ -2350,6 +2350,11 @@ function App() {
   const [whatsappLink, setWhatsappLink] = useState('');
   const [checkoutOrderNumber, setCheckoutOrderNumber] = useState('');
   const [currentBannerSlide, setCurrentBannerSlide] = useState(0);
+  const [bannerDrag, setBannerDrag] = useState(0);
+  const bannerRef = useRef(null);
+  const bannerDragStateRef = useRef({ startX: 0, startY: 0, dx: 0, decided: false, horizontal: false, active: false });
+  const currentBannerSlideRef = useRef(0);
+  const activeBannersLengthRef = useRef(0);
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
@@ -2378,6 +2383,8 @@ function App() {
   // config agora vive no Supabase; nada pra persistir localmente
 
   const activeBanners = useMemo(() => (banners || []).filter(b => b.active), [banners]);
+  useEffect(() => { currentBannerSlideRef.current = currentBannerSlide; }, [currentBannerSlide]);
+  useEffect(() => { activeBannersLengthRef.current = activeBanners.length; }, [activeBanners.length]);
   const availableCollections = useMemo(() => {
     const set = new Set();
     (banners || []).forEach(b => { if (b.collection_name) set.add(b.collection_name); });
@@ -2397,6 +2404,56 @@ function App() {
   };
   const nextBannerSlide = () => goToBannerSlide(currentBannerSlide + 1);
   const prevBannerSlide = () => goToBannerSlide(currentBannerSlide - 1);
+
+  // Touch swipe no banner — listener não-passivo para poder chamar preventDefault só no eixo horizontal
+  useEffect(() => {
+    const el = bannerRef.current;
+    if (!el) return;
+    const s = bannerDragStateRef.current;
+    const onStart = (e) => {
+      const t = e.touches[0];
+      s.startX = t.clientX; s.startY = t.clientY;
+      s.dx = 0; s.decided = false; s.horizontal = false; s.active = true;
+    };
+    const onMove = (e) => {
+      if (!s.active) return;
+      const t = e.touches[0];
+      const dx = t.clientX - s.startX;
+      const dy = t.clientY - s.startY;
+      if (!s.decided) {
+        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+        s.decided = true;
+        s.horizontal = Math.abs(dx) > Math.abs(dy) * 1.2;
+      }
+      if (!s.horizontal) { s.active = false; return; } // libera scroll vertical
+      e.preventDefault();
+      const slide = currentBannerSlideRef.current;
+      const total = activeBannersLengthRef.current;
+      const atEdge = (dx < 0 && slide >= total - 1) || (dx > 0 && slide <= 0);
+      s.dx = dx * (atEdge ? 0.2 : 1);
+      setBannerDrag(s.dx);
+    };
+    const onEnd = () => {
+      if (!s.active) return;
+      s.active = false;
+      const dx = s.dx; s.dx = 0;
+      setBannerDrag(0);
+      const total = activeBannersLengthRef.current;
+      if (s.horizontal && Math.abs(dx) > 55 && total > 1) {
+        setCurrentBannerSlide(prev => dx < 0 ? (prev + 1) % total : Math.max(0, prev - 1));
+      }
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd, { passive: true });
+    el.addEventListener('touchcancel', onEnd, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+      el.removeEventListener('touchcancel', onEnd);
+    };
+  }, []);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -2998,68 +3055,100 @@ function App() {
       </header>
 
       {(activeBanners.length > 0 || !bannersLoaded) && (
-        <section className="relative w-full max-w-md mx-auto aspect-[4/5] sm:aspect-video bg-black overflow-hidden group">
-          {activeBanners.length === 0 && <div className="absolute inset-0 bg-black" />}
-          <div className="flex h-full transition-transform duration-700 ease-in-out" style={{ transform: `translateX(-${currentBannerSlide * 100}%)` }}>
-            {activeBanners.map((banner, idx) => (
-              <div key={idx} className="w-full h-full shrink-0 relative">
-                <BannerImage src={banner.image} alt={banner.title || 'Banner'} active={idx === currentBannerSlide} />
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent"></div>
-                <div className="absolute inset-x-0 bottom-0 p-8 flex flex-col items-center text-center animate-slide-up">
-                  <h2 className="text-3xl font-black uppercase tracking-tighter drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]" style={{ color: '#9aa0a6' }}>{banner.title}</h2>
-                  <p className="text-xs font-medium uppercase tracking-widest mt-2 mb-6 drop-shadow-md" style={{ color: '#9aa0a6' }}>{banner.subtitle}</p>
-                  <button 
-                    onClick={() => {
-                      if (banner.collection_name) {
-                        setActiveCollectionFilter(banner.collection_name);
-                        document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
-                      } else {
-                        document.getElementById('search-input')?.focus();
-                      }
-                    }} 
-                    className="bg-transparent px-8 py-3.5 rounded-md font-bold text-[10px] uppercase tracking-widest active:scale-95 border"
-                    style={{ color: '#9aa0a6', borderColor: '#9aa0a6', borderWidth: '1.5px' }}
+        <section
+          ref={bannerRef}
+          className="relative w-full max-w-md mx-auto aspect-[4/5] overflow-hidden select-none"
+        >
+          {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
+
+          {/* Trilho de slides */}
+          <div
+            className="flex h-full"
+            style={{
+              transform: `translateX(calc(-${currentBannerSlide * 100}% + ${bannerDrag}px))`,
+              transition: bannerDrag !== 0 ? 'none' : 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
+              willChange: 'transform',
+            }}
+          >
+            {activeBanners.map((banner, idx) => {
+              const isActive = idx === currentBannerSlide;
+              return (
+                <div key={idx} className="w-full h-full shrink-0 relative overflow-hidden">
+                  {/* Ken Burns — zoom suave na imagem ativa */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      transform: isActive ? 'scale(1.09)' : 'scale(1)',
+                      transition: isActive ? 'transform 10s ease-out' : 'transform 0.6s ease',
+                      transformOrigin: '55% 45%',
+                    }}
                   >
-                    {banner.buttonText}
-                  </button>
+                    <BannerImage src={banner.image} alt={banner.title || 'Banner'} active={isActive} />
+                  </div>
+
+                  {/* Gradientes */}
+                  <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-zinc-950/75 to-transparent pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />
+
+                  {/* Conteúdo */}
+                  <div className="absolute inset-x-0 bottom-0 px-7 pb-12 flex flex-col">
+                    {banner.collection_name && (
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className="h-px w-8 bg-white/40" />
+                        <span className="text-[9px] font-black uppercase tracking-[0.28em] text-white/55">{banner.collection_name}</span>
+                      </div>
+                    )}
+                    <h2 className="text-[2.6rem] font-black uppercase leading-[0.92] tracking-tight text-white mb-2.5 drop-shadow-2xl">{banner.title}</h2>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/45 mb-7">{banner.subtitle}</p>
+                    {banner.buttonText && (
+                      <button
+                        onClick={() => {
+                          if (banner.collection_name) {
+                            setActiveCollectionFilter(banner.collection_name);
+                            document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
+                          } else {
+                            document.getElementById('search-input')?.focus();
+                          }
+                        }}
+                        className="self-start flex items-center gap-2 bg-white text-zinc-950 px-7 py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform shadow-[0_8px_30px_rgba(255,255,255,0.18)] touch-manipulation"
+                      >
+                        {banner.buttonText} <ArrowRight size={11} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
+          {/* Contador + linhas de progresso — canto superior direito */}
           {activeBanners.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={prevBannerSlide}
-                aria-label="Banner anterior"
-                data-testid="banner-prev"
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-zinc-950/80 backdrop-blur-md border border-white/20 text-white flex items-center justify-center active:scale-90 hover:bg-emerald-500 hover:text-zinc-950 hover:border-emerald-500 transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)]"
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <button
-                type="button"
-                onClick={nextBannerSlide}
-                aria-label="Próximo banner"
-                data-testid="banner-next"
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-zinc-950/80 backdrop-blur-md border border-white/20 text-white flex items-center justify-center active:scale-90 hover:bg-emerald-500 hover:text-zinc-950 hover:border-emerald-500 transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)]"
-              >
-                <ChevronRight size={24} />
-              </button>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+            <div className="absolute top-5 right-5 z-20 flex items-center gap-2.5 pointer-events-none">
+              <span className="text-[10px] font-black text-white/70 tabular-nums">{String(currentBannerSlide + 1).padStart(2, '0')}</span>
+              <div className="flex gap-1 items-center pointer-events-auto">
                 {activeBanners.map((_, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => goToBannerSlide(idx)}
-                    aria-label={`Ir para banner ${idx + 1}`}
-                    data-testid={`banner-dot-${idx}`}
-                    className={`h-2 rounded-full transition-all ${idx === currentBannerSlide ? 'w-6 bg-zinc-300' : 'w-2 bg-white/40'}`}
+                    aria-label={`Slide ${idx + 1}`}
+                    className={`h-0.5 rounded-full transition-all duration-500 ${idx === currentBannerSlide ? 'w-8 bg-white' : 'w-2 bg-white/30'}`}
                   />
                 ))}
               </div>
-            </>
+              <span className="text-[10px] font-black text-white/30 tabular-nums">{String(activeBanners.length).padStart(2, '0')}</span>
+            </div>
+          )}
+
+          {/* Barra de progresso animada */}
+          {activeBanners.length > 1 && !isAdmin && (
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/10 z-20 overflow-hidden">
+              <div
+                key={currentBannerSlide}
+                className="h-full bg-white/45"
+                style={{ animation: 'bannerProgress 5s linear forwards' }}
+              />
+            </div>
           )}
         </section>
       )}
