@@ -2357,10 +2357,6 @@ function App() {
   const activeBannersLengthRef = useRef(0);
   const featuredRailRef = useRef(null);
   const featuredPeekedRef = useRef(false);
-  // Gallery swipe nos cards do grid e destaque
-  const cardTouchRef = useRef({});
-  const cardRevertRef = useRef({});
-  const [cardImages, setCardImages] = useState({});
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
@@ -2481,29 +2477,6 @@ function App() {
     };
   }, []);
 
-  // Helpers para gallery swipe dos cards
-  const getCardGallery = (p) => [p.image, ...((Array.isArray(p.gallery) ? p.gallery : []))].filter(Boolean);
-  const getCardActiveImg = (p) => { const g = getCardGallery(p); return g[Math.min(cardImages[p.id] || 0, g.length - 1)] || p.image; };
-  const cardTouchStart = (p, e) => {
-    if (getCardGallery(p).length <= 1) return;
-    clearTimeout(cardRevertRef.current[p.id]);
-    const t = e.touches[0];
-    cardTouchRef.current[p.id] = { x: t.clientX, y: t.clientY, idx: cardImages[p.id] || 0, decided: false, h: false };
-  };
-  const cardTouchMove = (p, e) => {
-    const r = cardTouchRef.current[p.id]; if (!r) return;
-    const t = e.touches[0]; const dx = t.clientX - r.x; const dy = t.clientY - r.y;
-    if (!r.decided) { if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; r.decided = true; r.h = Math.abs(dx) > Math.abs(dy) * 0.8; }
-    if (!r.h) return;
-    const g = getCardGallery(p);
-    const ni = Math.max(0, Math.min(g.length - 1, r.idx + Math.round(dx / -55)));
-    setCardImages(prev => ({ ...prev, [p.id]: ni }));
-  };
-  const cardTouchEnd = (p, e) => {
-    const r = cardTouchRef.current[p.id]; delete cardTouchRef.current[p.id];
-    if (!r || !r.h) return;
-    cardRevertRef.current[p.id] = setTimeout(() => setCardImages(prev => { const n = { ...prev }; delete n[p.id]; return n; }), 2500);
-  };
 
   // Auto-peek na vitrine de destaques: quando a seção entra no viewport, revela levemente os próximos cards
   useEffect(() => {
@@ -3288,17 +3261,12 @@ function App() {
                 data-testid="featured-rail"
               >
                 {featured.map((product, idx) => {
-                  const fg = getCardGallery(product);
-                  const fActiveImg = getCardActiveImg(product);
-                  const fActiveIdx = Math.min(cardImages[product.id] || 0, fg.length - 1);
+                  const fg = [product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean);
                   return (
                     <motion.button
                       key={product.id}
                       type="button"
                       onClick={() => handleProductClick(product)}
-                      onTouchStart={e => cardTouchStart(product, e)}
-                      onTouchMove={e => cardTouchMove(product, e)}
-                      onTouchEnd={e => cardTouchEnd(product, e)}
                       initial={{ opacity: 0, y: 14 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, margin: '80px' }}
@@ -3307,27 +3275,25 @@ function App() {
                       data-testid={`featured-card-${product.id}`}
                     >
                       <div className="aspect-[2/3] relative rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_48px_rgba(0,0,0,0.6)]">
-                        <ProductImage src={fActiveImg} alt={product.name} priority={idx < 2} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/15 to-transparent pointer-events-none" />
+                        {/* Carrossel nativo */}
+                        <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                          {fg.map((imgSrc, i) => (
+                            <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
+                              <ProductImage src={imgSrc} alt={product.name} priority={idx < 2 && i === 0} />
+                            </div>
+                          ))}
+                        </div>
 
-                        {/* Gallery dots */}
-                        {fg.length > 1 && (
-                          <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none z-10">
-                            {fg.map((_, i) => <div key={i} className={`h-0.5 rounded-full transition-all duration-200 ${i === fActiveIdx ? 'w-4 bg-white' : 'w-1.5 bg-white/35'}`} />)}
-                          </div>
-                        )}
-
-                        {/* Badges */}
-                        {product.stock <= 3 && <div className="absolute top-3 left-3 bg-white/10 backdrop-blur-sm text-white/80 text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-white/10">Últimas {product.stock}</div>}
-                        {(product.sales || 0) >= 10 && product.stock > 3 && <div className="absolute top-3 right-3 bg-white/10 backdrop-blur-sm text-white/70 text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-white/10 flex items-center gap-1"><Flame size={7} />Top</div>}
-
-                        {/* Info */}
-                        <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+                        {/* Overlays */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/15 to-transparent pointer-events-none z-10" />
+                        {product.stock <= 3 && <div className="absolute top-3 left-3 z-20 bg-white/10 backdrop-blur-sm text-white/80 text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-white/10">Últimas {product.stock}</div>}
+                        {(product.sales || 0) >= 10 && product.stock > 3 && <div className="absolute top-3 right-3 z-20 bg-white/10 backdrop-blur-sm text-white/70 text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-white/10 flex items-center gap-1"><Flame size={7} />Top</div>}
+                        <div className="absolute inset-x-0 bottom-0 px-4 pb-4 z-20">
                           <p className="text-[7px] font-black uppercase tracking-widest text-white/30 mb-1">{product.category}</p>
                           <h3 className="text-white font-black text-[13px] uppercase leading-tight line-clamp-2">{product.name}</h3>
                           <div className="flex items-center justify-between mt-3">
                             <span className="text-emerald-400 font-black text-lg tracking-tight">{formatBRL(product.price || 0)}</span>
-                            <span className="w-8 h-8 rounded-full border border-white/15 flex items-center justify-center text-white/60">
+                            <span className="w-8 h-8 rounded-full border border-white/15 flex items-center justify-center text-white/60 z-20">
                               <Plus size={14} />
                             </span>
                           </div>
@@ -3369,9 +3335,6 @@ function App() {
                   <motion.div
                     key={product.id}
                     onClick={() => handleProductClick(product)}
-                    onTouchStart={e => cardTouchStart(product, e)}
-                    onTouchMove={e => cardTouchMove(product, e)}
-                    onTouchEnd={e => cardTouchEnd(product, e)}
                       initial={{ opacity: 0.01, y: 20 }}
                        whileInView={{ opacity: 1, y: 0 }}
                        viewport={{ once: true, margin: "100px" }}
@@ -3379,21 +3342,18 @@ function App() {
                     className={`group relative bg-zinc-900/40 backdrop-blur-sm rounded-[24px] overflow-hidden border border-white/10 transition-all duration-300 flex flex-col shadow-lg touch-manipulation ${isOutOfStock ? 'opacity-80' : 'hover:border-white/20 hover:-translate-y-0.5 cursor-pointer active:scale-[0.98]'}`}
                     data-testid={`product-card-${product.id}`}
                   >
-                    {(() => { const gg = getCardGallery(product); const gIdx = Math.min(cardImages[product.id] || 0, gg.length - 1); return gg.length > 1 && (
-                      <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1 z-20 pointer-events-none">
-                        {gg.map((_, i) => <div key={i} className={`h-0.5 rounded-full transition-all duration-200 ${i === gIdx ? 'w-3 bg-white' : 'w-1 bg-white/30'}`} />)}
-                      </div>
-                    ); })()}
                     {!isOutOfStock && !product.is_kit && product.stock <= 3 && <div className="absolute top-2 left-2 z-10 bg-amber-500 text-zinc-950 text-[8px] font-black uppercase px-2 py-1 rounded-md animate-pulse" data-testid={`badge-last-pieces-${product.id}`}>Restam {product.stock}</div>}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
 
                        <div className="aspect-[4/5] relative overflow-hidden">
-                         <ProductImage
-                           src={getCardActiveImg(product)}
-                           alt={product.name}
-                           isOutOfStock={isOutOfStock}
-                           priority={idx < 4}
-                         />
+                         {/* Carrossel nativo — deslize para ver fotos adicionais */}
+                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                           {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
+                             <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
+                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 4 && i === 0} />
+                             </div>
+                           ))}
+                         </div>
                         
                         {isOutOfStock && (
                            <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px] flex items-center justify-center">

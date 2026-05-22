@@ -142,6 +142,10 @@
   }
 }
 
+/* Oculta scrollbar em carrosséis nativos */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 /* Animação da barra de progresso do banner */
 @keyframes bannerProgress {
   from { width: 0%; }
