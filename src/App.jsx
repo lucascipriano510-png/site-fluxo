@@ -2355,6 +2355,8 @@ function App() {
   const bannerDragStateRef = useRef({ startX: 0, startY: 0, dx: 0, decided: false, horizontal: false, active: false });
   const currentBannerSlideRef = useRef(0);
   const activeBannersLengthRef = useRef(0);
+  const featuredRailRef = useRef(null);
+  const featuredPeekedRef = useRef(false);
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
@@ -2454,6 +2456,25 @@ function App() {
       el.removeEventListener('touchcancel', onEnd);
     };
   }, []);
+
+  // Auto-peek na vitrine de destaques: quando a seção entra no viewport, revela levemente os próximos cards
+  useEffect(() => {
+    const rail = featuredRailRef.current;
+    if (!rail) return;
+    featuredPeekedRef.current = false;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !featuredPeekedRef.current && rail.scrollWidth > rail.clientWidth) {
+        featuredPeekedRef.current = true;
+        observer.disconnect();
+        setTimeout(() => {
+          rail.scrollTo({ left: 110, behavior: 'smooth' });
+          setTimeout(() => rail.scrollTo({ left: 0, behavior: 'smooth' }), 950);
+        }, 650);
+      }
+    }, { threshold: 0.5 });
+    observer.observe(rail);
+    return () => observer.disconnect();
+  }, [productsLoaded]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -3226,28 +3247,34 @@ function App() {
           const featured = (products || []).filter(p => p.featured && !p.is_kit && (p.stock || 0) > 0);
           if (featured.length === 0) return null;
           return (
-            <section className="relative -mx-6 px-6 py-6 mt-2 animate-in" data-testid="featured-section">
-              {/* glow de fundo */}
+            <section className="relative -mx-6 overflow-hidden animate-in" data-testid="featured-section">
+              {/* Glow */}
               <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl" />
+                <div className="absolute -top-8 left-1/4 w-64 h-64 rounded-full bg-amber-500/8 blur-3xl" />
+                <div className="absolute top-12 right-0 w-48 h-48 rounded-full bg-orange-500/6 blur-3xl" />
               </div>
-              <div className="relative flex items-end justify-between mb-4">
+
+              {/* Cabeçalho */}
+              <div className="relative flex items-end justify-between px-6 pt-6 pb-5">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-400">Selecionado a dedo</span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-px w-5 bg-amber-400" />
+                    <span className="text-[8px] font-black uppercase tracking-[0.35em] text-amber-400">Curadoria exclusiva</span>
                   </div>
-                  <h2 className="text-xl font-black uppercase tracking-tight text-white mt-1 flex items-center gap-2">
-                    <Flame size={18} className="text-emerald-400" /> Em destaque
+                  <h2 className="text-[1.7rem] font-black uppercase leading-[0.88] tracking-tight text-white">
+                    Vitrine<br /><span className="text-amber-400">em destaque</span>
                   </h2>
                 </div>
-                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">
                   {featured.length} {featured.length === 1 ? 'peça' : 'peças'}
                 </span>
               </div>
+
+              {/* Rail horizontal */}
               <div
-                className="relative flex gap-4 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-2 -mx-2 px-2"
-                style={{ touchAction: 'pan-x', overscrollBehavior: 'contain', scrollPaddingLeft: '8px' }}
+                ref={featuredRailRef}
+                className="relative flex gap-3.5 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-6 px-6"
+                style={{ touchAction: 'pan-x pan-y', overscrollBehavior: 'contain' }}
                 data-testid="featured-rail"
               >
                 {featured.map((product, idx) => (
@@ -3255,33 +3282,59 @@ function App() {
                     key={product.id}
                     type="button"
                     onClick={() => handleProductClick(product)}
-                    initial={{ opacity: 0, y: 12 }}
+                    initial={{ opacity: 0, y: 14 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: '80px' }}
-                    transition={{ duration: 0.4, delay: idx * 0.05 }}
-                    className="group relative shrink-0 w-[68%] max-w-[260px] snap-start rounded-[28px] overflow-hidden border border-white/10 bg-gradient-to-b from-zinc-900 to-zinc-950 shadow-[0_18px_40px_rgba(0,0,0,0.45)] active:scale-[0.98] transition-transform text-left touch-manipulation"
+                    transition={{ duration: 0.45, delay: idx * 0.06 }}
+                    className="group relative shrink-0 w-[72%] max-w-[272px] snap-start rounded-[24px] overflow-hidden active:scale-[0.97] transition-transform text-left touch-manipulation shadow-[0_20px_50px_rgba(0,0,0,0.55)]"
                     data-testid={`featured-card-${product.id}`}
                   >
-                    <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-emerald-400 to-emerald-500 text-zinc-950 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-[0_4px_15px_rgba(16,185,129,0.45)] flex items-center gap-1">
-                      <Flame size={9} className="fill-zinc-950" /> Destaque
-                    </div>
-                    <div className="aspect-[4/5] relative overflow-hidden">
+                    <div className="aspect-[3/4] relative overflow-hidden bg-zinc-900">
                       <ProductImage src={product.image} alt={product.name} priority={idx < 2} />
-                      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent pointer-events-none" />
-                      <div className="absolute bottom-3 left-4 right-4">
-                        <p className="text-[8px] font-black uppercase tracking-[0.25em] text-emerald-300/90">{product.category}</p>
-                        <h3 className="text-white font-black uppercase text-sm leading-tight line-clamp-2 mt-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]">{product.name}</h3>
+
+                      {/* Gradiente de leitura */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/30 to-zinc-950/10 pointer-events-none" />
+
+                      {/* Badge de estoque baixo */}
+                      {product.stock <= 3 && (
+                        <div className="absolute top-3 left-3 bg-amber-400/90 backdrop-blur-sm text-zinc-950 text-[7px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                          Últimas {product.stock}
+                        </div>
+                      )}
+
+                      {/* Badge top seller */}
+                      {(product.sales || 0) >= 10 && (
+                        <div className="absolute top-3 right-3 bg-white/10 backdrop-blur-md text-white text-[7px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-white/15 flex items-center gap-1">
+                          <Flame size={8} /> Top
+                        </div>
+                      )}
+
+                      {/* Conteúdo inferior */}
+                      <div className="absolute inset-x-0 bottom-0 p-4">
+                        <p className="text-[7px] font-black uppercase tracking-[0.3em] text-white/40 mb-1">{product.category}</p>
+                        <h3 className="text-white font-black text-[13px] uppercase leading-tight line-clamp-2 drop-shadow-xl">{product.name}</h3>
+                        <div className="flex items-center justify-between mt-3">
+                          <span className="text-amber-400 font-black text-xl tracking-tight leading-none">{formatBRL(product.price || 0)}</span>
+                          <span className="bg-white/12 backdrop-blur-sm text-white text-[8px] font-black uppercase px-3.5 py-1.5 rounded-full border border-white/15 flex items-center gap-1 group-active:bg-white/20 transition-colors">
+                            Ver <ArrowRight size={9} />
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-3 bg-zinc-950/80 border-t border-white/5">
-                      <span className="text-white font-black text-base tracking-tight">{formatBRL(product.price || 0)}</span>
-                      <span className="bg-white text-zinc-950 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-md group-active:scale-95 transition-transform">
-                        Ver <ChevronRight size={11} />
-                      </span>
                     </div>
                   </motion.button>
                 ))}
+                {/* Padding final para o snap não cortar o último card */}
+                <div className="shrink-0 w-2" aria-hidden="true" />
               </div>
+
+              {/* Indicador de posição */}
+              {featured.length > 1 && (
+                <div className="flex justify-center gap-1.5 pb-5 -mt-3">
+                  {featured.map((_, idx) => (
+                    <div key={idx} className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+                  ))}
+                </div>
+              )}
             </section>
           );
         })()}
