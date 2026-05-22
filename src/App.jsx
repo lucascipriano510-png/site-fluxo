@@ -3250,7 +3250,7 @@ function App() {
         {(() => {
           const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
           if (!isDefaultView) return null;
-          const featured = (products || []).filter(p => p.featured && !p.is_kit && (p.stock || 0) > 0);
+          const featured = (products || []).filter(p => p.featured && (p.is_kit || (p.stock || 0) > 0));
           if (featured.length === 0) return null;
           return (
             <section className="relative -mx-6 overflow-hidden animate-in" data-testid="featured-section">
