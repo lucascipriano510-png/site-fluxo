@@ -2387,6 +2387,13 @@ function App() {
   const activeBanners = useMemo(() => (banners || []).filter(b => b.active), [banners]);
   useEffect(() => { currentBannerSlideRef.current = currentBannerSlide; }, [currentBannerSlide]);
   useEffect(() => { activeBannersLengthRef.current = activeBanners.length; }, [activeBanners.length]);
+  // Sincroniza transform do trilho quando slide muda por dots/auto (drag usa DOM direto)
+  useEffect(() => {
+    const track = bannerTrackRef.current;
+    if (!track) return;
+    track.style.transition = 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)';
+    track.style.transform = `translateX(-${currentBannerSlide * 100}%)`;
+  }, [currentBannerSlide]);
   const availableCollections = useMemo(() => {
     const set = new Set();
     (banners || []).forEach(b => { if (b.collection_name) set.add(b.collection_name); });
@@ -3100,14 +3107,15 @@ function App() {
         <section
           ref={bannerRef}
           className="relative w-full max-w-md mx-auto aspect-[4/5] overflow-hidden select-none"
+          style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
 
-          {/* Trilho de slides */}
+          {/* Trilho de slides — transform controlado apenas via DOM direto (applyTrackTransform) */}
           <div
             ref={bannerTrackRef}
             className="flex h-full"
-            style={{ transform: `translateX(-${currentBannerSlide * 100}%)`, transition: 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)', willChange: 'transform' }}
+            style={{ willChange: 'transform' }}
           >
             {activeBanners.map((banner, idx) => {
               const isActive = idx === currentBannerSlide;
