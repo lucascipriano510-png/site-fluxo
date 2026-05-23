@@ -2390,94 +2390,50 @@ function App() {
   const activeBanners = useMemo(() => (banners || []).filter(b => b.active), [banners]);
   useEffect(() => { currentBannerSlideRef.current = currentBannerSlide; }, [currentBannerSlide]);
   useEffect(() => { activeBannersLengthRef.current = activeBanners.length; }, [activeBanners.length]);
-  // Sincroniza transform do trilho quando slide muda por dots/auto (drag usa DOM direto)
-  useEffect(() => {
-    const track = bannerTrackRef.current;
-    if (!track) return;
-    track.style.transition = 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)';
-    track.style.transform = `translate3d(calc(-${currentBannerSlide * 100}%), var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))`;
-  }, [currentBannerSlide]);
   const availableCollections = useMemo(() => {
     const set = new Set();
     (banners || []).forEach(b => { if (b.collection_name) set.add(b.collection_name); });
     return Array.from(set).sort();
   }, [banners]);
-  useEffect(() => {
-    if (isAdmin || activeBanners.length <= 1) return;
-    const timer = setInterval(() => { setCurrentBannerSlide((prev) => (prev + 1) % activeBanners.length); }, 5000);
-    return () => clearInterval(timer);
-    // currentBannerSlide aqui força o timer a reiniciar quando o usuário navega manualmente
-  }, [activeBanners.length, isAdmin, currentBannerSlide]);
 
+  // Navega para slide via scrollTo nativo (scroll snap cuida da animação)
   const goToBannerSlide = (idx) => {
     if (!activeBanners.length) return;
     const total = activeBanners.length;
-    setCurrentBannerSlide(((idx % total) + total) % total);
+    const newIdx = ((idx % total) + total) % total;
+    const track = bannerTrackRef.current;
+    if (track) track.scrollTo({ left: newIdx * track.clientWidth, behavior: 'smooth' });
+    setCurrentBannerSlide(newIdx);
   };
-  const nextBannerSlide = () => goToBannerSlide(currentBannerSlide + 1);
-  const prevBannerSlide = () => goToBannerSlide(currentBannerSlide - 1);
+  const nextBannerSlide = () => goToBannerSlide(currentBannerSlideRef.current + 1);
+  const prevBannerSlide = () => goToBannerSlide(currentBannerSlideRef.current - 1);
 
-  // Banner: swipe + fade de texto no scroll
-  // touch-action:pan-y no section → browser trata scroll vertical nativamente (sem bloqueio),
-  // horizontal vai pro JS via touchmove sem precisar de e.preventDefault().
-  // draggable={false} na img evita que iOS/Android intercepte como arrastar imagem.
+  useEffect(() => {
+    if (isAdmin || activeBanners.length <= 1) return;
+    const timer = setInterval(() => {
+      const next = (currentBannerSlideRef.current + 1) % activeBanners.length;
+      const track = bannerTrackRef.current;
+      if (track) track.scrollTo({ left: next * track.clientWidth, behavior: 'smooth' });
+      setCurrentBannerSlide(next);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [activeBanners.length, isAdmin]);
+
+  // Banner: swipe via CSS scroll snap nativo (sem drag JS) + parallax no scroll vertical
   useEffect(() => {
     const section = bannerRef.current;
-    if (!section) return;
-    const s = bannerDragStateRef.current;
+    const track = bannerTrackRef.current;
+    if (!section || !track) return;
 
-    // Preserva parallax e scale ao aplicar transform do trilho
-    const applyTrackTransform = (slide, offsetPx, animated) => {
-      const track = bannerTrackRef.current;
-      if (!track) return;
-      track.style.transition = animated ? 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
-      track.style.transform = `translate3d(calc(-${slide * 100}% + ${offsetPx}px), var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))`;
-    };
-
-    const onStart = (e) => {
-      const t = e.touches[0];
-      s.startX = t.clientX;
-      s.startY = t.clientY;
-      s.dx = 0;
-      s.decided = false;
-      s.horizontal = false;
-      s.active = true;
-    };
-
-    const onMove = (e) => {
-      if (!s.active) return;
-      const t = e.touches[0];
-      const dx = t.clientX - s.startX;
-      const dy = t.clientY - s.startY;
-      if (!s.decided) {
-        if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
-        s.decided = true;
-        s.horizontal = Math.abs(dx) > Math.abs(dy) * 1.2;
-        if (!s.horizontal) { s.active = false; return; }
-      }
-      if (!s.horizontal) return;
-      const slide = currentBannerSlideRef.current;
-      const total = activeBannersLengthRef.current;
-      const atEdge = (dx < 0 && slide >= total - 1) || (dx > 0 && slide <= 0);
-      s.dx = dx * (atEdge ? 0.2 : 1);
-      applyTrackTransform(slide, s.dx, false);
-    };
-
-    const onEnd = () => {
-      if (!s.active) return;
-      s.active = false;
-      const dx = s.dx;
-      s.dx = 0;
-      const total = activeBannersLengthRef.current;
-      let newSlide = currentBannerSlideRef.current;
-      if (s.horizontal && Math.abs(dx) > 55 && total > 1) {
-        newSlide = dx < 0 ? (newSlide + 1) % total : Math.max(0, newSlide - 1);
+    // Detecta slide atual pelo scrollLeft do track (scroll snap nativo)
+    const onTrackScroll = () => {
+      const newSlide = Math.round(track.scrollLeft / (track.clientWidth || 1));
+      if (newSlide !== currentBannerSlideRef.current) {
         setCurrentBannerSlide(newSlide);
       }
-      applyTrackTransform(newSlide, 0, true);
     };
 
-    // Scroll-driven: parallax + scale + dim + fade de texto (estilo Apple/Nike) via RAF
+    // Scroll-driven: parallax + scale + dim + fade de texto via RAF
     let rafId = 0;
     const onScroll = () => {
       if (rafId) return;
@@ -2487,27 +2443,18 @@ function App() {
         const h = rect.height || 1;
         const scrolled = Math.max(0, -rect.top);
         const progress = Math.max(0, Math.min(1, scrolled / h));
-        const textOp = Math.max(0, 1 - progress * 2.5);
-        const parallax = scrolled * 0.35;
-        const scale = 1 - progress * 0.08;
-        section.style.setProperty('--banner-text-op', textOp.toFixed(3));
-        section.style.setProperty('--banner-parallax', `${parallax.toFixed(1)}px`);
-        section.style.setProperty('--banner-scale', scale.toFixed(3));
+        section.style.setProperty('--banner-text-op', Math.max(0, 1 - progress * 2.5).toFixed(3));
+        section.style.setProperty('--banner-parallax', `${(scrolled * 0.35).toFixed(1)}px`);
+        section.style.setProperty('--banner-scale', (1 - progress * 0.08).toFixed(3));
         section.style.setProperty('--banner-dim', (progress * 0.55).toFixed(3));
       });
     };
     onScroll();
 
-    section.addEventListener('touchstart', onStart, { passive: true });
-    section.addEventListener('touchmove', onMove, { passive: true });
-    section.addEventListener('touchend', onEnd, { passive: true });
-    section.addEventListener('touchcancel', onEnd, { passive: true });
+    track.addEventListener('scroll', onTrackScroll, { passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      section.removeEventListener('touchstart', onStart);
-      section.removeEventListener('touchmove', onMove);
-      section.removeEventListener('touchend', onEnd);
-      section.removeEventListener('touchcancel', onEnd);
+      track.removeEventListener('scroll', onTrackScroll);
       window.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
@@ -3141,20 +3088,19 @@ function App() {
         <section
           ref={bannerRef}
           className="relative w-full max-w-md mx-auto aspect-[4/5] overflow-hidden select-none"
-          style={{ touchAction: 'pan-y pinch-zoom' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
 
-          {/* Trilho com parallax + scale ao rolar */}
+          {/* Trilho com scroll snap nativo + parallax vertical */}
           <div
             ref={bannerTrackRef}
-            className="flex h-full"
-            style={{ willChange: 'transform', transform: 'translate3d(0, var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))', transformOrigin: '50% 0%' }}
+            className="flex h-full overflow-x-auto no-scrollbar"
+            style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', willChange: 'transform', transform: 'translate3d(0, var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))', transformOrigin: '50% 0%' }}
           >
             {activeBanners.map((banner, idx) => {
               const isActive = idx === currentBannerSlide;
               return (
-                <div key={idx} className="w-full h-full shrink-0 relative overflow-hidden">
+                <div key={idx} className="w-full h-full shrink-0 relative overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
                   <div className="absolute inset-0" style={{ transform: isActive ? 'scale(1.09)' : 'scale(1)', transition: isActive ? 'transform 10s ease-out' : 'transform 0.6s ease', transformOrigin: '55% 45%' }}>
                     <BannerImage src={banner.image} alt={banner.title || 'Banner'} active={isActive} />
                   </div>
