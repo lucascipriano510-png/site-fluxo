@@ -2354,7 +2354,7 @@ function App() {
   const [currentBannerSlide, setCurrentBannerSlide] = useState(0);
   const bannerRef = useRef(null);
   const bannerTrackRef = useRef(null);
-  const bannerDragStateRef = useRef({ startX: 0, startY: 0, dx: 0, decided: false, horizontal: false, active: false });
+  const bannerDragStateRef = useRef({ startX: 0, startY: 0, dx: 0, decided: false, horizontal: false, active: false, pointerId: -1 });
   const currentBannerSlideRef = useRef(0);
   const activeBannersLengthRef = useRef(0);
   const featuredRailRef = useRef(null);
@@ -2394,7 +2394,7 @@ function App() {
     const track = bannerTrackRef.current;
     if (!track) return;
     track.style.transition = 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)';
-    track.style.transform = `translateX(-${currentBannerSlide * 100}%)`;
+    track.style.transform = `translate3d(calc(-${currentBannerSlide * 100}%), var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))`;
   }, [currentBannerSlide]);
   const availableCollections = useMemo(() => {
     const set = new Set();
@@ -2416,46 +2416,61 @@ function App() {
   const nextBannerSlide = () => goToBannerSlide(currentBannerSlide + 1);
   const prevBannerSlide = () => goToBannerSlide(currentBannerSlide - 1);
 
-  // Banner: swipe com manipulação direta do DOM (sem re-render durante drag) + fade de texto no scroll
+  // Banner: swipe com Pointer Events (iOS + Android) + fade de texto no scroll
   useEffect(() => {
     const section = bannerRef.current;
     if (!section) return;
     const s = bannerDragStateRef.current;
 
+    // Preserva parallax e scale ao aplicar transform do trilho
     const applyTrackTransform = (slide, offsetPx, animated) => {
       const track = bannerTrackRef.current;
       if (!track) return;
       track.style.transition = animated ? 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
-      track.style.transform = `translateX(calc(-${slide * 100}% + ${offsetPx}px))`;
+      track.style.transform = `translate3d(calc(-${slide * 100}% + ${offsetPx}px), var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))`;
     };
 
-    const onStart = (e) => {
-      const t = e.touches[0];
-      s.startX = t.clientX; s.startY = t.clientY;
-      s.dx = 0; s.decided = false; s.horizontal = false; s.active = true;
+    const onPointerDown = (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      s.startX = e.clientX;
+      s.startY = e.clientY;
+      s.dx = 0;
+      s.decided = false;
+      s.horizontal = false;
+      s.active = true;
+      s.pointerId = e.pointerId;
     };
-    const onMove = (e) => {
-      if (!s.active) return;
-      const t = e.touches[0];
-      const dx = t.clientX - s.startX;
-      const dy = t.clientY - s.startY;
+
+    const onPointerMove = (e) => {
+      if (!s.active || e.pointerId !== s.pointerId) return;
+      const dx = e.clientX - s.startX;
+      const dy = e.clientY - s.startY;
       if (!s.decided) {
         if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
         s.decided = true;
         s.horizontal = Math.abs(dx) > Math.abs(dy) * 1.2;
+        if (s.horizontal) {
+          // Captura o ponteiro: JS controla o drag exclusivamente, browser não rola a página
+          try { section.setPointerCapture(e.pointerId); } catch (_) {}
+        } else {
+          s.active = false;
+          return;
+        }
       }
-      if (!s.horizontal) { s.active = false; return; }
-      e.preventDefault();
+      if (!s.horizontal) return;
       const slide = currentBannerSlideRef.current;
       const total = activeBannersLengthRef.current;
       const atEdge = (dx < 0 && slide >= total - 1) || (dx > 0 && slide <= 0);
       s.dx = dx * (atEdge ? 0.2 : 1);
       applyTrackTransform(slide, s.dx, false);
     };
-    const onEnd = () => {
-      if (!s.active) return;
+
+    const onPointerUp = (e) => {
+      if (!s.active || e.pointerId !== s.pointerId) return;
       s.active = false;
-      const dx = s.dx; s.dx = 0;
+      try { section.releasePointerCapture(e.pointerId); } catch (_) {}
+      const dx = s.dx;
+      s.dx = 0;
       const total = activeBannersLengthRef.current;
       let newSlide = currentBannerSlideRef.current;
       if (s.horizontal && Math.abs(dx) > 55 && total > 1) {
@@ -2463,6 +2478,13 @@ function App() {
         setCurrentBannerSlide(newSlide);
       }
       applyTrackTransform(newSlide, 0, true);
+    };
+
+    const onPointerCancel = (e) => {
+      if (!s.active || e.pointerId !== s.pointerId) return;
+      s.active = false;
+      s.dx = 0;
+      applyTrackTransform(currentBannerSlideRef.current, 0, true);
     };
 
     // Scroll-driven: parallax + scale + dim + fade de texto (estilo Apple/Nike) via RAF
@@ -2486,16 +2508,16 @@ function App() {
     };
     onScroll();
 
-    section.addEventListener('touchstart', onStart, { passive: true });
-    section.addEventListener('touchmove', onMove, { passive: false });
-    section.addEventListener('touchend', onEnd, { passive: true });
-    section.addEventListener('touchcancel', onEnd, { passive: true });
+    section.addEventListener('pointerdown', onPointerDown);
+    section.addEventListener('pointermove', onPointerMove);
+    section.addEventListener('pointerup', onPointerUp);
+    section.addEventListener('pointercancel', onPointerCancel);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      section.removeEventListener('touchstart', onStart);
-      section.removeEventListener('touchmove', onMove);
-      section.removeEventListener('touchend', onEnd);
-      section.removeEventListener('touchcancel', onEnd);
+      section.removeEventListener('pointerdown', onPointerDown);
+      section.removeEventListener('pointermove', onPointerMove);
+      section.removeEventListener('pointerup', onPointerUp);
+      section.removeEventListener('pointercancel', onPointerCancel);
       window.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
