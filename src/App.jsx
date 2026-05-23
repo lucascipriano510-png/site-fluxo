@@ -2456,7 +2456,6 @@ function App() {
         if (!s.horizontal) { s.active = false; return; }
       }
       if (!s.horizontal) return;
-      e.preventDefault(); // previne scroll da página durante swipe horizontal
       const slide = currentBannerSlideRef.current;
       const total = activeBannersLengthRef.current;
       const atEdge = (dx < 0 && slide >= total - 1) || (dx > 0 && slide <= 0);
@@ -2500,7 +2499,7 @@ function App() {
     onScroll();
 
     section.addEventListener('touchstart', onStart, { passive: true });
-    section.addEventListener('touchmove', onMove, { passive: false }); // non-passive p/ e.preventDefault() no horizontal
+    section.addEventListener('touchmove', onMove, { passive: true });
     section.addEventListener('touchend', onEnd, { passive: true });
     section.addEventListener('touchcancel', onEnd, { passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -3089,7 +3088,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell min-h-screen bg-zinc-950 font-sans text-white pb-0 overflow-x-hidden selection:bg-emerald-500 selection:text-zinc-950">
+    <div className="app-shell min-h-screen bg-zinc-950 font-sans text-white pb-0 overflow-x-clip selection:bg-emerald-500 selection:text-zinc-950">
       
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
@@ -3142,6 +3141,7 @@ function App() {
         <section
           ref={bannerRef}
           className="relative w-full max-w-md mx-auto aspect-[4/5] overflow-hidden select-none"
+          style={{ touchAction: 'pan-y pinch-zoom' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
 
