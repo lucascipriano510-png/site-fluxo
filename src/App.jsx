@@ -2450,12 +2450,13 @@ function App() {
       const dx = t.clientX - s.startX;
       const dy = t.clientY - s.startY;
       if (!s.decided) {
-        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+        if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
         s.decided = true;
         s.horizontal = Math.abs(dx) > Math.abs(dy) * 1.2;
         if (!s.horizontal) { s.active = false; return; }
       }
       if (!s.horizontal) return;
+      e.preventDefault(); // previne scroll da página durante swipe horizontal
       const slide = currentBannerSlideRef.current;
       const total = activeBannersLengthRef.current;
       const atEdge = (dx < 0 && slide >= total - 1) || (dx > 0 && slide <= 0);
@@ -2498,9 +2499,8 @@ function App() {
     };
     onScroll();
 
-    // Todos passive: touch-action:pan-y garante que scroll vertical não espera JS
     section.addEventListener('touchstart', onStart, { passive: true });
-    section.addEventListener('touchmove', onMove, { passive: true });
+    section.addEventListener('touchmove', onMove, { passive: false }); // non-passive p/ e.preventDefault() no horizontal
     section.addEventListener('touchend', onEnd, { passive: true });
     section.addEventListener('touchcancel', onEnd, { passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -3142,7 +3142,6 @@ function App() {
         <section
           ref={bannerRef}
           className="relative w-full max-w-md mx-auto aspect-[4/5] overflow-hidden select-none"
-          style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
 
