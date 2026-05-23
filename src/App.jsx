@@ -2465,12 +2465,26 @@ function App() {
       applyTrackTransform(newSlide, 0, true);
     };
 
-    // Fade de texto: conforme banner sobe na tela, texto some gradualmente
+    // Scroll-driven: parallax + scale + dim + fade de texto (estilo Apple/Nike) via RAF
+    let rafId = 0;
     const onScroll = () => {
-      const rect = section.getBoundingClientRect();
-      const opacity = Math.max(0, Math.min(1, rect.top / 56));
-      section.style.setProperty('--banner-text-op', opacity);
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        const rect = section.getBoundingClientRect();
+        const h = rect.height || 1;
+        const scrolled = Math.max(0, -rect.top);
+        const progress = Math.max(0, Math.min(1, scrolled / h));
+        const textOp = Math.max(0, 1 - progress * 2.5);
+        const parallax = scrolled * 0.35;
+        const scale = 1 - progress * 0.08;
+        section.style.setProperty('--banner-text-op', textOp.toFixed(3));
+        section.style.setProperty('--banner-parallax', `${parallax.toFixed(1)}px`);
+        section.style.setProperty('--banner-scale', scale.toFixed(3));
+        section.style.setProperty('--banner-dim', (progress * 0.55).toFixed(3));
+      });
     };
+    onScroll();
 
     section.addEventListener('touchstart', onStart, { passive: true });
     section.addEventListener('touchmove', onMove, { passive: false });
@@ -2483,6 +2497,7 @@ function App() {
       section.removeEventListener('touchend', onEnd);
       section.removeEventListener('touchcancel', onEnd);
       window.removeEventListener('scroll', onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);
 
@@ -3077,7 +3092,7 @@ function App() {
 
       <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-2xl border-b border-white/5 px-6 py-2 flex justify-between items-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20">
         <button className="p-2 text-zinc-400 hover:text-white shrink-0 touch-manipulation" onClick={() => document.getElementById('search-input').focus()} data-testid="btn-header-search"><Search size={22} /></button>
-        
+
         <button
           className="select-none flex-1 flex flex-col items-center justify-center mx-2 h-full relative overflow-hidden touch-manipulation active:opacity-80 transition-opacity"
           onClick={() => {
@@ -3118,11 +3133,11 @@ function App() {
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
 
-          {/* Trilho de slides — transform controlado apenas via DOM direto (applyTrackTransform) */}
+          {/* Trilho com parallax + scale ao rolar */}
           <div
             ref={bannerTrackRef}
             className="flex h-full"
-            style={{ willChange: 'transform' }}
+            style={{ willChange: 'transform', transform: 'translate3d(0, var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))', transformOrigin: '50% 0%' }}
           >
             {activeBanners.map((banner, idx) => {
               const isActive = idx === currentBannerSlide;
@@ -3134,7 +3149,7 @@ function App() {
                   <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-zinc-950/75 to-transparent pointer-events-none" />
                   <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />
                   {/* Texto com fade proporcional ao scroll */}
-                  <div className="absolute inset-x-0 bottom-0 px-7 pb-12 flex flex-col" style={{ opacity: 'var(--banner-text-op, 1)', transition: 'opacity 0.08s linear' }}>
+                  <div className="absolute inset-x-0 bottom-0 px-7 pb-12 flex flex-col" style={{ opacity: 'var(--banner-text-op, 1)', transform: 'translate3d(0, calc(var(--banner-parallax, 0px) * -0.4), 0)', transition: 'opacity 0.08s linear', willChange: 'opacity, transform' }}>
                     {banner.collection_name && (
                       <div className="flex items-center gap-2.5 mb-4">
                         <div className="h-px w-8 bg-white/40" />
@@ -3142,7 +3157,7 @@ function App() {
                       </div>
                     )}
                     <h2 className="text-[2.6rem] font-black uppercase leading-[0.92] tracking-tight text-white mb-2.5 drop-shadow-2xl">{banner.title}</h2>
-                    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/45 mb-7">{banner.subtitle}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-7">{banner.subtitle}</p>
                     {banner.buttonText && (
                       <button
                         onClick={() => {
@@ -3159,6 +3174,9 @@ function App() {
               );
             })}
           </div>
+
+          {/* Dimmer que escurece conforme banner sai da viewport */}
+          <div className="absolute inset-0 bg-zinc-950 pointer-events-none" style={{ opacity: 'var(--banner-dim, 0)', willChange: 'opacity' }} aria-hidden="true" />
 
           {/* Contador + linhas de progresso — canto superior direito */}
           {activeBanners.length > 1 && (
@@ -3259,89 +3277,168 @@ function App() {
           if (!isDefaultView) return null;
           const featured = (products || []).filter(p => p.featured && (p.is_kit || (p.stock || 0) > 0));
           if (featured.length === 0) return null;
+          const hero = featured[0];
+          const rest = featured.slice(1);
+          const heroImages = [hero.image, ...((Array.isArray(hero.gallery) ? hero.gallery : []))].filter(Boolean);
+          const heroLow = (hero.stock || 0) > 0 && hero.stock <= 3;
           return (
-            <section className="relative -mx-6 overflow-hidden animate-in" data-testid="featured-section">
+            <section
+              className="relative -mx-6 overflow-hidden animate-in"
+              data-testid="featured-section"
+              style={{ background: 'radial-gradient(120% 80% at 50% 0%, rgba(228,228,231,0.06) 0%, rgba(9,9,11,0) 55%), linear-gradient(180deg, rgba(9,9,11,0) 0%, rgba(9,9,11,0) 100%)' }}
+            >
+              {/* Linha luminosa superior */}
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" aria-hidden="true" />
+
               {/* Cabeçalho editorial */}
-              <div className="flex items-center gap-4 px-6 pt-8 pb-5">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-400/20 to-zinc-300/25" />
-                <div className="flex items-center gap-2">
-                  <span className="text-zinc-400/60 text-[8px] select-none">◆</span>
-                  <span className="text-[8px] font-black uppercase tracking-[0.45em] text-white/50 shrink-0">Em Destaque</span>
-                  <span className="text-zinc-400/60 text-[8px] select-none">◆</span>
+              <div className="px-6 pt-10 pb-6">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-[9px] font-black uppercase tracking-[0.45em] text-white/40">N.º 01</span>
+                      <span className="h-px w-6 bg-white/25" />
+                    </div>
+                    <h2 className="font-black uppercase text-white leading-[0.88] tracking-tight" style={{ fontSize: '2.35rem' }}>
+                      Em<br/>
+                      <span className="italic font-serif text-white/85" style={{ fontWeight: 500 }}>Destaque</span>
+                    </h2>
+                  </div>
+                  <div className="flex flex-col items-end pb-1">
+                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/35">Seleção</span>
+                    <span className="text-[10px] font-black tabular-nums text-white/70">
+                      {String(featured.length).padStart(2, '0')} <span className="text-white/30">peças</span>
+                    </span>
+                  </div>
                 </div>
-                <div className="h-px flex-1 bg-gradient-to-l from-transparent via-zinc-400/20 to-zinc-300/25" />
               </div>
 
-              {/* Rail */}
-              <div
-                ref={featuredRailRef}
-                className="flex gap-3.5 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-7 px-6"
-                style={{ touchAction: 'pan-x pan-y', overscrollBehavior: 'contain' }}
-                data-testid="featured-rail"
+              {/* HERO — card grande, presença de loja real */}
+              <motion.button
+                type="button"
+                onClick={() => handleProductClick(hero)}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '120px' }}
+                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                className="block w-full text-left touch-manipulation active:scale-[0.985] transition-transform"
+                data-testid={`featured-hero-${hero.id}`}
               >
-                {featured.map((product, idx) => {
-                  const fg = [product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean);
-                  const isLowStock = (product.stock || 0) > 0 && product.stock <= 3;
-                  return (
-                    <motion.button
-                      key={product.id}
-                      type="button"
-                      onClick={() => handleProductClick(product)}
-                      initial={{ opacity: 0, y: 16 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: '80px' }}
-                      transition={{ duration: 0.5, delay: idx * 0.07, ease: [0.16, 1, 0.3, 1] }}
-                      className="shrink-0 w-[62%] max-w-[240px] snap-start text-left touch-manipulation active:scale-[0.97] transition-transform"
-                      data-testid={`featured-card-${product.id}`}
-                    >
-                      {/* Borda gradiente platina */}
-                      <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/18 to-white/4">
-                        <div className="rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
-
-                          {/* Imagem limpa — sem overlay pesado, foto fala sozinha */}
-                          <div className="aspect-[3/4] relative overflow-hidden">
-                            <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
-                              {fg.map((imgSrc, i) => (
-                                <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
-                                  <ProductImage src={imgSrc} alt={product.name} priority={idx < 2 && i === 0} sizes="65vw" />
-                                </div>
-                              ))}
+                <div className="mx-6 relative">
+                  {/* Glow ambiente */}
+                  <div className="absolute -inset-3 bg-gradient-to-b from-white/8 via-white/2 to-transparent rounded-[36px] blur-2xl opacity-70 pointer-events-none" aria-hidden="true" />
+                  {/* Borda platina */}
+                  <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5">
+                    <div className="rounded-[27px] overflow-hidden bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+                      <div className="aspect-[4/5] relative overflow-hidden">
+                        <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                          {heroImages.map((imgSrc, i) => (
+                            <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
+                              <ProductImage src={imgSrc} alt={hero.name} priority={i === 0} sizes="92vw" />
                             </div>
-
-                            {/* Badge exclusividade — pequeno, canto superior */}
-                            <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm border border-white/20 rounded-full px-2 py-[3px]">
-                              <span className="w-[5px] h-[5px] rounded-full bg-zinc-300 shrink-0" />
-                              <span className="text-[6px] font-black uppercase tracking-[0.25em] text-zinc-300">Exclusivo</span>
-                            </div>
-
-                            {/* Fade suave para o painel — apenas para transição visual */}
-                            <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
+                          ))}
+                        </div>
+                        {/* Vinheta lateral premium */}
+                        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(120% 80% at 50% 35%, transparent 50%, rgba(0,0,0,0.45) 100%)' }} />
+                        {/* Gradient inferior */}
+                        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />
+                        {heroLow && (
+                          <div className="absolute top-4 right-4 z-20 bg-zinc-950/80 backdrop-blur-md border border-red-400/40 rounded-full px-3 py-1">
+                            <span className="text-[8px] font-black uppercase tracking-[0.25em] text-red-300">Últimas {hero.stock}</span>
                           </div>
-
-                          {/* Separador platina */}
-                          <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                          {/* Painel de info — mesmas cores dos cards normais */}
-                          <div className="px-3 pt-2.5 pb-3 bg-zinc-900">
-                            {isLowStock && (
-                              <p className="text-[7px] font-black uppercase tracking-widest text-red-400/80 mb-1.5">Últimas {product.stock} peças</p>
-                            )}
-                            {!product.is_kit && <h3 className="font-black text-zinc-300 text-[10px] uppercase line-clamp-2 leading-tight mb-2.5">{product.name}</h3>}
-                            <div className="flex items-center justify-between">
-                              <span className="font-black text-sm text-white">{formatBRL(product.price || 0)}</span>
-                              <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-white/60">
-                                <Plus size={13} />
-                              </span>
-                            </div>
+                        )}
+                        {/* Conteúdo sobre a imagem */}
+                        <div className="absolute inset-x-0 bottom-0 p-5 z-10">
+                          <div className="flex items-center gap-2 mb-2.5">
+                            <span className="text-[8px] font-black uppercase tracking-[0.35em] text-white/55">Em destaque</span>
+                            <span className="h-px flex-1 bg-white/15" />
                           </div>
-
+                          {!hero.is_kit && (
+                            <h3 className="font-black text-white text-[15px] uppercase leading-tight mb-3 line-clamp-2 drop-shadow-lg">{hero.name}</h3>
+                          )}
+                          <div className="flex items-end justify-between">
+                            <div className="flex flex-col">
+                              <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/45">A partir de</span>
+                              <span className="font-black text-white text-2xl leading-none mt-1 drop-shadow-lg">{formatBRL(hero.price || 0)}</span>
+                            </div>
+                            <span className="flex items-center gap-2 bg-white text-zinc-950 px-4 py-2.5 rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-[0_8px_30px_rgba(255,255,255,0.18)]">
+                              Ver peça <ArrowRight size={11} />
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </motion.button>
-                  );
-                })}
-                <div className="shrink-0 w-2" aria-hidden="true" />
-              </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.button>
+
+              {/* Rail secundário — demais destaques */}
+              {rest.length > 0 && (
+                <>
+                  <div className="flex items-center gap-3 px-6 pt-8 pb-4">
+                    <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white/40">Também em destaque</span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/15 to-transparent" />
+                  </div>
+                  <div
+                    ref={featuredRailRef}
+                    className="flex gap-3 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-9 px-6"
+                    style={{ touchAction: 'pan-x pan-y', overscrollBehavior: 'contain' }}
+                    data-testid="featured-rail"
+                  >
+                    {rest.map((product, idx) => {
+                      const fg = [product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean);
+                      const isLowStock = (product.stock || 0) > 0 && product.stock <= 3;
+                      return (
+                        <motion.button
+                          key={product.id}
+                          type="button"
+                          onClick={() => handleProductClick(product)}
+                          initial={{ opacity: 0, y: 16 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true, margin: '80px' }}
+                          transition={{ duration: 0.5, delay: idx * 0.07, ease: [0.16, 1, 0.3, 1] }}
+                          className="shrink-0 w-[54%] max-w-[210px] snap-start text-left touch-manipulation active:scale-[0.97] transition-transform"
+                          data-testid={`featured-card-${product.id}`}
+                        >
+                          <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/4">
+                            <div className="rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
+                              <div className="aspect-[3/4] relative overflow-hidden">
+                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                                  {fg.map((imgSrc, i) => (
+                                    <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
+                                      <ProductImage src={imgSrc} alt={product.name} priority={idx < 1 && i === 0} sizes="55vw" />
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 bg-black/55 backdrop-blur-sm border border-white/15 rounded-full px-2 py-[3px]">
+                                  <span className="text-[6px] font-black uppercase tracking-[0.25em] text-white/85">N.º {String(idx + 2).padStart(2, '0')}</span>
+                                </div>
+                                <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
+                              </div>
+                              <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                              <div className="px-3 pt-2.5 pb-3 bg-zinc-900">
+                                {isLowStock && (
+                                  <p className="text-[7px] font-black uppercase tracking-widest text-red-400/80 mb-1.5">Últimas {product.stock} peças</p>
+                                )}
+                                {!product.is_kit && <h3 className="font-black text-zinc-300 text-[10px] uppercase line-clamp-2 leading-tight mb-2.5">{product.name}</h3>}
+                                <div className="flex items-center justify-between">
+                                  <span className="font-black text-sm text-white">{formatBRL(product.price || 0)}</span>
+                                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-white/60">
+                                    <Plus size={13} />
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
+                    <div className="shrink-0 w-2" aria-hidden="true" />
+                  </div>
+                </>
+              )}
+
+              {/* Linha luminosa inferior */}
+              <div className="h-px bg-gradient-to-r from-transparent via-white/15 to-transparent mb-2" aria-hidden="true" />
             </section>
           );
         })()}
