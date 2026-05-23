@@ -3088,7 +3088,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell min-h-screen bg-zinc-950 font-sans text-white pb-0 overflow-x-clip selection:bg-emerald-500 selection:text-zinc-950">
+    <div className="app-shell min-h-screen bg-zinc-950 font-sans text-white pb-0 selection:bg-emerald-500 selection:text-zinc-950">
       
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
