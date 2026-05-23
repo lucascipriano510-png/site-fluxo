@@ -252,6 +252,7 @@ const BannerImage = ({ src, alt, active }) => {
         decoding="async"
         fetchPriority={active ? 'high' : 'low'}
         onLoad={() => setLoaded(true)}
+        draggable={false}
       />
     </>
   );
@@ -2416,7 +2417,10 @@ function App() {
   const nextBannerSlide = () => goToBannerSlide(currentBannerSlide + 1);
   const prevBannerSlide = () => goToBannerSlide(currentBannerSlide - 1);
 
-  // Banner: swipe com Pointer Events (iOS + Android) + fade de texto no scroll
+  // Banner: swipe + fade de texto no scroll
+  // touch-action:pan-y no section → browser trata scroll vertical nativamente (sem bloqueio),
+  // horizontal vai pro JS via touchmove sem precisar de e.preventDefault().
+  // draggable={false} na img evita que iOS/Android intercepte como arrastar imagem.
   useEffect(() => {
     const section = bannerRef.current;
     if (!section) return;
@@ -2430,32 +2434,26 @@ function App() {
       track.style.transform = `translate3d(calc(-${slide * 100}% + ${offsetPx}px), var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))`;
     };
 
-    const onPointerDown = (e) => {
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      s.startX = e.clientX;
-      s.startY = e.clientY;
+    const onStart = (e) => {
+      const t = e.touches[0];
+      s.startX = t.clientX;
+      s.startY = t.clientY;
       s.dx = 0;
       s.decided = false;
       s.horizontal = false;
       s.active = true;
-      s.pointerId = e.pointerId;
     };
 
-    const onPointerMove = (e) => {
-      if (!s.active || e.pointerId !== s.pointerId) return;
-      const dx = e.clientX - s.startX;
-      const dy = e.clientY - s.startY;
+    const onMove = (e) => {
+      if (!s.active) return;
+      const t = e.touches[0];
+      const dx = t.clientX - s.startX;
+      const dy = t.clientY - s.startY;
       if (!s.decided) {
         if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
         s.decided = true;
         s.horizontal = Math.abs(dx) > Math.abs(dy) * 1.2;
-        if (s.horizontal) {
-          // Captura o ponteiro: JS controla o drag exclusivamente, browser não rola a página
-          try { section.setPointerCapture(e.pointerId); } catch (_) {}
-        } else {
-          s.active = false;
-          return;
-        }
+        if (!s.horizontal) { s.active = false; return; }
       }
       if (!s.horizontal) return;
       const slide = currentBannerSlideRef.current;
@@ -2465,10 +2463,9 @@ function App() {
       applyTrackTransform(slide, s.dx, false);
     };
 
-    const onPointerUp = (e) => {
-      if (!s.active || e.pointerId !== s.pointerId) return;
+    const onEnd = () => {
+      if (!s.active) return;
       s.active = false;
-      try { section.releasePointerCapture(e.pointerId); } catch (_) {}
       const dx = s.dx;
       s.dx = 0;
       const total = activeBannersLengthRef.current;
@@ -2478,13 +2475,6 @@ function App() {
         setCurrentBannerSlide(newSlide);
       }
       applyTrackTransform(newSlide, 0, true);
-    };
-
-    const onPointerCancel = (e) => {
-      if (!s.active || e.pointerId !== s.pointerId) return;
-      s.active = false;
-      s.dx = 0;
-      applyTrackTransform(currentBannerSlideRef.current, 0, true);
     };
 
     // Scroll-driven: parallax + scale + dim + fade de texto (estilo Apple/Nike) via RAF
@@ -2508,16 +2498,17 @@ function App() {
     };
     onScroll();
 
-    section.addEventListener('pointerdown', onPointerDown);
-    section.addEventListener('pointermove', onPointerMove);
-    section.addEventListener('pointerup', onPointerUp);
-    section.addEventListener('pointercancel', onPointerCancel);
+    // Todos passive: touch-action:pan-y garante que scroll vertical não espera JS
+    section.addEventListener('touchstart', onStart, { passive: true });
+    section.addEventListener('touchmove', onMove, { passive: true });
+    section.addEventListener('touchend', onEnd, { passive: true });
+    section.addEventListener('touchcancel', onEnd, { passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      section.removeEventListener('pointerdown', onPointerDown);
-      section.removeEventListener('pointermove', onPointerMove);
-      section.removeEventListener('pointerup', onPointerUp);
-      section.removeEventListener('pointercancel', onPointerCancel);
+      section.removeEventListener('touchstart', onStart);
+      section.removeEventListener('touchmove', onMove);
+      section.removeEventListener('touchend', onEnd);
+      section.removeEventListener('touchcancel', onEnd);
       window.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
