@@ -3965,8 +3965,8 @@ function App() {
 
         .native-x-scroll {
           touch-action: pan-x pan-y;
-          overscroll-behavior: contain;
-          -webkit-overflow-scrolling: touch;
+          overscroll-behavior-x: contain;
+          overscroll-behavior-y: auto;
         }
 
         img {
