@@ -3056,12 +3056,12 @@ function App() {
 
       {toast && <div className="fixed top-28 left-1/2 -translate-x-1/2 z-[200] animate-slide-down"><div className="px-6 py-3 rounded-full font-black text-[10px] uppercase bg-white text-zinc-950 shadow-2xl">{toast.message}</div></div>}
 
-      <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20">
+      <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20 lg:h-28">
         <div className="w-full px-6 lg:px-16 h-full flex items-center gap-4">
 
           {/* LOGO */}
           <button
-            className="select-none flex-1 flex flex-col items-center justify-center mx-2 h-full relative overflow-hidden touch-manipulation active:opacity-80 transition-opacity"
+            className="select-none flex-1 lg:flex-none flex flex-col items-center lg:items-start justify-center mx-2 lg:mx-0 h-full relative overflow-hidden touch-manipulation active:opacity-80 transition-opacity"
             onClick={() => {
               setSelectedCategory('TODOS');
               setSelectedSubcategory('TODOS');
@@ -3728,7 +3728,7 @@ function App() {
             </button>
 
             {/* Espaçador do header */}
-            <div className="h-20" />
+            <div className="h-20 lg:h-28" />
 
             {/* CONTEÚDO — container centralizado e limitado */}
             <div className="max-w-[1320px] mx-auto px-10 py-10 flex gap-12 items-start">
