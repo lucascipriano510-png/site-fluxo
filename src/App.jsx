@@ -3105,8 +3105,8 @@ function App() {
           {/* Trilho com scroll snap nativo + parallax vertical */}
           <div
             ref={bannerTrackRef}
-            className="flex h-full overflow-x-auto no-scrollbar"
-            style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', willChange: 'transform', transform: 'translate3d(0, var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))', transformOrigin: '50% 0%' }}
+            className="flex h-full overflow-x-auto no-scrollbar native-x-scroll"
+            style={{ scrollSnapType: 'x mandatory', willChange: 'transform', transform: 'translate3d(0, var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))', transformOrigin: '50% 0%' }}
           >
             {activeBanners.map((banner, idx) => {
               const isActive = idx === currentBannerSlide;
@@ -3185,7 +3185,7 @@ function App() {
           <input id="search-input" placeholder="O que você procura?" data-testid="input-search" className="w-full bg-zinc-900/50 backdrop-blur-sm border border-white/5 py-4 pl-14 pr-6 rounded-2xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/50 shadow-inner client-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
         
-        <div id="catalog-section" className="flex gap-3 overflow-x-auto no-scrollbar pb-1 mask-linear touch-pan-x">
+        <div id="catalog-section" className="flex gap-3 overflow-x-auto no-scrollbar pb-1 mask-linear native-x-scroll">
           {/* Botão destacado de KITS — sempre primeiro */}
           {(products || []).some(p => p.is_kit) && (
             <button
@@ -3215,7 +3215,7 @@ function App() {
 
 
         {!kitsOnly && selectedCategory !== 'TODOS' && availableSubcategories.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear touch-pan-x items-center" data-testid="subcategory-bar">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center" data-testid="subcategory-bar">
             {availableSubcategories.map(sub => (
               <button key={sub} onClick={() => setSelectedSubcategory(sub)} data-testid={`subcategory-filter-${sub}`} className={`px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSubcategory === sub ? 'bg-white/90 text-zinc-950 border-white' : 'bg-transparent text-zinc-500 border-white/10 hover:text-white hover:border-white/30'}`}>{sub === 'TODOS' ? 'Todas subcategorias' : sub}</button>
             ))}
@@ -3233,7 +3233,7 @@ function App() {
         )}
 
         {!kitsOnly && availableSizes.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear touch-pan-x items-center">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center">
             {availableSizes.map(sz => (
               <button key={sz} onClick={() => setSelectedSize(sz)} data-testid={`size-filter-${sz}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSize === sz ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>{sz === 'TODOS' ? 'Todos tamanhos' : sz}</button>
             ))}
@@ -3299,7 +3299,7 @@ function App() {
                   <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5">
                     <div className="rounded-[27px] overflow-hidden bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
                       <div className="aspect-[4/5] relative overflow-hidden">
-                        <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                        <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar native-x-scroll">
                           {heroImages.map((imgSrc, i) => (
                             <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                               <ProductImage src={imgSrc} alt={hero.name} priority={i === 0} sizes="92vw" />
@@ -3349,8 +3349,7 @@ function App() {
                   </div>
                   <div
                     ref={featuredRailRef}
-                    className="flex gap-3 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-9 px-6"
-                    style={{ touchAction: 'pan-x pan-y', overscrollBehavior: 'contain' }}
+                    className="flex gap-3 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-9 px-6 native-x-scroll"
                     data-testid="featured-rail"
                   >
                     {rest.map((product, idx) => {
@@ -3371,7 +3370,7 @@ function App() {
                           <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/4">
                             <div className="rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
                               <div className="aspect-[3/4] relative overflow-hidden">
-                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar native-x-scroll">
                                   {fg.map((imgSrc, i) => (
                                     <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                                       <ProductImage src={imgSrc} alt={product.name} priority={idx < 1 && i === 0} sizes="55vw" />
@@ -3451,7 +3450,7 @@ function App() {
 
                        <div className="aspect-[4/5] relative overflow-hidden">
                          {/* Carrossel nativo — deslize para ver fotos adicionais */}
-                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar native-x-scroll">
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                                <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 4 && i === 0} />
@@ -3996,7 +3995,7 @@ function App() {
           overflow-x: hidden;
           overscroll-behavior-y: none;
           overscroll-behavior-x: none;
-          touch-action: manipulation; 
+          touch-action: auto; 
           image-rendering: -webkit-optimize-contrast;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
@@ -4006,6 +4005,13 @@ function App() {
           min-height: 100dvh;
           overscroll-behavior-y: none;
           overscroll-behavior-x: none;
+          touch-action: auto;
+        }
+
+        .native-x-scroll {
+          touch-action: pan-x pan-y;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
         }
 
         img {
