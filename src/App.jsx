@@ -4012,6 +4012,13 @@ function App() {
           min-height: 100dvh;
           overscroll-behavior-y: none;
           overscroll-behavior-x: none;
+          touch-action: pan-y pinch-zoom;
+        }
+
+        .native-x-scroll {
+          touch-action: pan-x pan-y;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
         }
 
         img {
