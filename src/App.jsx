@@ -3061,7 +3061,7 @@ function App() {
 
           {/* LOGO */}
           <button
-            className="select-none flex-1 lg:flex-none lg:w-[260px] flex flex-col items-center lg:items-start justify-center mx-2 lg:mx-0 h-full relative overflow-hidden touch-manipulation active:opacity-80 transition-opacity"
+            className="select-none flex-1 lg:flex-none flex items-center justify-center lg:justify-start mx-2 lg:mx-0 touch-manipulation active:opacity-80 transition-opacity"
             onClick={() => {
               setSelectedCategory('TODOS');
               setSelectedSubcategory('TODOS');
@@ -3075,9 +3075,16 @@ function App() {
             aria-label="Voltar ao início"
           >
             {config.logoUrl ? (
-               <img src={config.logoUrl} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto lg:w-full max-w-full object-contain lg:object-fill mix-blend-screen transition-transform" />
+              <div className="w-[110px] h-[44px] lg:w-[160px] lg:h-[58px] overflow-hidden shrink-0 flex items-center justify-center lg:justify-start">
+                <img
+                  src={config.logoUrl}
+                  alt={config.brandName}
+                  style={{ transform: `scale(${config.logoZoom || 1})`, transformOrigin: 'left center' }}
+                  className="w-full h-full object-contain object-left mix-blend-screen transition-transform"
+                />
+              </div>
             ) : (
-               <h1 className="logo-font text-xl text-white font-black italic uppercase text-center">{config.brandName}</h1>
+               <h1 className="logo-font text-xl text-white font-black italic uppercase text-center lg:text-left">{config.brandName}</h1>
             )}
           </button>
 
@@ -3104,7 +3111,7 @@ function App() {
       {(activeBanners.length > 0 || !bannersLoaded) && (
         <section
           ref={bannerRef}
-          className="relative w-full max-w-md lg:max-w-none mx-auto aspect-[4/5] lg:aspect-[21/8] overflow-hidden select-none"
+          className="relative w-full max-w-md lg:max-w-none mx-auto aspect-[4/5] lg:aspect-[3/1] lg:max-h-[440px] overflow-hidden select-none"
           style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
