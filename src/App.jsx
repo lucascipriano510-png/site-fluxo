@@ -3995,7 +3995,7 @@ function App() {
           overflow-x: hidden;
           overscroll-behavior-y: none;
           overscroll-behavior-x: none;
-          touch-action: pan-y pinch-zoom; 
+          touch-action: auto; 
           image-rendering: -webkit-optimize-contrast;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
@@ -4005,7 +4005,7 @@ function App() {
           min-height: 100dvh;
           overscroll-behavior-y: none;
           overscroll-behavior-x: none;
-          touch-action: pan-y pinch-zoom;
+          touch-action: auto;
         }
 
         .native-x-scroll {
