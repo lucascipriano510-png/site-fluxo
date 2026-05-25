@@ -85,6 +85,15 @@ const useVisualViewportFrame = () => {
 
 const useScrollBounceGuard = () => {
   useEffect(() => {
+    // Apenas iOS sofre com rubber-band/pull-to-refresh que tampa a URL.
+    // No Android, interceptar touchmove quebra o scroll nativo (arredondamento
+    // de scrollHeight/clientHeight faz atBottom virar true incorretamente),
+    // então mantemos o comportamento padrão do sistema.
+    const ua = window.navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIOS) return;
+
     let startY = 0;
     const getScrollable = (target) => {
       let el = target instanceof Element ? target : null;
@@ -104,6 +113,8 @@ const useScrollBounceGuard = () => {
       if (event.touches.length !== 1) return;
       const scrollable = getScrollable(event.target);
       const deltaY = event.touches[0].clientY - startY;
+      const canScrollInside = scrollable.scrollHeight > scrollable.clientHeight + 1;
+      if (!canScrollInside) return;
       const atTop = scrollable.scrollTop <= 0;
       const atBottom = scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 1;
       if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) event.preventDefault();
