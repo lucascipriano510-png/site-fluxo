@@ -3075,7 +3075,7 @@ function App() {
             aria-label="Voltar ao início"
           >
             {config.logoUrl ? (
-               <img src={config.logoUrl} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto max-w-full object-contain mix-blend-screen transition-transform logo-header-img" />
+               <img src={config.logoUrl} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto lg:w-full max-w-full object-contain lg:object-fill mix-blend-screen transition-transform" />
             ) : (
                <h1 className="logo-font text-xl text-white font-black italic uppercase text-center">{config.brandName}</h1>
             )}

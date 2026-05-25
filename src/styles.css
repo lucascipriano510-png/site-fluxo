@@ -156,13 +156,6 @@
   }
 }
 
-/* Logo: estica horizontalmente só no desktop */
-@media (min-width: 1024px) {
-  .logo-header-img {
-    transform: scaleX(2) scaleY(1.1) !important;
-  }
-}
-
 /* Oculta scrollbar em carrosséis nativos */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
