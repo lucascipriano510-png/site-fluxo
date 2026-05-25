@@ -214,9 +214,9 @@ const BannerImage = ({ src, alt, active }) => {
     <>
       {!loaded && <div className="absolute inset-0 bg-black" />}
       <img
-        src={optimizeImage(src, 900, 75)}
-        srcSet={buildSrcSet(src, [600, 900, 1200])}
-        sizes="(max-width: 640px) 100vw, 448px"
+        src={optimizeImage(src, 1920, 90)}
+        srcSet={buildSrcSet(src, [640, 900, 1280, 1920, 2560], 90)}
+        sizes="100vw"
         className={`w-full h-full object-cover opacity-80 transition-opacity duration-300 ${loaded ? 'opacity-80' : 'opacity-0'}`}
         alt={alt}
         loading={active ? 'eager' : 'lazy'}
