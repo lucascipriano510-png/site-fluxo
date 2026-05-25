@@ -123,7 +123,7 @@ class AdminTabErrorBoundary extends React.Component {
 // ==========================================
 
 // Otimização de imagens via CDN (WebP + resize on-the-fly).
-const optimizeImage = (src, width = 600, quality = 70) => {
+const optimizeImage = (src, width = 600, quality = 90) => {
   if (!src || typeof src !== 'string') return src;
   if (src.startsWith('data:') || src.startsWith('blob:')) return src;
   try {
@@ -135,11 +135,8 @@ const optimizeImage = (src, width = 600, quality = 70) => {
       u.searchParams.set('fit', 'crop');
       return u.toString();
     }
-    // Supabase Storage: retorna URL original (CDN próprio do Supabase já é rápido)
-    if (src.includes('.supabase.co/')) {
-      return src;
-    }
-    // Demais URLs externas: proxy wsrv.nl
+    // Todas as URLs (inclusive Supabase) passam pelo wsrv.nl para
+    // redimensionamento correto + WebP. &we = sem ampliar se já for menor.
     const clean = src.replace(/^https?:\/\//, '');
     return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we`;
   } catch {
@@ -148,7 +145,7 @@ const optimizeImage = (src, width = 600, quality = 70) => {
 };
 
 const buildSrcSet = (src, widths = [400, 600, 900, 1200, 1600], quality = 90) => {
-  if (!src || src.includes('.supabase.co/')) return undefined;
+  if (!src) return undefined;
   return widths.map((w) => `${optimizeImage(src, w, quality)} ${w}w`).join(', ');
 };
 
