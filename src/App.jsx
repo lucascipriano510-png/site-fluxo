@@ -3054,7 +3054,7 @@ function App() {
       {toast && <div className="fixed top-28 left-1/2 -translate-x-1/2 z-[200] animate-slide-down"><div className="px-6 py-3 rounded-full font-black text-[10px] uppercase bg-white text-zinc-950 shadow-2xl">{toast.message}</div></div>}
 
       <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20">
-        <div className="max-w-[1600px] mx-auto px-6 lg:px-16 h-full flex items-center gap-4">
+        <div className="w-full px-6 lg:px-16 h-full flex items-center gap-4">
 
           {/* LOGO — mobile: centralizada (flex-1 + mx-auto), desktop: esquerda (flex-none) */}
           <button
@@ -3075,8 +3075,8 @@ function App() {
                <img
                  src={config.logoUrl}
                  alt={config.brandName}
-                 style={{ transform: `scale(${config.logoZoom || 1.5})` }}
-                 className="h-full w-auto max-w-full object-contain mix-blend-screen lg:mix-blend-normal lg:brightness-0 lg:invert transition-transform"
+                 style={{ transform: `scale(${config.logoZoom || 1.5})`, filter: 'brightness(0) invert(1)' }}
+                 className="h-full w-auto max-w-full object-contain transition-transform"
                />
             ) : (
                <h1 className="logo-font text-xl text-white font-black italic uppercase text-center lg:text-left">{config.brandName}</h1>
@@ -3106,7 +3106,7 @@ function App() {
       {(activeBanners.length > 0 || !bannersLoaded) && (
         <section
           ref={bannerRef}
-          className="relative w-full max-w-md lg:max-w-[1600px] mx-auto aspect-[4/5] lg:aspect-[21/8] overflow-hidden select-none lg:rounded-2xl"
+          className="relative w-full max-w-md lg:max-w-none mx-auto aspect-[4/5] lg:aspect-[21/8] overflow-hidden select-none"
           style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
@@ -3188,7 +3188,7 @@ function App() {
         </section>
       )}
 
-      <main className="max-w-[1600px] mx-auto px-6 lg:px-16 mt-6 lg:mt-10 space-y-5 lg:space-y-8 min-h-screen" data-testid="catalog-main">
+      <main className="w-full px-6 lg:px-16 mt-6 lg:mt-10 space-y-5 lg:space-y-8 min-h-screen" data-testid="catalog-main">
         <div className="relative group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
           <input id="search-input" placeholder="O que você procura?" data-testid="input-search" className="w-full bg-zinc-900/50 backdrop-blur-sm border border-white/5 py-4 pl-14 pr-6 rounded-2xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/50 shadow-inner client-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -3572,7 +3572,7 @@ function App() {
         )}
       </main>
 
-      <footer className="mt-20 bg-zinc-900/50 border-t border-white/5 pt-12 pb-10 px-6 lg:px-16 max-w-[1600px] mx-auto">
+      <footer className="mt-20 bg-zinc-900/50 border-t border-white/5 pt-12 pb-10 px-6 lg:px-16 w-full">
         <div className="space-y-10">
           <div className="flex flex-col items-center text-center">
             <div className="h-16 w-full flex items-center justify-center mb-4 relative overflow-hidden pointer-events-none">
