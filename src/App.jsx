@@ -402,6 +402,18 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
   const [formSizes, setFormSizes] = useState([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
+  // ===== NOVOS CAMPOS =====
+  const [isActive, setIsActive] = useState(true);
+  const [color, setColor] = useState('');
+  const [secondaryColors, setSecondaryColors] = useState([]);
+  const [secondaryColorInput, setSecondaryColorInput] = useState('');
+  const [productType, setProductType] = useState('');
+  const [material, setMaterial] = useState('');
+  const [searchTags, setSearchTags] = useState([]);
+  const [searchTagInput, setSearchTagInput] = useState('');
+  const [botDescription, setBotDescription] = useState('');
+  const [promotionalPrice, setPromotionalPrice] = useState('');
+
   // ===== KIT (Bundle Builder) =====
   const [isKit, setIsKit] = useState(false);
   const [galleryUrls, setGalleryUrls] = useState([]);
@@ -431,7 +443,14 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setFormSizes(normalizedSizes.length > 0 ? normalizedSizes : [{ size: 'U', stock: editMode.stock || 0 }]);
       setIsKit(!!editMode.is_kit);
       setGalleryUrls(Array.isArray(editMode.gallery) ? editMode.gallery : []);
-      // Carrega componentes do kit do banco
+      setIsActive(editMode.is_active !== false);
+      setColor(editMode.color || '');
+      setSecondaryColors(Array.isArray(editMode.secondary_colors) ? editMode.secondary_colors : []);
+      setProductType(editMode.product_type || '');
+      setMaterial(editMode.material || '');
+      setSearchTags(Array.isArray(editMode.search_tags) ? editMode.search_tags : []);
+      setBotDescription(editMode.bot_description || '');
+      setPromotionalPrice(editMode.promotional_price != null ? String(editMode.promotional_price) : '');
       if (editMode.is_kit && editMode.id) {
         fetchKitItems(editMode.id)
           .then(rows => setKitComponentIds(rows.map(r => r.product_id)))
@@ -445,7 +464,17 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setIsKit(false);
       setGalleryUrls([]);
       setKitComponentIds([]);
+      setIsActive(true);
+      setColor('');
+      setSecondaryColors([]);
+      setProductType('');
+      setMaterial('');
+      setSearchTags([]);
+      setBotDescription('');
+      setPromotionalPrice('');
     }
+    setSecondaryColorInput('');
+    setSearchTagInput('');
     setKitSearch('');
     setProductImageFile(null);
   }, [editMode]);
@@ -645,6 +674,14 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
         featured: fd.get('featured') === 'on',
         is_kit: isKit,
         gallery: galleryUrls,
+        is_active: isActive,
+        color: color || null,
+        secondary_colors: secondaryColors.length > 0 ? secondaryColors : null,
+        product_type: productType.trim() || null,
+        material: material.trim() || null,
+        search_tags: searchTags.length > 0 ? searchTags : null,
+        bot_description: botDescription.trim() || null,
+        promotional_price: promotionalPrice !== '' ? parseFloat(promotionalPrice) : null,
       };
       const updatedProducts = editMode === 'new' ? [data, ...products] : products.map(p => p.id === data.id ? data : p);
       setProducts(updatedProducts);
@@ -876,94 +913,22 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       )}
 
       {editMode ? (
-        <form onSubmit={handleSave} className="bg-zinc-900 p-8 rounded-[40px] border border-white/10 space-y-4 shadow-2xl relative">
-          <button type="button" onClick={() => { setEditMode(null); setPreviewImage(''); }} className="absolute top-6 right-6 text-zinc-500 hover:text-white"><X/></button>
-          <h3 className="font-black italic uppercase tracking-tighter text-xl text-white mb-6">{editMode === 'new' ? 'Novo Produto' : 'Editar Produto'}</h3>
-          <div className="relative group overflow-hidden bg-zinc-950 border-2 border-dashed border-white/10 rounded-[32px] aspect-video flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-emerald-500/50 transition-all">
-            {previewImage ? (
-              <img src={previewImage} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Preview" />
-            ) : (
-              <ImageIcon size={40} className="text-zinc-800" />
-            )}
-            <div className="relative z-10 flex flex-col items-center">
-              <Upload size={24} className="text-emerald-500 mb-2" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white">Carregar Imagem</span>
-            </div>
-            <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+        <form onSubmit={handleSave} className="space-y-4 pb-32">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-black italic uppercase tracking-tighter text-xl text-white">{editMode === 'new' ? 'Novo Produto' : 'Editar Produto'}</h3>
+            <button type="button" onClick={() => { setEditMode(null); setPreviewImage(''); }} className="text-zinc-500 hover:text-white p-2"><X size={20}/></button>
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {!isKit && (
-              <div className="col-span-2 space-y-1">
-                <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Nome</label>
-                <input name="name" defaultValue={editMode?.name} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" required />
-              </div>
-            )}
-            <div className="space-y-1">
-               <label className="text-[9px] font-black text-zinc-500 uppercase px-2 flex items-center gap-1.5">
-                 SKU {editMode === 'new' && <span className="text-emerald-500 text-[8px] tracking-widest">AUTO</span>}
-               </label>
-               <input
-                 name="sku"
-                 defaultValue={editMode === 'new' ? nextSku : editMode?.sku}
-                 readOnly={editMode === 'new'}
-                 className={`w-full p-4 bg-zinc-950 border rounded-2xl font-bold text-sm text-white outline-none ${editMode === 'new' ? 'border-emerald-500/30 text-emerald-400 cursor-not-allowed select-none' : 'border-white/5 focus:border-emerald-500/50'}`}
-                 required
-               />
-            </div>
-            <div className="space-y-1">
-               <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Preço (R$)</label>
-               <input name="price" type="number" step="0.01" defaultValue={editMode?.price} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" required />
-            </div>
-             <div className="col-span-2 space-y-1">
-               <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Categoria</label>
-	              <input name="category" defaultValue={editMode?.category} placeholder={isKit ? 'KITS (automático)' : 'Categoria (ex: VESTUÁRIO)'} disabled={isKit} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase disabled:opacity-50" required={!isKit} />
-	            </div>
-	            <div className="col-span-2 space-y-1">
-	               <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Subcategoria (Opcional)</label>
-	              <input name="subcategory" defaultValue={editMode?.subcategory || ''} placeholder="Ex: CALÇA JOGADOR" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase" />
-	            </div>
-	            <div className="col-span-2 space-y-1">
-	               <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Vincular à Coleção (Opcional)</label>
-	               <select name="collection_name" defaultValue={editMode?.collection_name || ""} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase appearance-none cursor-pointer focus:border-emerald-500/50">
-	                 <option value="">Nenhuma Coleção</option>
-	                 {availableCollections.map(c => (
-	                   <option key={c} value={c}>{c}</option>
-	                 ))}
-	               </select>
-	            </div>
-            {/* TOGGLE — É um Kit? */}
-            <div className="col-span-2 flex items-center gap-3 bg-gradient-to-r from-amber-500/10 to-pink-500/10 p-4 rounded-2xl border border-amber-400/30 mt-2 cursor-pointer" onClick={() => setIsKit(v => !v)}>
-              <div className={`w-11 h-6 rounded-full p-0.5 transition-all ${isKit ? 'bg-gradient-to-r from-amber-400 to-pink-500' : 'bg-zinc-800'}`}>
-                <div className={`w-5 h-5 rounded-full bg-white transition-transform ${isKit ? 'translate-x-5' : ''}`} />
-              </div>
-              <div className="flex-1">
-                <p className="text-[11px] font-black uppercase text-white flex items-center gap-1.5"><Zap size={12} className="text-amber-400 fill-amber-400" /> É um KIT (Bundle)</p>
-                <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wide">{isKit ? 'Estoque/tamanhos vêm dos itens vinculados' : 'Produto único com tamanhos próprios'}</p>
-              </div>
-            </div>
 
-            {!isKit && (
-              <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-white/5 space-y-3 mt-2">
-                 <label className="text-[9px] font-black text-emerald-500 uppercase flex items-center gap-1"><Layers size={12}/> Grade de Tamanhos</label>
-                 {formSizes.map((item, idx) => (
-                   <div key={idx} className="flex gap-2 items-center animate-in">
-                     <input placeholder="Tam." className="w-1/2 p-3 bg-zinc-900 border border-white/5 rounded-xl font-bold text-sm text-white uppercase outline-none" value={item.size} onChange={(e) => handleSizeChange(idx, 'size', e.target.value)} required />
-                     <input type="number" placeholder="Qtd" className="w-1/2 p-3 bg-zinc-900 border border-white/5 rounded-xl font-bold text-sm text-white outline-none" value={item.stock} onChange={(e) => handleSizeChange(idx, 'stock', e.target.value)} required />
-                     <button type="button" onClick={() => removeSize(idx)} className="p-3 text-red-500 bg-red-500/5 rounded-xl transition-colors border border-red-500/10"><X size={16}/></button>
-                   </div>
-                 ))}
-                 <button type="button" onClick={addSize} className="w-full py-3 mt-2 border border-dashed border-white/10 rounded-xl text-[10px] font-black uppercase text-zinc-500 hover:text-white transition-all">+ Adicionar</button>
-              </div>
-            )}
-
-            {/* GALERIA — sempre disponível (imagens adicionais além da principal) */}
-            <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-white/5 space-y-3 mt-2">
-              <label className="text-[9px] font-black text-emerald-500 uppercase flex items-center gap-1">
-                <ImagePlus size={12}/> {isKit ? `Galeria do Kit (${galleryUrls.length})` : `Fotos extras (${galleryUrls.length})`}
-              </label>
-              <p className="text-[9px] text-zinc-500 font-bold">
-                {isKit ? 'Imagens auxiliares mostrando cada peça.' : 'Ângulos diferentes da peça. A foto principal permanece em destaque.'}
-              </p>
+          {/* BLOCO 1 — MÍDIA */}
+          <div className="bg-zinc-900 p-5 rounded-[28px] border border-white/5 space-y-3">
+            <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5"><ImageIcon size={12}/> Mídia</p>
+            <div className="relative group overflow-hidden bg-zinc-950 border-2 border-dashed border-white/10 rounded-[24px] aspect-video flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-emerald-500/50 transition-all">
+              {previewImage ? <img src={previewImage} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Preview" /> : <ImageIcon size={40} className="text-zinc-800" />}
+              <div className="relative z-10 flex flex-col items-center"><Upload size={24} className="text-emerald-500 mb-2" /><span className="text-[10px] font-black uppercase tracking-widest text-white">Imagem Principal</span></div>
+              <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-zinc-500 uppercase flex items-center gap-1"><ImagePlus size={12}/> {isKit ? `Galeria do Kit (${galleryUrls.length})` : `Fotos extras (${galleryUrls.length})`}</label>
               <div className="grid grid-cols-4 gap-2">
                 {galleryUrls.map((url, i) => (
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
@@ -978,59 +943,167 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
               </div>
               {isUploadingGallery && <p className="text-[9px] text-emerald-400 font-bold uppercase">Enviando imagens...</p>}
             </div>
+          </div>
 
-            {isKit && (
-              <>
-                {/* MULTI-SELECT DE PRODUTOS */}
-                <div className="col-span-2 bg-zinc-950 p-4 rounded-[20px] border border-amber-400/20 space-y-3 mt-2">
-                  <label className="text-[9px] font-black text-amber-400 uppercase flex items-center gap-1"><Layers size={12}/> Peças do Kit ({kitComponentIds.length})</label>
-                  <input
-                    value={kitSearch}
-                    onChange={(e) => setKitSearch(e.target.value)}
-                    placeholder="Buscar por nome ou SKU..."
-                    className="w-full p-3 bg-zinc-900 border border-white/5 rounded-xl text-sm text-white outline-none focus:border-amber-400/50"
-                  />
-                  <div className="max-h-72 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
-                    {(products || [])
-                      .filter(p => !p.is_kit && (
-                        !kitSearch.trim() ||
-                        (p.name || '').toLowerCase().includes(kitSearch.toLowerCase()) ||
-                        (p.sku || '').toLowerCase().includes(kitSearch.toLowerCase())
-                      ))
-                      .map(p => {
-                        const selected = kitComponentIds.includes(p.id);
-                        return (
-                          <button
-                            type="button"
-                            key={p.id}
-                            onClick={() => toggleKitComponent(p.id)}
-                            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all text-left ${selected ? 'bg-amber-400/10 border-amber-400/60' : 'bg-zinc-900 border-white/5 hover:border-white/15'}`}
-                          >
-                            <div className={`w-5 h-5 rounded grid place-items-center border-2 shrink-0 ${selected ? 'bg-amber-400 border-amber-400' : 'border-zinc-600'}`}>
-                              {selected && <Check size={12} className="text-zinc-950" strokeWidth={3}/>}
-                            </div>
-                            <img src={p.image} className="w-10 h-10 rounded-lg object-cover border border-white/5" alt="" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[11px] font-black uppercase text-white truncate">{p.name}</p>
-                              <p className="text-[9px] text-zinc-500 font-bold">{p.sku} · {formatBRL(p.price || 0)}</p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    {(products || []).filter(p => !p.is_kit).length === 0 && (
-                      <p className="text-[10px] text-zinc-500 text-center py-4">Nenhum produto disponível.</p>
-                    )}
-                  </div>
-                </div>
-              </>
+          {/* BLOCO 2 — IDENTIFICAÇÃO */}
+          <div className="bg-zinc-900 p-5 rounded-[28px] border border-white/5 space-y-3">
+            <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5"><Tag size={12}/> Identificação</p>
+            {!isKit && (
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Nome</label>
+                <input name="name" defaultValue={editMode?.name} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" required />
+              </div>
             )}
-
-            <div className="col-span-2 flex items-center gap-3 bg-zinc-950 p-4 rounded-2xl border border-white/5 mt-2 cursor-pointer" onClick={() => document.getElementById('f-check').click()}>
-              <input type="checkbox" name="featured" id="f-check" defaultChecked={editMode?.featured} className="w-5 h-5 accent-emerald-500" />
-              <label className="text-[11px] font-black uppercase text-white">Destaque na Home</label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-zinc-500 uppercase px-1 flex items-center gap-1">SKU {editMode === 'new' && <span className="text-emerald-500 text-[8px]">AUTO</span>}</label>
+                <input name="sku" defaultValue={editMode === 'new' ? nextSku : editMode?.sku} readOnly={editMode === 'new'} className={`w-full p-4 bg-zinc-950 border rounded-2xl font-bold text-sm text-white outline-none ${editMode === 'new' ? 'border-emerald-500/30 text-emerald-400 cursor-not-allowed' : 'border-white/5 focus:border-emerald-500/50'}`} required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Status</label>
+                <div className="flex items-center gap-3 h-[52px] px-4 bg-zinc-950 border border-white/5 rounded-2xl cursor-pointer" onClick={() => setIsActive(v => !v)}>
+                  <div className={`w-10 h-5 rounded-full p-0.5 transition-all ${isActive ? 'bg-emerald-500' : 'bg-zinc-700'}`}>
+                    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isActive ? 'translate-x-5' : ''}`} />
+                  </div>
+                  <span className={`text-[11px] font-black uppercase ${isActive ? 'text-emerald-400' : 'text-zinc-500'}`}>{isActive ? 'Ativo' : 'Inativo'}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex items-center gap-2 bg-zinc-950 px-4 py-3 rounded-2xl border border-white/5 cursor-pointer flex-1" onClick={() => document.getElementById('f-check').click()}>
+                <input type="checkbox" name="featured" id="f-check" defaultChecked={editMode?.featured} className="w-4 h-4 accent-emerald-500" />
+                <label className="text-[10px] font-black uppercase text-white cursor-pointer">Destaque na Home</label>
+              </div>
+              <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-pink-500/10 px-4 py-3 rounded-2xl border border-amber-400/30 cursor-pointer flex-1" onClick={() => setIsKit(v => !v)}>
+                <div className={`w-8 h-4 rounded-full p-0.5 transition-all shrink-0 ${isKit ? 'bg-gradient-to-r from-amber-400 to-pink-500' : 'bg-zinc-800'}`}>
+                  <div className={`w-3 h-3 rounded-full bg-white transition-transform ${isKit ? 'translate-x-4' : ''}`} />
+                </div>
+                <span className="text-[10px] font-black uppercase text-white flex items-center gap-1"><Zap size={10} className="text-amber-400 fill-amber-400"/> Kit</span>
+              </div>
             </div>
           </div>
-          <button type="submit" disabled={isUploadingImage} className={`w-full py-5 rounded-[28px] font-black uppercase text-[11px] tracking-widest mt-6 shadow-[0_0_20px_rgba(16,185,129,0.2)] ${isUploadingImage ? 'bg-zinc-800 text-zinc-500' : 'bg-emerald-500 text-zinc-950 active:scale-95'}`}>
+
+          {/* BLOCO 3 — CLASSIFICAÇÃO */}
+          <div className="bg-zinc-900 p-5 rounded-[28px] border border-white/5 space-y-3">
+            <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5"><Layers size={12}/> Classificação</p>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Categoria</label>
+              <input name="category" defaultValue={editMode?.category} placeholder={isKit ? 'KITS (automático)' : 'Ex: VESTUÁRIO'} disabled={isKit} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase disabled:opacity-50 focus:border-emerald-500/50" required={!isKit} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Subcategoria (opcional)</label>
+              <input name="subcategory" defaultValue={editMode?.subcategory || ''} placeholder="Ex: CALÇA JOGADOR" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase focus:border-emerald-500/50" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Coleção (opcional)</label>
+              <select name="collection_name" defaultValue={editMode?.collection_name || ""} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase appearance-none cursor-pointer focus:border-emerald-500/50">
+                <option value="">Nenhuma Coleção</option>
+                {availableCollections.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Tipo / Modelo</label>
+              <input list="product-type-list" value={productType} onChange={e => setProductType(e.target.value)} placeholder="Ex: camisa premium, calça jeans…" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none focus:border-emerald-500/50" />
+              <datalist id="product-type-list">
+                {['camisa básica','camisa premium','polo','malha egípcia','calça jeans','bermuda jeans','tênis','boné','kit'].map(t => <option key={t} value={t}/>)}
+              </datalist>
+            </div>
+          </div>
+
+          {/* BLOCO 4 — ATRIBUTOS */}
+          <div className="bg-zinc-900 p-5 rounded-[28px] border border-white/5 space-y-3">
+            <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Atributos do Produto</p>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Cor Principal</label>
+              <select value={color} onChange={e => setColor(e.target.value)} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none appearance-none cursor-pointer focus:border-emerald-500/50">
+                {['','preto','branco','azul','vermelho','verde','bege','cinza','marrom','rosa','amarelo'].map(c => <option key={c} value={c}>{c || 'não informado'}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Cores Secundárias (opcional)</label>
+              <div className="flex gap-2">
+                <input value={secondaryColorInput} onChange={e => setSecondaryColorInput(e.target.value)} onKeyDown={e => { if ((e.key === 'Enter' || e.key === ',') && secondaryColorInput.trim()) { e.preventDefault(); setSecondaryColors(v => [...v, secondaryColorInput.trim().toLowerCase()]); setSecondaryColorInput(''); }}} placeholder="Digite e pressione Enter" className="flex-1 p-3 bg-zinc-950 border border-white/5 rounded-xl text-sm text-white outline-none focus:border-emerald-500/50" />
+                <button type="button" onClick={() => { if (secondaryColorInput.trim()) { setSecondaryColors(v => [...v, secondaryColorInput.trim().toLowerCase()]); setSecondaryColorInput(''); }}} className="px-4 bg-zinc-800 text-white rounded-xl text-[11px] font-black">+</button>
+              </div>
+              {secondaryColors.length > 0 && <div className="flex flex-wrap gap-1.5 mt-1">{secondaryColors.map((c, i) => <span key={i} className="flex items-center gap-1 bg-zinc-800 text-zinc-300 text-[10px] font-black px-2 py-1 rounded-full">{c}<button type="button" onClick={() => setSecondaryColors(v => v.filter((_,j) => j !== i))} className="text-zinc-500 hover:text-red-400"><X size={10}/></button></span>)}</div>}
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Material / Tecido</label>
+              <input list="material-list" value={material} onChange={e => setMaterial(e.target.value)} placeholder="Ex: algodão, jeans, poliéster…" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none focus:border-emerald-500/50" />
+              <datalist id="material-list">
+                {['algodão','malha egípcia','jeans','sarja','poliéster','viscose','linho'].map(m => <option key={m} value={m}/>)}
+              </datalist>
+            </div>
+          </div>
+
+          {/* BLOCO 5 — PREÇO */}
+          <div className="bg-zinc-900 p-5 rounded-[28px] border border-white/5 space-y-3">
+            <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Preço</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Preço Normal (R$)</label>
+                <input name="price" type="number" step="0.01" defaultValue={editMode?.price} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Preço Promo (opcional)</label>
+                <input type="number" step="0.01" value={promotionalPrice} onChange={e => setPromotionalPrice(e.target.value)} placeholder="—" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* BLOCO 6 — ESTOQUE */}
+          {!isKit && (
+            <div className="bg-zinc-900 p-5 rounded-[28px] border border-white/5 space-y-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5"><Layers size={12}/> Estoque / Grade de Tamanhos</p>
+              {formSizes.map((item, idx) => (
+                <div key={idx} className="flex gap-2 items-center">
+                  <input placeholder="Tam." className="w-1/2 p-3 bg-zinc-950 border border-white/5 rounded-xl font-bold text-sm text-white uppercase outline-none" value={item.size} onChange={(e) => handleSizeChange(idx, 'size', e.target.value)} required />
+                  <input type="number" placeholder="Qtd" className="w-1/2 p-3 bg-zinc-950 border border-white/5 rounded-xl font-bold text-sm text-white outline-none" value={item.stock} onChange={(e) => handleSizeChange(idx, 'stock', e.target.value)} required />
+                  <button type="button" onClick={() => removeSize(idx)} className="p-3 text-red-500 bg-red-500/5 rounded-xl border border-red-500/10"><X size={16}/></button>
+                </div>
+              ))}
+              <button type="button" onClick={addSize} className="w-full py-3 border border-dashed border-white/10 rounded-xl text-[10px] font-black uppercase text-zinc-500 hover:text-white transition-all">+ Adicionar Tamanho</button>
+            </div>
+          )}
+
+          {/* KIT — seleção de peças */}
+          {isKit && (
+            <div className="bg-zinc-900 p-5 rounded-[28px] border border-amber-400/20 space-y-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5"><Layers size={12}/> Peças do Kit ({kitComponentIds.length})</p>
+              <input value={kitSearch} onChange={(e) => setKitSearch(e.target.value)} placeholder="Buscar por nome ou SKU..." className="w-full p-3 bg-zinc-950 border border-white/5 rounded-xl text-sm text-white outline-none focus:border-amber-400/50" />
+              <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+                {(products || []).filter(p => !p.is_kit && (!kitSearch.trim() || (p.name||'').toLowerCase().includes(kitSearch.toLowerCase()) || (p.sku||'').toLowerCase().includes(kitSearch.toLowerCase()))).map(p => {
+                  const selected = kitComponentIds.includes(p.id);
+                  return (
+                    <button type="button" key={p.id} onClick={() => toggleKitComponent(p.id)} className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all text-left ${selected ? 'bg-amber-400/10 border-amber-400/60' : 'bg-zinc-950 border-white/5 hover:border-white/15'}`}>
+                      <div className={`w-5 h-5 rounded grid place-items-center border-2 shrink-0 ${selected ? 'bg-amber-400 border-amber-400' : 'border-zinc-600'}`}>{selected && <Check size={12} className="text-zinc-950" strokeWidth={3}/>}</div>
+                      <img src={p.image} className="w-10 h-10 rounded-lg object-cover border border-white/5" alt="" />
+                      <div className="flex-1 min-w-0"><p className="text-[11px] font-black uppercase text-white truncate">{p.name}</p><p className="text-[9px] text-zinc-500 font-bold">{p.sku} · {formatBRL(p.price||0)}</p></div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* BLOCO 7 — BOT / ATENDIMENTO */}
+          <div className="bg-zinc-900 p-5 rounded-[28px] border border-white/5 space-y-3">
+            <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Bot / Atendimento</p>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Descrição curta para o bot</label>
+              <textarea value={botDescription} onChange={e => setBotDescription(e.target.value)} rows={3} placeholder='Ex: "Camisa premium branca, estilo casual, disponível em P e M."' className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none focus:border-emerald-500/50 resize-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Tags de busca</label>
+              <div className="flex gap-2">
+                <input value={searchTagInput} onChange={e => setSearchTagInput(e.target.value)} onKeyDown={e => { if ((e.key === 'Enter' || e.key === ',') && searchTagInput.trim()) { e.preventDefault(); setSearchTags(v => [...v, searchTagInput.trim().toLowerCase()]); setSearchTagInput(''); }}} placeholder="Digite e pressione Enter" className="flex-1 p-3 bg-zinc-950 border border-white/5 rounded-xl text-sm text-white outline-none focus:border-emerald-500/50" />
+                <button type="button" onClick={() => { if (searchTagInput.trim()) { setSearchTags(v => [...v, searchTagInput.trim().toLowerCase()]); setSearchTagInput(''); }}} className="px-4 bg-zinc-800 text-white rounded-xl text-[11px] font-black">+</button>
+              </div>
+              {searchTags.length > 0 && <div className="flex flex-wrap gap-1.5 mt-1">{searchTags.map((t, i) => <span key={i} className="flex items-center gap-1 bg-zinc-800 text-zinc-300 text-[10px] font-black px-2 py-1 rounded-full">{t}<button type="button" onClick={() => setSearchTags(v => v.filter((_,j) => j !== i))} className="text-zinc-500 hover:text-red-400"><X size={10}/></button></span>)}</div>}
+            </div>
+          </div>
+
+          <button type="submit" disabled={isUploadingImage} className={`w-full py-5 rounded-[28px] font-black uppercase text-[11px] tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.2)] ${isUploadingImage ? 'bg-zinc-800 text-zinc-500' : 'bg-emerald-500 text-zinc-950 active:scale-95'}`}>
             {isUploadingImage ? 'Salvando...' : 'Salvar Alterações'}
           </button>
         </form>
@@ -2716,6 +2789,8 @@ function App() {
 
   const filteredProducts = useMemo(() => {
     return (products || []).filter(p => {
+      // Produtos com is_active === false ficam ocultos para o cliente
+      if (p.is_active === false) return false;
       // Modo KITS: só exibe produtos marcados como kit (e ignora estoque/tamanho/categoria)
       if (kitsOnly) {
         if (!p.is_kit) return false;

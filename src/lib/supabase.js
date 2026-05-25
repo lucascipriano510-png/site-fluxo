@@ -33,6 +33,15 @@ export async function upsertProduct(product) {
     is_kit: !!product.is_kit,
     gallery: Array.isArray(product.gallery) ? product.gallery : [],
     updated_at: new Date().toISOString(),
+    // Campos novos — opcionais, compatíveis com produtos antigos
+    is_active: product.is_active !== false,
+    color: product.color || null,
+    secondary_colors: Array.isArray(product.secondary_colors) && product.secondary_colors.length > 0 ? product.secondary_colors : null,
+    product_type: product.product_type || null,
+    material: product.material || null,
+    search_tags: Array.isArray(product.search_tags) && product.search_tags.length > 0 ? product.search_tags : null,
+    bot_description: product.bot_description || null,
+    promotional_price: product.promotional_price != null ? Number(product.promotional_price) : null,
   };
   const { data, error } = await supabase
     .from('products')
