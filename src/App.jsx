@@ -3755,11 +3755,6 @@ function App() {
 
           {/* ── DESKTOP: página de produto real (oculto no mobile) ── */}
           <div className="hidden lg:block fixed inset-0 z-30 overflow-y-auto bg-zinc-950">
-            {/* Fechar */}
-            <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="fixed top-6 right-8 z-50 text-white bg-zinc-900 border border-white/10 rounded-full p-3 hover:bg-zinc-800 transition-colors">
-              <X size={20}/>
-            </button>
-
             {/* Espaçador do header */}
             <div className="h-20 lg:h-28" />
 
@@ -3800,6 +3795,15 @@ function App() {
 
               {/* COLUNA DIREITA — painel de compra fixo em largura */}
               <div className="w-[420px] shrink-0 flex flex-col">
+                {/* X fechar */}
+                <div className="flex justify-end mb-4">
+                  <button
+                    onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }}
+                    className="flex items-center gap-2 text-zinc-400 hover:text-white bg-zinc-900 border border-white/10 rounded-full px-4 py-2 text-[11px] font-black uppercase tracking-widest transition-colors hover:bg-zinc-800"
+                  >
+                    <X size={14}/> Fechar
+                  </button>
+                </div>
               {selectedProduct.category && (
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4">
                   {selectedProduct.category}{selectedProduct.collection_name ? ` / ${selectedProduct.collection_name}` : ''}
