@@ -60,6 +60,12 @@ const DEFAULT_CONFIG = {
   ]
 };
 
+const HORIZONTAL_TOUCH_SCROLL_STYLE = {
+  touchAction: 'pan-x pan-y',
+  overscrollBehavior: 'contain',
+  WebkitOverflowScrolling: 'touch',
+};
+
 const useVisualViewportFrame = () => {
   const [frame, setFrame] = useState({ top: 0, height: 0 });
   useEffect(() => {
