@@ -3075,14 +3075,24 @@ function App() {
             aria-label="Voltar ao início"
           >
             {config.logoUrl ? (
-              <div className="w-[110px] h-[44px] lg:w-[160px] lg:h-[58px] overflow-hidden shrink-0 flex items-center justify-center lg:justify-start">
+              <>
+                {/* MOBILE logo — original sem alteração */}
                 <img
                   src={config.logoUrl}
                   alt={config.brandName}
-                  style={{ transform: `scale(${config.logoZoom || 1})`, transformOrigin: window.innerWidth >= 1024 ? 'left center' : 'center center' }}
-                  className="w-full h-full object-contain object-center lg:object-left mix-blend-screen transition-transform"
+                  style={{ transform: `scale(${config.logoZoom || 1.5})` }}
+                  className="lg:hidden h-full w-auto max-w-full object-contain mix-blend-screen transition-transform"
                 />
-              </div>
+                {/* DESKTOP logo — container fixo, alinhado à esquerda */}
+                <div className="hidden lg:flex w-[160px] h-[58px] overflow-hidden shrink-0 items-center justify-start">
+                  <img
+                    src={config.logoUrl}
+                    alt={config.brandName}
+                    style={{ transform: `scale(${config.logoZoom || 1})`, transformOrigin: 'left center' }}
+                    className="w-full h-full object-contain object-left mix-blend-screen transition-transform"
+                  />
+                </div>
+              </>
             ) : (
                <h1 className="logo-font text-xl text-white font-black italic uppercase text-center lg:text-left">{config.brandName}</h1>
             )}
