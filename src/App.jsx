@@ -3956,9 +3956,7 @@ function App() {
           height: 100%;
           overflow-x: hidden;
           overflow-y: scroll;
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior-y: none;
-          overscroll-behavior-x: none;
+          overscroll-behavior-y: contain;
         }
 
         .app-shell {
