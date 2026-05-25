@@ -135,14 +135,11 @@ const optimizeImage = (src, width = 600, quality = 70) => {
       u.searchParams.set('fit', 'crop');
       return u.toString();
     }
-    // Supabase Storage: usa a API de transformação nativa (sem proxy externo)
-    if (src.includes('.supabase.co/storage/v1/object/public/')) {
-      return src.replace(
-        '/storage/v1/object/public/',
-        '/storage/v1/render/image/public/'
-      ) + `?width=${width}&quality=${quality}&format=webp`;
+    // Supabase Storage: retorna URL original (CDN próprio do Supabase já é rápido)
+    if (src.includes('.supabase.co/')) {
+      return src;
     }
-    // Demais URLs: proxy wsrv.nl
+    // Demais URLs externas: proxy wsrv.nl
     const clean = src.replace(/^https?:\/\//, '');
     return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we`;
   } catch {
