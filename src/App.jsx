@@ -3079,8 +3079,8 @@ function App() {
                 <img
                   src={config.logoUrl}
                   alt={config.brandName}
-                  style={{ transform: `scale(${config.logoZoom || 1})`, transformOrigin: 'left center' }}
-                  className="w-full h-full object-contain object-left mix-blend-screen transition-transform"
+                  style={{ transform: `scale(${config.logoZoom || 1})`, transformOrigin: window.innerWidth >= 1024 ? 'left center' : 'center center' }}
+                  className="w-full h-full object-contain object-center lg:object-left mix-blend-screen transition-transform"
                 />
               </div>
             ) : (
