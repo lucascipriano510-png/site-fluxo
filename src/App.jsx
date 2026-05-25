@@ -3061,7 +3061,7 @@ function App() {
 
           {/* LOGO */}
           <button
-            className="select-none flex-1 lg:flex-none flex flex-col items-center lg:items-start justify-center mx-2 lg:mx-0 h-full relative overflow-hidden touch-manipulation active:opacity-80 transition-opacity"
+            className="select-none flex-1 lg:flex-none lg:w-[260px] flex flex-col items-center lg:items-start justify-center mx-2 lg:mx-0 h-full relative overflow-hidden touch-manipulation active:opacity-80 transition-opacity"
             onClick={() => {
               setSelectedCategory('TODOS');
               setSelectedSubcategory('TODOS');
@@ -3075,7 +3075,7 @@ function App() {
             aria-label="Voltar ao início"
           >
             {config.logoUrl ? (
-               <img src={config.logoUrl} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto max-w-full object-contain mix-blend-screen transition-transform" />
+               <img src={config.logoUrl} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto max-w-full object-contain mix-blend-screen transition-transform logo-header-img" />
             ) : (
                <h1 className="logo-font text-xl text-white font-black italic uppercase text-center">{config.brandName}</h1>
             )}
