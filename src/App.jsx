@@ -3667,80 +3667,42 @@ function App() {
         const productGallery = [selectedProduct.image, ...((Array.isArray(selectedProduct.gallery) ? selectedProduct.gallery : []) || [])].filter(Boolean);
         const heroImg = activeProductImage || selectedProduct.image;
         return (
-        <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center overflow-hidden" style={viewportOverlayStyle}>
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} />
-
-          {/* DIALOG — mobile: bottom sheet | desktop: modal 2 colunas */}
-          <div className="relative bg-zinc-950 w-full max-w-md lg:max-w-5xl rounded-t-[40px] lg:rounded-[32px] animate-slide-up border-t lg:border border-white/10 shadow-2xl overflow-hidden flex flex-col lg:flex-row" style={{ maxHeight: viewportPanelMaxHeight }}>
-
-            {/* Drag handle — só mobile */}
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full z-10 pointer-events-none lg:hidden" />
-
-            {/* Fechar */}
-            <button
-              onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }}
-              className="absolute top-4 right-4 z-20 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform"
-            >
-              <X size={18}/>
-            </button>
-
-            {/* COLUNA ESQUERDA — imagem (mobile: topo, desktop: metade esquerda) */}
-            <div className="relative w-full lg:w-[52%] lg:shrink-0 bg-zinc-900 pt-12 lg:pt-0 flex flex-col">
-              <button
-                onClick={() => setZoomImage(heroImg)}
-                className="block w-full aspect-[4/3] lg:aspect-auto lg:flex-1 overflow-hidden touch-manipulation group relative"
-                aria-label="Ampliar foto"
-              >
-                <img
-                  src={optimizeImage(heroImg, 1200, 90)}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  alt={selectedProduct.name}
-                  fetchPriority="high"
-                />
-                <div className="absolute bottom-3 right-3 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 flex items-center gap-1.5 pointer-events-none">
-                  <ZoomIn size={10}/> Ampliar
-                </div>
-              </button>
-
-              {/* Thumbs */}
+        <>
+          {/* ── MOBILE: bottom sheet (oculto no desktop) ── */}
+          <div className="fixed inset-x-0 bottom-0 z-[100] flex items-end justify-center overflow-hidden lg:hidden" style={viewportOverlayStyle}>
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} />
+            <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: viewportPanelMaxHeight }}>
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full z-10 pointer-events-none" />
+              <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="absolute top-4 right-4 z-20 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform"><X size={18}/></button>
+              <div className="relative w-full bg-zinc-900 pt-12 shrink-0">
+                <button onClick={() => setZoomImage(heroImg)} className="block w-full aspect-[4/3] overflow-hidden touch-manipulation group relative" aria-label="Ampliar foto">
+                  <img src={optimizeImage(heroImg, 1200, 90)} className="w-full h-full object-cover transition-transform duration-500 group-active:scale-105" alt={selectedProduct.name} fetchPriority="high" />
+                  <div className="absolute bottom-3 right-3 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 flex items-center gap-1.5 pointer-events-none"><ZoomIn size={10}/> Ampliar</div>
+                </button>
+              </div>
               {productGallery.length > 1 && (
-                <div
-                  className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar bg-zinc-950 border-t border-white/5"
-                  style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}
-                >
+                <div className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar bg-zinc-950 border-b border-white/5" style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
                   {productGallery.map((g, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveProductImage(g)}
-                      className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60 hover:opacity-100'}`}
-                    >
+                    <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}>
                       <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
                     </button>
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* COLUNA DIREITA — detalhes (mobile: abaixo, desktop: metade direita) */}
-            <div className="flex-1 overflow-y-auto px-7 pt-5 pb-8 lg:px-10 lg:pt-12 lg:pb-10 flex flex-col">
-              <div className="flex flex-col gap-1 mb-6">
-                <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest self-start">REF: {selectedProduct.sku}</span>
-                <h2 className="text-2xl lg:text-3xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{selectedProduct.name}</h2>
-                <p className="text-3xl lg:text-4xl font-black text-emerald-500 mt-2 tracking-tighter">{formatBRL(selectedProduct.price || 0)}</p>
-              </div>
-
-              <div className="space-y-4 flex-1">
-                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Selecione o Tamanho</p>
-                <div className="grid grid-cols-4 lg:grid-cols-5 gap-2">
-                  {(selectedProduct.sizes || []).filter(s => {
-                    const stock = typeof s === 'string' ? selectedProduct.stock : s.stock;
-                    return Number(stock || 0) > 0;
-                  }).map((s, idx) => {
-                    const sz = typeof s === 'string' ? s : s.size;
-                    const stock = typeof s === 'string' ? selectedProduct.stock : s.stock;
-                    const qty = selectedSizes[sz] || 0;
-                    if (qty > 0) {
-                      return (
+              <div className="flex-1 overflow-y-auto px-7 pt-5 pb-8 flex flex-col">
+                <div className="flex flex-col gap-1 mb-6">
+                  <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest self-start">REF: {selectedProduct.sku}</span>
+                  <h2 className="text-2xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{selectedProduct.name}</h2>
+                  <p className="text-3xl font-black text-emerald-500 mt-2 tracking-tighter">{formatBRL(selectedProduct.price || 0)}</p>
+                </div>
+                <div className="space-y-4 flex-1">
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Selecione o Tamanho</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(selectedProduct.sizes || []).filter(s => { const stock = typeof s === 'string' ? selectedProduct.stock : s.stock; return Number(stock || 0) > 0; }).map((s, idx) => {
+                      const sz = typeof s === 'string' ? s : s.size;
+                      const stock = typeof s === 'string' ? selectedProduct.stock : s.stock;
+                      const qty = selectedSizes[sz] || 0;
+                      if (qty > 0) return (
                         <div key={idx} className="py-2.5 rounded-lg border-2 border-white bg-zinc-900 flex flex-col items-center justify-center gap-1.5">
                           <span className="text-xs font-black text-white">{sz}</span>
                           <div className="flex items-center gap-2 bg-zinc-950 rounded-md px-1 py-1 border border-zinc-800">
@@ -3750,23 +3712,100 @@ function App() {
                           </div>
                         </div>
                       );
-                    }
-                    return (
-                      <button key={idx} disabled={stock <= 0} onClick={() => handleSizeSelect(sz, stock)} className={`py-3 rounded-lg border font-black text-sm transition-all touch-manipulation bg-zinc-900 border-zinc-800 ${stock > 0 ? 'text-zinc-300 hover:border-white hover:text-white active:scale-95' : 'text-zinc-600 opacity-50'}`}>{sz}</button>
-                    );
-                  })}
-                </div>
-
-                <div className="pt-6 mt-auto border-t border-white/5">
-                  <button onClick={handleCommitToCart} disabled={Object.keys(selectedSizes).length === 0} className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 touch-manipulation ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-700' : 'bg-emerald-500 text-zinc-950 shadow-[0_10px_30px_rgba(16,185,129,0.3)] hover:bg-emerald-400'}`}>
-                    {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola (${Object.values(selectedSizes).reduce((a,b)=>a+b,0)})`} <ShoppingBag size={14}/>
-                  </button>
+                      return <button key={idx} disabled={stock <= 0} onClick={() => handleSizeSelect(sz, stock)} className={`py-3 rounded-lg border font-black text-sm transition-all touch-manipulation bg-zinc-900 border-zinc-800 ${stock > 0 ? 'text-zinc-300 active:scale-95' : 'text-zinc-600 opacity-50'}`}>{sz}</button>;
+                    })}
+                  </div>
+                  <div className="pt-6 mt-4 border-t border-white/5">
+                    <button onClick={handleCommitToCart} disabled={Object.keys(selectedSizes).length === 0} className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 touch-manipulation ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-700' : 'bg-emerald-500 text-zinc-950 shadow-[0_10px_30px_rgba(16,185,129,0.3)]'}`}>
+                      {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola (${Object.values(selectedSizes).reduce((a,b)=>a+b,0)})`} <ShoppingBag size={14}/>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-
           </div>
-        </div>
+
+          {/* ── DESKTOP: página de produto real (oculto no mobile) ── */}
+          <div className="hidden lg:flex fixed inset-0 z-30 overflow-hidden bg-zinc-950">
+            {/* Fechar */}
+            <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="absolute top-6 right-8 z-50 text-white bg-zinc-900 border border-white/10 rounded-full p-3 hover:bg-zinc-800 transition-colors">
+              <X size={20}/>
+            </button>
+
+            {/* COLUNA ESQUERDA — galeria (55%) */}
+            <div className="w-[55%] shrink-0 h-full flex flex-col bg-zinc-900 pt-20">
+              <button onClick={() => setZoomImage(heroImg)} className="flex-1 overflow-hidden group relative block" aria-label="Ampliar foto">
+                <img src={optimizeImage(heroImg, 1200, 90)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={selectedProduct.name} fetchPriority="high" />
+                <div className="absolute bottom-6 right-6 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 flex items-center gap-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <ZoomIn size={10}/> Ampliar
+                </div>
+              </button>
+              {productGallery.length > 1 && (
+                <div className="shrink-0 px-6 py-4 flex gap-3 overflow-x-auto no-scrollbar border-t border-white/5" style={{ touchAction: 'pan-x' }}>
+                  {productGallery.map((g, i) => (
+                    <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
+                      <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* COLUNA DIREITA — painel de compra (45%) */}
+            <div className="flex-1 h-full overflow-y-auto pt-28 px-14 pb-16 flex flex-col">
+              {selectedProduct.category && (
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4">
+                  {selectedProduct.category}{selectedProduct.collection_name ? ` / ${selectedProduct.collection_name}` : ''}
+                </p>
+              )}
+              <h1 className="text-4xl font-black text-white leading-tight uppercase tracking-tight mb-1">{selectedProduct.name}</h1>
+              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-6">REF: {selectedProduct.sku}</p>
+              <p className="text-5xl font-black text-emerald-400 tracking-tighter mb-10">{formatBRL(selectedProduct.price || 0)}</p>
+
+              <div className="mb-8">
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-3">Selecione o Tamanho</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {(selectedProduct.sizes || []).filter(s => { const stock = typeof s === 'string' ? selectedProduct.stock : s.stock; return Number(stock || 0) > 0; }).map((s, idx) => {
+                    const sz = typeof s === 'string' ? s : s.size;
+                    const stock = typeof s === 'string' ? selectedProduct.stock : s.stock;
+                    const qty = selectedSizes[sz] || 0;
+                    if (qty > 0) return (
+                      <div key={idx} className="py-3 rounded-xl border-2 border-white bg-zinc-900 flex flex-col items-center justify-center gap-1.5">
+                        <span className="text-sm font-black text-white">{sz}</span>
+                        <div className="flex items-center gap-2 bg-zinc-950 rounded-md px-1.5 py-1 border border-zinc-800">
+                          <button onClick={() => { const n = {...selectedSizes}; if(n[sz]>1) n[sz]--; else delete n[sz]; setSelectedSizes(n); }} className="text-zinc-400 hover:text-white transition-colors"><Minus size={11}/></button>
+                          <span className="text-[11px] font-black text-white w-4 text-center">{qty}</span>
+                          <button onClick={() => handleSizeSelect(sz, stock)} className="text-zinc-400 hover:text-white transition-colors"><Plus size={11}/></button>
+                        </div>
+                      </div>
+                    );
+                    return <button key={idx} disabled={stock <= 0} onClick={() => handleSizeSelect(sz, stock)} className={`py-4 rounded-xl border font-black text-sm transition-all ${stock > 0 ? 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-white hover:text-white hover:bg-zinc-800' : 'bg-zinc-900/50 border-zinc-800 text-zinc-600 opacity-40 cursor-not-allowed'}`}>{sz}</button>;
+                  })}
+                </div>
+              </div>
+
+              <button onClick={handleCommitToCart} disabled={Object.keys(selectedSizes).length === 0} className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed' : 'bg-emerald-500 text-zinc-950 shadow-[0_10px_40px_rgba(16,185,129,0.35)] hover:bg-emerald-400 hover:shadow-[0_10px_50px_rgba(16,185,129,0.5)]'}`}>
+                {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola — ${Object.values(selectedSizes).reduce((a,b)=>a+b,0)} ${Object.values(selectedSizes).reduce((a,b)=>a+b,0) === 1 ? 'peça' : 'peças'}`}
+                <ShoppingBag size={16}/>
+              </button>
+
+              <div className="mt-10 pt-8 border-t border-white/5 grid grid-cols-3 gap-4">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <div className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><ShieldCheck size={16} className="text-emerald-500"/></div>
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Compra Segura</span>
+                </div>
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <div className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={16} className="text-emerald-500"/></div>
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Envio Rápido</span>
+                </div>
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <div className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={16} className="text-emerald-500"/></div>
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Suporte WhatsApp</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
         );
       })()}
 
