@@ -147,14 +147,15 @@ const optimizeImage = (src, width = 600, quality = 70) => {
   }
 };
 
-const buildSrcSet = (src, widths = [400, 600, 900, 1200], quality = 75) =>
-  widths.map((w) => `${optimizeImage(src, w, quality)} ${w}w`).join(', ');
+const buildSrcSet = (src, widths = [400, 600, 900, 1200, 1600], quality = 90) => {
+  if (!src || src.includes('.supabase.co/')) return undefined;
+  return widths.map((w) => `${optimizeImage(src, w, quality)} ${w}w`).join(', ');
+};
 
 const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesProp }) => {
   const [loaded, setLoaded] = React.useState(false);
   const [inView, setInView] = React.useState(priority);
   const wrapperRef = React.useRef(null);
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
   React.useEffect(() => {
     if (!src) return;
@@ -181,14 +182,16 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
     return () => io.disconnect();
   }, [src, priority]);
 
+  const srcSet = buildSrcSet(src);
+
   return (
     <div ref={wrapperRef} className="absolute inset-0">
       {!loaded && <div className="absolute inset-0 bg-zinc-800 animate-pulse" />}
       {inView && (
         <img
-          src={optimizeImage(src, isDesktop ? 1200 : 900, isDesktop ? 90 : 75)}
-          srcSet={buildSrcSet(src, isDesktop ? [600, 900, 1200, 1600] : [400, 600, 900], isDesktop ? 90 : 75)}
-          sizes={sizesProp || (isDesktop ? "(max-width: 1280px) 25vw, 20vw" : "(max-width: 640px) 50vw, 35vw")}
+          src={optimizeImage(src, 1200, 90)}
+          srcSet={srcSet}
+          sizes={sizesProp || "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw"}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
@@ -3472,7 +3475,7 @@ function App() {
                        whileInView={{ opacity: 1, y: 0 }}
                        viewport={{ once: true, margin: "100px" }}
                        transition={{ duration: 0.5, ease: "easeOut" }}
-                    className={`group relative bg-zinc-900/40 backdrop-blur-sm rounded-[24px] overflow-hidden border border-white/10 transition-all duration-300 flex flex-col shadow-lg touch-manipulation ${isOutOfStock ? 'opacity-80' : 'hover:border-white/20 hover:-translate-y-0.5 cursor-pointer active:scale-[0.98]'}`}
+                    className={`group relative bg-zinc-900 rounded-[24px] overflow-hidden border border-white/10 transition-all duration-300 flex flex-col shadow-lg touch-manipulation ${isOutOfStock ? 'opacity-80' : 'hover:border-white/20 hover:-translate-y-0.5 cursor-pointer active:scale-[0.98]'}`}
                     data-testid={`product-card-${product.id}`}
                   >
                     {!isOutOfStock && !product.is_kit && product.stock <= 3 && <div className="absolute top-2 left-2 z-10 bg-amber-500 text-zinc-950 text-[8px] font-black uppercase px-2 py-1 rounded-md animate-pulse" data-testid={`badge-last-pieces-${product.id}`}>Restam {product.stock}</div>}
