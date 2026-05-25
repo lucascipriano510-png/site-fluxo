@@ -147,13 +147,14 @@ const optimizeImage = (src, width = 600, quality = 70) => {
   }
 };
 
-const buildSrcSet = (src, widths = [400, 600, 900, 1200]) =>
-  widths.map((w) => `${optimizeImage(src, w)} ${w}w`).join(', ');
+const buildSrcSet = (src, widths = [400, 600, 900, 1200], quality = 75) =>
+  widths.map((w) => `${optimizeImage(src, w, quality)} ${w}w`).join(', ');
 
 const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesProp }) => {
   const [loaded, setLoaded] = React.useState(false);
   const [inView, setInView] = React.useState(priority);
   const wrapperRef = React.useRef(null);
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
   React.useEffect(() => {
     if (!src) return;
@@ -185,9 +186,9 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
       {!loaded && <div className="absolute inset-0 bg-zinc-800 animate-pulse" />}
       {inView && (
         <img
-          src={optimizeImage(src, 900)}
-          srcSet={buildSrcSet(src)}
-          sizes={sizesProp || "(max-width: 640px) 50vw, (max-width: 1280px) 30vw, 23vw"}
+          src={optimizeImage(src, isDesktop ? 1200 : 900, isDesktop ? 90 : 75)}
+          srcSet={buildSrcSet(src, isDesktop ? [600, 900, 1200, 1600] : [400, 600, 900], isDesktop ? 90 : 75)}
+          sizes={sizesProp || (isDesktop ? "(max-width: 1280px) 25vw, 20vw" : "(max-width: 640px) 50vw, 35vw")}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
@@ -3854,30 +3855,21 @@ function App() {
         >
           <button
             onClick={() => setShowCart(true)}
-            className="
-              pointer-events-auto w-full
-              md:w-auto
-              flex items-center justify-between md:justify-start gap-4
-              bg-emerald-500 text-zinc-950
-              px-5 py-4 md:px-6 md:py-4
-              rounded-2xl md:rounded-2xl
-              shadow-[0_8px_32px_rgba(16,185,129,0.5)]
-              touch-manipulation active:scale-95 transition-transform
-            "
+            className="pointer-events-auto w-full md:w-auto flex items-center justify-between md:justify-start gap-4 bg-zinc-900 text-white border border-white/10 px-5 py-4 md:px-6 md:py-4 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] touch-manipulation active:scale-95 transition-transform"
           >
             <div className="flex items-center gap-3">
               <div className="relative">
-                <ShoppingBag size={22} strokeWidth={2.5} />
-                <span className="absolute -top-2 -right-2 bg-zinc-950 text-emerald-400 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                <ShoppingBag size={22} strokeWidth={2.5} className="text-emerald-400" />
+                <span className="absolute -top-2 -right-2 bg-emerald-500 text-zinc-950 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
                   {cart.reduce((a, i) => a + i.quantity, 0)}
                 </span>
               </div>
               <div className="flex flex-col items-start leading-tight">
-                <span className="text-[10px] font-black uppercase tracking-widest">Ver Sacola</span>
-                <span className="text-[11px] font-black">{formatBRL(subtotal)}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Ver Sacola</span>
+                <span className="text-[11px] font-black text-white">{formatBRL(subtotal)}</span>
               </div>
             </div>
-            <ChevronRight size={18} strokeWidth={3} className="md:hidden" />
+            <ChevronRight size={18} strokeWidth={3} className="md:hidden text-zinc-500" />
           </button>
         </div>
       )}
