@@ -4002,7 +4002,7 @@ function App() {
           overflow-x: hidden;
           overscroll-behavior-y: none;
           overscroll-behavior-x: none;
-          touch-action: manipulation; 
+          touch-action: pan-y pinch-zoom; 
           image-rendering: -webkit-optimize-contrast;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
