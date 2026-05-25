@@ -3832,14 +3832,10 @@ function App() {
       })()}
 
       {/* BARRA FLUTUANTE DA SACOLA */}
-      {cart.length > 0 && !showCart && (
+      {cart.length > 0 && !showCart && !isCartModalOpen && (
         <div
-          className="
-            fixed bottom-0 left-0 right-0 z-[90]
-            px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3
-            md:left-auto md:right-6 md:bottom-6 md:w-auto md:px-0 md:pb-0 md:pt-0
-            pointer-events-none
-          "
+          className="fixed bottom-0 left-0 right-0 z-[90] pt-3 md:left-auto md:right-6 md:bottom-6 md:w-auto md:pt-0 pointer-events-none"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)', paddingLeft: '1rem', paddingRight: '1rem' }}
         >
           <button
             onClick={() => setShowCart(true)}
