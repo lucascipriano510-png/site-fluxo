@@ -3078,7 +3078,7 @@ function App() {
                <img
                  src={config.logoUrl}
                  alt={config.brandName}
-                 style={{ transform: `scale(${config.logoZoom || 1.5})`, filter: 'brightness(0) invert(1)', transformOrigin: 'center' }}
+                 style={{ transform: `scale(${config.logoZoom || 1.5})`, transformOrigin: 'center' }}
                  className="max-h-10 w-auto object-contain transition-transform"
                />
             ) : (
