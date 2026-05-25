@@ -3059,9 +3059,9 @@ function App() {
       <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20">
         <div className="w-full px-6 lg:px-16 h-full flex items-center gap-4">
 
-          {/* LOGO — mobile: centralizada (flex-1 + mx-auto), desktop: esquerda (flex-none) */}
+          {/* LOGO — mobile: centralizada, desktop: esquerda */}
           <button
-            className="select-none flex-1 lg:flex-none flex flex-col items-center lg:items-start justify-center h-full relative overflow-hidden touch-manipulation active:opacity-80 transition-opacity lg:mr-8"
+            className="select-none flex-1 lg:flex-none flex items-center justify-center lg:justify-start h-full touch-manipulation active:opacity-80 transition-opacity lg:mr-8"
             onClick={() => {
               setSelectedCategory('TODOS');
               setSelectedSubcategory('TODOS');
@@ -3078,8 +3078,8 @@ function App() {
                <img
                  src={config.logoUrl}
                  alt={config.brandName}
-                 style={{ transform: `scale(${config.logoZoom || 1.5})`, filter: 'brightness(0) invert(1)' }}
-                 className="h-full w-auto max-w-full object-contain transition-transform"
+                 style={{ transform: `scale(${config.logoZoom || 1.5})`, filter: 'brightness(0) invert(1)', transformOrigin: 'center' }}
+                 className="max-h-10 w-auto object-contain transition-transform"
                />
             ) : (
                <h1 className="logo-font text-xl text-white font-black italic uppercase text-center lg:text-left">{config.brandName}</h1>
@@ -3726,33 +3726,52 @@ function App() {
           </div>
 
           {/* ── DESKTOP: página de produto real (oculto no mobile) ── */}
-          <div className="hidden lg:flex fixed inset-0 z-30 overflow-hidden bg-zinc-950">
+          <div className="hidden lg:block fixed inset-0 z-30 overflow-y-auto bg-zinc-950">
             {/* Fechar */}
-            <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="absolute top-6 right-8 z-50 text-white bg-zinc-900 border border-white/10 rounded-full p-3 hover:bg-zinc-800 transition-colors">
+            <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="fixed top-6 right-8 z-50 text-white bg-zinc-900 border border-white/10 rounded-full p-3 hover:bg-zinc-800 transition-colors">
               <X size={20}/>
             </button>
 
-            {/* COLUNA ESQUERDA — galeria (55%) */}
-            <div className="w-[55%] shrink-0 h-full flex flex-col bg-zinc-900 pt-20">
-              <button onClick={() => setZoomImage(heroImg)} className="flex-1 overflow-hidden group relative block" aria-label="Ampliar foto">
-                <img src={optimizeImage(heroImg, 1200, 90)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={selectedProduct.name} fetchPriority="high" />
-                <div className="absolute bottom-6 right-6 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 flex items-center gap-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <ZoomIn size={10}/> Ampliar
-                </div>
-              </button>
-              {productGallery.length > 1 && (
-                <div className="shrink-0 px-6 py-4 flex gap-3 overflow-x-auto no-scrollbar border-t border-white/5" style={{ touchAction: 'pan-x' }}>
-                  {productGallery.map((g, i) => (
-                    <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
-                      <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Espaçador do header */}
+            <div className="h-20" />
 
-            {/* COLUNA DIREITA — painel de compra (45%) */}
-            <div className="flex-1 h-full overflow-y-auto pt-28 px-14 pb-16 flex flex-col">
+            {/* CONTEÚDO — container centralizado e limitado */}
+            <div className="max-w-[1320px] mx-auto px-10 py-10 flex gap-12 items-start">
+
+              {/* COLUNA ESQUERDA — galeria controlada */}
+              <div className="flex-1 min-w-0">
+                {/* Imagem principal: altura controlada, peça inteira visível */}
+                <button
+                  onClick={() => setZoomImage(heroImg)}
+                  className="block w-full bg-zinc-900 rounded-2xl overflow-hidden group relative"
+                  style={{ maxHeight: '640px' }}
+                  aria-label="Ampliar foto"
+                >
+                  <img
+                    src={optimizeImage(heroImg, 1200, 90)}
+                    className="w-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                    style={{ maxHeight: '640px' }}
+                    alt={selectedProduct.name}
+                    fetchPriority="high"
+                  />
+                  <div className="absolute bottom-4 right-4 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 flex items-center gap-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <ZoomIn size={10}/> Ampliar
+                  </div>
+                </button>
+                {/* Thumbs */}
+                {productGallery.length > 1 && (
+                  <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar" style={{ touchAction: 'pan-x' }}>
+                    {productGallery.map((g, i) => (
+                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
+                        <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* COLUNA DIREITA — painel de compra fixo em largura */}
+              <div className="w-[420px] shrink-0 flex flex-col">
               {selectedProduct.category && (
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4">
                   {selectedProduct.category}{selectedProduct.collection_name ? ` / ${selectedProduct.collection_name}` : ''}
@@ -3803,8 +3822,9 @@ function App() {
                   <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Suporte WhatsApp</span>
                 </div>
               </div>
-            </div>
-          </div>
+            </div>{/* fim coluna direita */}
+          </div>{/* fim container max-w */}
+          </div>{/* fim outer desktop */}
         </>
         );
       })()}
