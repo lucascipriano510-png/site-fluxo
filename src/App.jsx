@@ -123,7 +123,6 @@ class AdminTabErrorBoundary extends React.Component {
 // ==========================================
 
 // Otimização de imagens via CDN (WebP + resize on-the-fly).
-// Unsplash já oferece query params; demais URLs passam pelo proxy gratuito wsrv.nl.
 const optimizeImage = (src, width = 600, quality = 70) => {
   if (!src || typeof src !== 'string') return src;
   if (src.startsWith('data:') || src.startsWith('blob:')) return src;
@@ -136,7 +135,14 @@ const optimizeImage = (src, width = 600, quality = 70) => {
       u.searchParams.set('fit', 'crop');
       return u.toString();
     }
-    // Proxy universal: serve em WebP, redimensiona e cacheia globalmente.
+    // Supabase Storage: usa a API de transformação nativa (sem proxy externo)
+    if (src.includes('.supabase.co/storage/v1/object/public/')) {
+      return src.replace(
+        '/storage/v1/object/public/',
+        '/storage/v1/render/image/public/'
+      ) + `?width=${width}&quality=${quality}&format=webp`;
+    }
+    // Demais URLs: proxy wsrv.nl
     const clean = src.replace(/^https?:\/\//, '');
     return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we`;
   } catch {
@@ -3664,69 +3670,71 @@ function App() {
         const productGallery = [selectedProduct.image, ...((Array.isArray(selectedProduct.gallery) ? selectedProduct.gallery : []) || [])].filter(Boolean);
         const heroImg = activeProductImage || selectedProduct.image;
         return (
-        <div className="fixed inset-x-0 z-[100] flex items-end justify-center overflow-hidden" style={viewportOverlayStyle}>
+        <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center overflow-hidden" style={viewportOverlayStyle}>
           <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} />
-          <div className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] animate-slide-up border-t border-white/10 shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: viewportPanelMaxHeight }}>
-            {/* Drag handle — overlay fixo */}
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full backdrop-blur-md z-10 pointer-events-none" />
-            {/* Fechar — overlay fixo */}
+
+          {/* DIALOG — mobile: bottom sheet | desktop: modal 2 colunas */}
+          <div className="relative bg-zinc-950 w-full max-w-md lg:max-w-5xl rounded-t-[40px] lg:rounded-[32px] animate-slide-up border-t lg:border border-white/10 shadow-2xl overflow-hidden flex flex-col lg:flex-row" style={{ maxHeight: viewportPanelMaxHeight }}>
+
+            {/* Drag handle — só mobile */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full z-10 pointer-events-none lg:hidden" />
+
+            {/* Fechar */}
             <button
               onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }}
-              className="absolute top-4 right-4 z-10 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform"
+              className="absolute top-4 right-4 z-20 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform"
             >
               <X size={18}/>
             </button>
 
-            {/* HERO IMAGE — menor para produtos ficarem visíveis abaixo */}
-            <div className="relative w-full bg-gradient-to-b from-zinc-900 to-zinc-950 pt-12 shrink-0">
+            {/* COLUNA ESQUERDA — imagem (mobile: topo, desktop: metade esquerda) */}
+            <div className="relative w-full lg:w-[52%] lg:shrink-0 bg-zinc-900 pt-12 lg:pt-0 flex flex-col">
               <button
                 onClick={() => setZoomImage(heroImg)}
-                className="block w-full aspect-[4/3] overflow-hidden touch-manipulation group"
+                className="block w-full aspect-[4/3] lg:aspect-auto lg:flex-1 overflow-hidden touch-manipulation group relative"
                 aria-label="Ampliar foto"
               >
                 <img
-                  src={optimizeImage(heroImg, 1200, 85)}
-                  className="w-full h-full object-cover transition-transform duration-500 group-active:scale-105"
+                  src={optimizeImage(heroImg, 1200, 90)}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   alt={selectedProduct.name}
                   fetchPriority="high"
                 />
+                <div className="absolute bottom-3 right-3 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 flex items-center gap-1.5 pointer-events-none">
+                  <ZoomIn size={10}/> Ampliar
+                </div>
               </button>
-              {/* Hint de zoom */}
-              <div className="absolute bottom-4 right-4 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 flex items-center gap-1.5 pointer-events-none">
-                <Search size={10}/> Toque para ampliar
-              </div>
-              {/* Fade na base */}
-              <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-b from-transparent to-zinc-950 pointer-events-none" />
+
+              {/* Thumbs */}
+              {productGallery.length > 1 && (
+                <div
+                  className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar bg-zinc-950 border-t border-white/5"
+                  style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}
+                >
+                  {productGallery.map((g, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveProductImage(g)}
+                      className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60 hover:opacity-100'}`}
+                    >
+                      <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* THUMBS — quando houver mais de 1 imagem */}
-            {productGallery.length > 1 && (
-              <div
-                className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto overflow-y-hidden no-scrollbar bg-zinc-950 border-b border-white/5"
-                style={{ touchAction: 'pan-x', overscrollBehavior: 'contain' }}
-              >
-                {productGallery.map((g, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveProductImage(g)}
-                    className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-70 hover:opacity-100'}`}
-                  >
-                    <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* CONTEÚDO scrollável */}
-            <div className="flex-1 overflow-y-auto px-7 pt-5 pb-8">
+            {/* COLUNA DIREITA — detalhes (mobile: abaixo, desktop: metade direita) */}
+            <div className="flex-1 overflow-y-auto px-7 pt-5 pb-8 lg:px-10 lg:pt-12 lg:pb-10 flex flex-col">
               <div className="flex flex-col gap-1 mb-6">
                 <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest self-start">REF: {selectedProduct.sku}</span>
-                <h2 className="text-2xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{selectedProduct.name}</h2>
-                <p className="text-3xl font-black text-emerald-500 mt-2 tracking-tighter">{formatBRL(selectedProduct.price || 0)}</p>
+                <h2 className="text-2xl lg:text-3xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{selectedProduct.name}</h2>
+                <p className="text-3xl lg:text-4xl font-black text-emerald-500 mt-2 tracking-tighter">{formatBRL(selectedProduct.price || 0)}</p>
               </div>
-              <div className="space-y-4">
+
+              <div className="space-y-4 flex-1">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Selecione o Tamanho</p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 lg:grid-cols-5 gap-2">
                   {(selectedProduct.sizes || []).filter(s => {
                     const stock = typeof s === 'string' ? selectedProduct.stock : s.stock;
                     return Number(stock || 0) > 0;
@@ -3747,17 +3755,19 @@ function App() {
                       );
                     }
                     return (
-                      <button key={idx} disabled={stock <= 0} onClick={() => handleSizeSelect(sz, stock)} className={`py-3 rounded-lg border font-black text-sm transition-all touch-manipulation bg-zinc-900 border-zinc-800 ${stock > 0 ? 'text-zinc-300 active:scale-95' : 'text-zinc-600 opacity-50'}`}>{sz}</button>
+                      <button key={idx} disabled={stock <= 0} onClick={() => handleSizeSelect(sz, stock)} className={`py-3 rounded-lg border font-black text-sm transition-all touch-manipulation bg-zinc-900 border-zinc-800 ${stock > 0 ? 'text-zinc-300 hover:border-white hover:text-white active:scale-95' : 'text-zinc-600 opacity-50'}`}>{sz}</button>
                     );
                   })}
                 </div>
-                <div className="pt-6 mt-4 border-t border-white/5">
-                  <button onClick={handleCommitToCart} disabled={Object.keys(selectedSizes).length === 0} className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 touch-manipulation ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-700' : 'bg-emerald-500 text-zinc-950 shadow-[0_10px_30px_rgba(16,185,129,0.3)]'}`}>
+
+                <div className="pt-6 mt-auto border-t border-white/5">
+                  <button onClick={handleCommitToCart} disabled={Object.keys(selectedSizes).length === 0} className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 touch-manipulation ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-700' : 'bg-emerald-500 text-zinc-950 shadow-[0_10px_30px_rgba(16,185,129,0.3)] hover:bg-emerald-400'}`}>
                     {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola (${Object.values(selectedSizes).reduce((a,b)=>a+b,0)})`} <ShoppingBag size={14}/>
                   </button>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
         );
