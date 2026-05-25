@@ -3831,6 +3831,46 @@ function App() {
         );
       })()}
 
+      {/* BARRA FLUTUANTE DA SACOLA */}
+      {cart.length > 0 && !showCart && (
+        <div
+          className="
+            fixed bottom-0 left-0 right-0 z-[90]
+            px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3
+            md:left-auto md:right-6 md:bottom-6 md:w-auto md:px-0 md:pb-0 md:pt-0
+            pointer-events-none
+          "
+        >
+          <button
+            onClick={() => setShowCart(true)}
+            className="
+              pointer-events-auto w-full
+              md:w-auto
+              flex items-center justify-between md:justify-start gap-4
+              bg-emerald-500 text-zinc-950
+              px-5 py-4 md:px-6 md:py-4
+              rounded-2xl md:rounded-2xl
+              shadow-[0_8px_32px_rgba(16,185,129,0.5)]
+              touch-manipulation active:scale-95 transition-transform
+            "
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <ShoppingBag size={22} strokeWidth={2.5} />
+                <span className="absolute -top-2 -right-2 bg-zinc-950 text-emerald-400 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                  {cart.reduce((a, i) => a + i.quantity, 0)}
+                </span>
+              </div>
+              <div className="flex flex-col items-start leading-tight">
+                <span className="text-[10px] font-black uppercase tracking-widest">Ver Sacola</span>
+                <span className="text-[11px] font-black">{formatBRL(subtotal)}</span>
+              </div>
+            </div>
+            <ChevronRight size={18} strokeWidth={3} className="md:hidden" />
+          </button>
+        </div>
+      )}
+
       {/* MODAL — Adicionado ao Carrinho */}
       {isCartModalOpen && (
         <div className="fixed inset-x-0 z-[200] flex items-end sm:items-center justify-center overflow-hidden" style={viewportOverlayStyle}>
