@@ -2965,37 +2965,74 @@ function App() {
     }
   };
 
+  const adminNavItems = [
+    { key: 'dashboard', icon: <LayoutDashboard size={18}/>, label: 'Painel' },
+    { key: 'inventory', icon: <Box size={18}/>, label: 'Estoque' },
+    { key: 'leads', icon: <User size={18}/>, label: 'Pedidos', badge: newOrdersCount > 0 ? (newOrdersCount > 99 ? '99+' : String(newOrdersCount)) : null },
+    { key: 'crm', icon: <MessageCircle size={18}/>, label: 'Atend.' },
+    { key: 'banners', icon: <Megaphone size={18}/>, label: 'Promo' },
+    { key: 'config', icon: <Settings size={18}/>, label: 'Setup' },
+    { key: 'rastreio', icon: <Database size={18}/>, label: 'CAPI' },
+  ];
+
   if (isAdmin) {
     return (
-      <div className="app-shell min-h-screen bg-zinc-950 font-sans text-zinc-100 pb-20 selection:bg-emerald-500 selection:text-zinc-950">
+      <div className="app-shell min-h-screen bg-zinc-950 font-sans text-zinc-100 selection:bg-emerald-500 selection:text-zinc-950">
         <AdminHeader handleLogout={handleLogout} handleBackToStore={handleBackToStore} />
-        <main className="max-w-md mx-auto">
-          <AdminTabErrorBoundary resetKey={adminTab}>
-            {adminTab === 'dashboard' && <AdminDashboard leads={leads} products={products} />}
-            {adminTab === 'inventory' && <AdminInventory products={products} setProducts={setProducts} showToast={showToast} availableCollections={availableCollections} productImageFile={productImageFile} setProductImageFile={setProductImageFile} uploadImage={uploadImage} />}
-            {adminTab === 'leads' && <AdminLeads leads={leads} setLeads={setLeads} products={products} setProducts={setProducts} showToast={showToast} config={config} />}
-            {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} />}
-            {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} />}
-            {adminTab === 'rastreio' && <AdminRastreio />}
-            {adminTab === 'crm' && <AdminCRM showToast={showToast} config={config} />}
-          </AdminTabErrorBoundary>
-        </main>
-        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-zinc-900/95 backdrop-blur-xl px-4 py-4 rounded-3xl flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-50 border border-white/10">
-          <button onClick={() => setAdminTab('dashboard')} className={`flex flex-col items-center gap-1 transition-colors ${adminTab === 'dashboard' ? 'text-emerald-500' : 'text-zinc-500'}`}><LayoutDashboard size={18}/><span className="text-[8px] font-black uppercase">Painel</span></button>
-          <button onClick={() => setAdminTab('inventory')} className={`flex flex-col items-center gap-1 transition-colors ${adminTab === 'inventory' ? 'text-emerald-500' : 'text-zinc-500'}`}><Box size={18}/><span className="text-[8px] font-black uppercase">Estoque</span></button>
-          <button onClick={() => { setAdminTab('leads'); setNewOrdersCount(0); }} className={`flex flex-col items-center gap-1 transition-colors relative ${adminTab === 'leads' ? 'text-emerald-500' : 'text-zinc-500'}`}>
-            <User size={18}/>
-            {newOrdersCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-zinc-900 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]">
-                {newOrdersCount > 99 ? '99+' : newOrdersCount}
-              </span>
-            )}
-            <span className="text-[8px] font-black uppercase">Pedidos</span>
-          </button>
-          <button onClick={() => setAdminTab('crm')} className={`flex flex-col items-center gap-1 transition-colors ${adminTab === 'crm' ? 'text-emerald-500' : 'text-zinc-500'}`}><MessageCircle size={18}/><span className="text-[8px] font-black uppercase">Atend.</span></button>
-          <button onClick={() => setAdminTab('banners')} className={`flex flex-col items-center gap-1 transition-colors ${adminTab === 'banners' ? 'text-emerald-500' : 'text-zinc-500'}`}><Megaphone size={18}/><span className="text-[8px] font-black uppercase">Promo</span></button>
-          <button onClick={() => setAdminTab('config')} className={`flex flex-col items-center gap-1 transition-colors ${adminTab === 'config' ? 'text-emerald-500' : 'text-zinc-500'}`}><Settings size={18}/><span className="text-[8px] font-black uppercase">Setup</span></button>
-          <button onClick={() => setAdminTab('rastreio')} className={`flex flex-col items-center gap-1 transition-colors ${adminTab === 'rastreio' ? 'text-emerald-500' : 'text-zinc-500'}`}><Database size={18}/><span className="text-[8px] font-black uppercase">CAPI</span></button>
+
+        <div className="lg:flex">
+          {/* SIDEBAR — visível só no desktop */}
+          <aside className="hidden lg:flex lg:flex-col lg:w-56 lg:shrink-0 lg:border-r lg:border-white/10 lg:sticky lg:top-20 lg:self-start" style={{ height: 'calc(100vh - 80px)', overflowY: 'auto' }}>
+            <nav className="flex flex-col gap-1 p-4">
+              {adminNavItems.map(item => (
+                <button
+                  key={item.key}
+                  onClick={() => { setAdminTab(item.key); if (item.key === 'leads') setNewOrdersCount(0); }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all relative ${adminTab === item.key ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                >
+                  {item.icon}
+                  {item.label}
+                  {item.badge && (
+                    <span className="ml-auto bg-red-500 text-white text-[9px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]">
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </aside>
+
+          {/* CONTEÚDO PRINCIPAL */}
+          <main className="flex-1 max-w-md mx-auto lg:max-w-none lg:mx-0 pb-24 lg:pb-8">
+            <AdminTabErrorBoundary resetKey={adminTab}>
+              {adminTab === 'dashboard' && <AdminDashboard leads={leads} products={products} />}
+              {adminTab === 'inventory' && <AdminInventory products={products} setProducts={setProducts} showToast={showToast} availableCollections={availableCollections} productImageFile={productImageFile} setProductImageFile={setProductImageFile} uploadImage={uploadImage} />}
+              {adminTab === 'leads' && <AdminLeads leads={leads} setLeads={setLeads} products={products} setProducts={setProducts} showToast={showToast} config={config} />}
+              {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} />}
+              {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} />}
+              {adminTab === 'rastreio' && <AdminRastreio />}
+              {adminTab === 'crm' && <AdminCRM showToast={showToast} config={config} />}
+            </AdminTabErrorBoundary>
+          </main>
+        </div>
+
+        {/* BOTTOM NAV — visível só no mobile */}
+        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-zinc-900/95 backdrop-blur-xl px-4 py-4 rounded-3xl flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-50 border border-white/10 lg:hidden">
+          {adminNavItems.map(item => (
+            <button
+              key={item.key}
+              onClick={() => { setAdminTab(item.key); if (item.key === 'leads') setNewOrdersCount(0); }}
+              className={`flex flex-col items-center gap-1 transition-colors relative ${adminTab === item.key ? 'text-emerald-500' : 'text-zinc-500'}`}
+            >
+              {item.icon}
+              {item.badge && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-zinc-900 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]">
+                  {item.badge}
+                </span>
+              )}
+              <span className="text-[8px] font-black uppercase">{item.label}</span>
+            </button>
+          ))}
         </nav>
       </div>
     );
@@ -3016,7 +3053,8 @@ function App() {
 
       {toast && <div className="fixed top-28 left-1/2 -translate-x-1/2 z-[200] animate-slide-down"><div className="px-6 py-3 rounded-full font-black text-[10px] uppercase bg-white text-zinc-950 shadow-2xl">{toast.message}</div></div>}
 
-      <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-2xl border-b border-white/5 px-6 py-2 flex justify-between items-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20">
+      <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20">
+        <div className="max-w-[1440px] mx-auto px-6 lg:px-12 h-full flex justify-between items-center">
         <button className="p-2 text-zinc-400 hover:text-white shrink-0 touch-manipulation" onClick={() => document.getElementById('search-input').focus()} data-testid="btn-header-search"><Search size={22} /></button>
 
         <button
@@ -3049,12 +3087,13 @@ function App() {
             {cart.length > 0 && <span className="absolute top-0 right-0 bg-emerald-500 text-zinc-950 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-zinc-950 shadow-[0_0_10px_rgba(16,185,129,0.5)]">{cart.reduce((a,i)=>a+i.quantity,0)}</span>}
           </button>
         </div>
+        </div>
       </header>
 
       {(activeBanners.length > 0 || !bannersLoaded) && (
         <section
           ref={bannerRef}
-          className="relative w-full max-w-md mx-auto aspect-[4/5] overflow-hidden select-none"
+          className="relative w-full max-w-md lg:max-w-3xl mx-auto aspect-[4/5] lg:aspect-[16/7] overflow-hidden select-none"
           style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
@@ -3136,7 +3175,7 @@ function App() {
         </section>
       )}
 
-      <main className="max-w-md mx-auto px-6 mt-6 space-y-5 min-h-screen" data-testid="catalog-main">
+      <main className="max-w-[1440px] mx-auto px-6 lg:px-12 mt-6 space-y-5 min-h-screen" data-testid="catalog-main">
         <div className="relative group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
           <input id="search-input" placeholder="O que você procura?" data-testid="input-search" className="w-full bg-zinc-900/50 backdrop-blur-sm border border-white/5 py-4 pl-14 pr-6 rounded-2xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/50 shadow-inner client-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -3388,7 +3427,7 @@ function App() {
            </div>
         ) : (
            <>
-           <div className="grid grid-cols-2 gap-4" data-testid="products-grid">
+           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
@@ -3520,7 +3559,7 @@ function App() {
         )}
       </main>
 
-      <footer className="mt-20 bg-zinc-900/50 border-t border-white/5 pt-12 pb-10 px-6 max-w-md mx-auto">
+      <footer className="mt-20 bg-zinc-900/50 border-t border-white/5 pt-12 pb-10 px-6 lg:px-12 max-w-[1440px] mx-auto">
         <div className="space-y-10">
           <div className="flex flex-col items-center text-center">
             <div className="h-16 w-full flex items-center justify-center mb-4 relative overflow-hidden pointer-events-none">
