@@ -144,7 +144,7 @@ const optimizeImage = (src, width = 600, quality = 70) => {
   }
 };
 
-const buildSrcSet = (src, widths = [400, 600, 900]) =>
+const buildSrcSet = (src, widths = [400, 600, 900, 1200]) =>
   widths.map((w) => `${optimizeImage(src, w)} ${w}w`).join(', ');
 
 const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesProp }) => {
@@ -182,9 +182,9 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
       {!loaded && <div className="absolute inset-0 bg-zinc-800 animate-pulse" />}
       {inView && (
         <img
-          src={optimizeImage(src, 600)}
+          src={optimizeImage(src, 900)}
           srcSet={buildSrcSet(src)}
-          sizes={sizesProp || "(max-width: 640px) 50vw, 300px"}
+          sizes={sizesProp || "(max-width: 640px) 50vw, (max-width: 1280px) 30vw, 23vw"}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
