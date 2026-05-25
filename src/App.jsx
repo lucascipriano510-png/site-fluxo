@@ -83,50 +83,6 @@ const useVisualViewportFrame = () => {
   return frame;
 };
 
-const useScrollBounceGuard = () => {
-  useEffect(() => {
-    // Apenas iOS sofre com rubber-band/pull-to-refresh que tampa a URL.
-    // No Android, interceptar touchmove quebra o scroll nativo (arredondamento
-    // de scrollHeight/clientHeight faz atBottom virar true incorretamente),
-    // então mantemos o comportamento padrão do sistema.
-    const ua = window.navigator.userAgent || '';
-    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (!isIOS) return;
-
-    let startY = 0;
-    const getScrollable = (target) => {
-      let el = target instanceof Element ? target : null;
-      while (el && el !== document.body && el !== document.documentElement) {
-        const style = window.getComputedStyle(el);
-        const canScroll = /(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight;
-        if (canScroll) return el;
-        el = el.parentElement;
-      }
-      return document.scrollingElement || document.documentElement;
-    };
-    const onTouchStart = (event) => {
-      if (event.touches.length !== 1) return;
-      startY = event.touches[0].clientY;
-    };
-    const onTouchMove = (event) => {
-      if (event.touches.length !== 1) return;
-      const scrollable = getScrollable(event.target);
-      const deltaY = event.touches[0].clientY - startY;
-      const canScrollInside = scrollable.scrollHeight > scrollable.clientHeight + 1;
-      if (!canScrollInside) return;
-      const atTop = scrollable.scrollTop <= 0;
-      const atBottom = scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 1;
-      if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) event.preventDefault();
-    };
-    document.addEventListener('touchstart', onTouchStart, { passive: true });
-    document.addEventListener('touchmove', onTouchMove, { passive: false });
-    return () => {
-      document.removeEventListener('touchstart', onTouchStart);
-      document.removeEventListener('touchmove', onTouchMove);
-    };
-  }, []);
-};
 
 class AdminTabErrorBoundary extends React.Component {
   constructor(props) {
@@ -2374,7 +2330,6 @@ function App() {
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
-  useScrollBounceGuard();
   const viewportOverlayStyle = { top: visualFrame.top, height: visualFrame.height || '100dvh' };
   const viewportPanelMaxHeight = visualFrame.height ? `calc(${visualFrame.height}px - 10px)` : 'calc(100dvh - 10px)';
 
@@ -3099,6 +3054,7 @@ function App() {
         <section
           ref={bannerRef}
           className="relative w-full max-w-md mx-auto aspect-[4/5] overflow-hidden select-none"
+          style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
 
