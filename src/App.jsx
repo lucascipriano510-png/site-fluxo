@@ -194,7 +194,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
           decoding="async"
           fetchPriority={priority ? 'high' : 'low'}
           onLoad={() => setLoaded(true)}
-          className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : 'group-hover:scale-105'} transition-transform`}
+          className={`w-full h-full object-contain transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''} transition-transform`}
         />
       )}
     </div>
@@ -3472,9 +3472,19 @@ function App() {
                        whileInView={{ opacity: 1, y: 0 }}
                        viewport={{ once: true, margin: "100px" }}
                        transition={{ duration: 0.5, ease: "easeOut" }}
-                    className={`group relative bg-zinc-900 rounded-[24px] overflow-hidden border border-white/10 transition-all duration-300 flex flex-col shadow-lg touch-manipulation ${isOutOfStock ? 'opacity-80' : 'hover:border-white/20 hover:-translate-y-0.5 cursor-pointer active:scale-[0.98]'}`}
+                    className={`group relative bg-zinc-900 rounded-[24px] overflow-hidden border transition-all duration-300 flex flex-col shadow-lg touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : 'border-white/10'} ${isOutOfStock ? 'opacity-80' : 'hover:border-white/20 hover:-translate-y-0.5 cursor-pointer active:scale-[0.98]'}`}
                     data-testid={`product-card-${product.id}`}
                   >
+                    {/* X de fechar — aparece quando este card está selecionado */}
+                    {selectedProduct?.id === product.id && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedProduct(null); setSelectedSizes({}); }}
+                        className="absolute top-2 right-2 z-30 bg-zinc-950/90 border border-white/20 text-white rounded-full w-7 h-7 flex items-center justify-center touch-manipulation active:scale-90 transition-transform shadow-lg"
+                        aria-label="Fechar"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
                     {!isOutOfStock && !product.is_kit && product.stock <= 3 && <div className="absolute top-2 left-2 z-10 bg-amber-500 text-zinc-950 text-[8px] font-black uppercase px-2 py-1 rounded-md animate-pulse" data-testid={`badge-last-pieces-${product.id}`}>Restam {product.stock}</div>}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
 
