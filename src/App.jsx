@@ -3059,9 +3059,9 @@ function App() {
       <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20">
         <div className="w-full px-6 lg:px-16 h-full flex items-center gap-4">
 
-          {/* LOGO — mobile: centralizada, desktop: esquerda */}
+          {/* LOGO */}
           <button
-            className="select-none flex-1 lg:flex-none flex items-center justify-center lg:justify-start h-full touch-manipulation active:opacity-80 transition-opacity lg:mr-8"
+            className="select-none flex-1 flex flex-col items-center justify-center mx-2 h-full relative overflow-hidden touch-manipulation active:opacity-80 transition-opacity"
             onClick={() => {
               setSelectedCategory('TODOS');
               setSelectedSubcategory('TODOS');
@@ -3075,14 +3075,9 @@ function App() {
             aria-label="Voltar ao início"
           >
             {config.logoUrl ? (
-               <img
-                 src={config.logoUrl}
-                 alt={config.brandName}
-                 style={{ transform: `scale(${config.logoZoom || 1.5})`, transformOrigin: 'center' }}
-                 className="max-h-10 w-auto object-contain transition-transform"
-               />
+               <img src={config.logoUrl} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto max-w-full object-contain mix-blend-screen transition-transform" />
             ) : (
-               <h1 className="logo-font text-xl text-white font-black italic uppercase text-center lg:text-left">{config.brandName}</h1>
+               <h1 className="logo-font text-xl text-white font-black italic uppercase text-center">{config.brandName}</h1>
             )}
           </button>
 
