@@ -2417,11 +2417,12 @@ function App() {
     };
     onScroll();
 
+    const scroller = document.getElementById('root') || window;
     track.addEventListener('scroll', onTrackScroll, { passive: true });
-    window.addEventListener('scroll', onScroll, { passive: true });
+    scroller.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       track.removeEventListener('scroll', onTrackScroll);
-      window.removeEventListener('scroll', onScroll);
+      scroller.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);
@@ -3028,7 +3029,7 @@ function App() {
             setKitsOnly(false);
             setActiveCollectionFilter(null);
             setCurrentPage(1);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            (document.getElementById('root') || window).scrollTo({ top: 0, behavior: 'smooth' });
           }}
           aria-label="Voltar ao início"
         >
@@ -3474,7 +3475,7 @@ function App() {
            {totalPages > 1 && (
              <div className="flex items-center justify-center gap-1.5 pt-8 pb-2 animate-in flex-wrap" data-testid="pagination-controls">
                <button
-                 onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
+                 onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); requestAnimationFrame(() => (document.getElementById('root') || window).scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
                  disabled={currentPage <= 1}
                  className="w-10 h-10 rounded-xl text-base font-black border border-white/10 bg-zinc-900/60 text-white hover:bg-white hover:text-zinc-950 transition-all active:scale-95 disabled:opacity-25 disabled:cursor-not-allowed touch-manipulation flex items-center justify-center"
                  data-testid="pagination-prev"
@@ -3496,7 +3497,7 @@ function App() {
                    return (
                      <button
                        key={p}
-                       onClick={() => { setCurrentPage(p); requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
+                       onClick={() => { setCurrentPage(p); requestAnimationFrame(() => (document.getElementById('root') || window).scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
                        data-testid={`pagination-page-${p}`}
                        className={`w-10 h-10 rounded-xl text-[11px] font-black border transition-all active:scale-95 touch-manipulation ${currentPage === p ? 'bg-white text-zinc-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-zinc-900/60 text-zinc-400 border-white/10 hover:border-white/30 hover:text-white'}`}
                      >
@@ -3506,7 +3507,7 @@ function App() {
                  });
                })()}
                <button
-                 onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
+                 onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); requestAnimationFrame(() => (document.getElementById('root') || window).scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
                  disabled={currentPage >= totalPages}
                  className="w-10 h-10 rounded-xl text-base font-black border border-white/10 bg-zinc-900/60 text-white hover:bg-white hover:text-zinc-950 transition-all active:scale-95 disabled:opacity-25 disabled:cursor-not-allowed touch-manipulation flex items-center justify-center"
                  data-testid="pagination-next"
@@ -3936,32 +3937,32 @@ function App() {
         
         ::-webkit-scrollbar { display: none; }
         
-        html {
+        html, body {
           background-color: #09090b;
-          overscroll-behavior-y: none;
-          overscroll-behavior-x: none;
-          overflow-x: hidden;
-          min-height: 100%;
+          height: 100%;
+          overflow: hidden;
         }
 
-        body { 
-          font-family: 'Inter', sans-serif; 
-          -webkit-tap-highlight-color: transparent; 
-          background-color: #09090b; 
-          overflow-x: hidden;
-          overscroll-behavior-y: none;
-          overscroll-behavior-x: none;
-          touch-action: auto; 
+        body {
+          font-family: 'Inter', sans-serif;
+          -webkit-tap-highlight-color: transparent;
+          background-color: #09090b;
           image-rendering: -webkit-optimize-contrast;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
         }
 
-        #root, .app-shell {
-          min-height: 100dvh;
+        #root {
+          height: 100%;
+          overflow-x: hidden;
+          overflow-y: scroll;
+          -webkit-overflow-scrolling: touch;
           overscroll-behavior-y: none;
           overscroll-behavior-x: none;
-          touch-action: auto;
+        }
+
+        .app-shell {
+          min-height: 100%;
         }
 
         .native-x-scroll {
