@@ -3076,13 +3076,18 @@ function App() {
           >
             {config.logoUrl ? (
               <>
-                {/* MOBILE logo — original sem alteração */}
-                <img
-                  src={config.logoUrl}
-                  alt={config.brandName}
-                  style={{ transform: `scale(${config.logoZoom || 1.5})` }}
-                  className="lg:hidden h-full w-auto max-w-full object-contain mix-blend-screen transition-transform"
-                />
+                {/* MOBILE logo */}
+                <div
+                  className="lg:hidden flex items-center justify-center overflow-hidden"
+                  style={{ width: '180px', maxWidth: '48vw', height: '70px', maxHeight: '70px' }}
+                >
+                  <img
+                    src={config.logoUrl}
+                    alt={config.brandName}
+                    style={{ transform: `scale(${config.logoZoom || 1})`, maxWidth: '180px', maxHeight: '70px' }}
+                    className="w-full h-full object-contain mix-blend-screen transition-transform"
+                  />
+                </div>
                 {/* DESKTOP logo — container fixo, alinhado à esquerda */}
                 <div className="hidden lg:flex w-[160px] h-[58px] overflow-hidden shrink-0 items-center justify-start">
                   <img
