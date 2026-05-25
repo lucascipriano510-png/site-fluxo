@@ -3282,7 +3282,7 @@ function App() {
           const heroLow = (hero.stock || 0) > 0 && hero.stock <= 3;
           return (
             <section
-              className="relative -mx-6 overflow-hidden animate-in"
+              className="relative -mx-6 lg:mx-auto lg:max-w-[1000px] lg:rounded-3xl overflow-hidden animate-in"
               data-testid="featured-section"
               style={{ background: 'radial-gradient(120% 80% at 50% 0%, rgba(228,228,231,0.06) 0%, rgba(9,9,11,0) 55%), linear-gradient(180deg, rgba(9,9,11,0) 0%, rgba(9,9,11,0) 100%)' }}
             >
@@ -3322,7 +3322,7 @@ function App() {
                 className="block w-full text-left touch-manipulation active:scale-[0.985] transition-transform"
                 data-testid={`featured-hero-${hero.id}`}
               >
-                <div className="mx-6 relative">
+                <div className="mx-6 lg:mx-auto lg:max-w-[420px] relative">
                   {/* Glow ambiente */}
                   <div className="absolute -inset-3 bg-gradient-to-b from-white/8 via-white/2 to-transparent rounded-[36px] blur-2xl opacity-70 pointer-events-none" aria-hidden="true" />
                   {/* Borda platina */}
