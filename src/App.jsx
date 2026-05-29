@@ -3536,7 +3536,7 @@ function App() {
            </div>
         ) : (
            <>
-           <div className="catalog-grid" data-testid="products-grid">
+           <div className="products-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '0 8px', width: '100%' }} data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
@@ -3568,10 +3568,10 @@ function App() {
                        <div className="aspect-[4/5] relative">
                          {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
                            <div
-                             className="badge-glass"
-                             style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0, 0, 0, 0.28)', border: '0.5px solid rgba(255, 255, 255, 0.18)', borderRadius: '999px', color: 'rgba(255, 255, 255, 0.92)', fontSize: '10px', fontWeight: '500', letterSpacing: '0.08em', padding: '4px 10px', zIndex: 10 }}
                              data-testid={`badge-last-pieces-${product.id}`}
+                             style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(10, 10, 10, 0.45)', border: '0.5px solid rgba(255,255,255,0.14)', borderRadius: '999px', color: 'rgba(255,255,255,0.88)', fontSize: '9px', fontWeight: '500', letterSpacing: '0.1em', padding: '4px 9px', zIndex: 10, display: 'flex', alignItems: 'center', gap: '5px' }}
                            >
+                             <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'rgba(180,180,180,0.7)', flexShrink: 0, display: 'inline-block' }} />
                              RESTAM {product.stock}
                            </div>
                          )}
