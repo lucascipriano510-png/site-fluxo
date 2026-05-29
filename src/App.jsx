@@ -3578,9 +3578,9 @@ function App() {
                                WebkitBackdropFilter: 'blur(16px) saturate(1.8)',
                                border: '0.5px solid rgba(255,255,255,0.15)',
                                borderRadius: '5px',
-                               color: 'rgba(245,245,243,0.96)',
+                               color: 'rgba(200,200,198,0.82)',
                                fontFamily: "'Anton', Impact, 'Arial Narrow', sans-serif",
-                               fontSize: '10px',
+                               fontSize: '11px',
                                fontWeight: '400',
                                letterSpacing: '0.12em',
                                textTransform: 'uppercase',
@@ -3594,12 +3594,12 @@ function App() {
                              }}
                            >
                              <span style={{
-                               width: '4px',
-                               height: '4px',
+                               width: '6px',
+                               height: '6px',
                                borderRadius: '50%',
                                flexShrink: 0,
-                               background: product.stock <= 1 ? 'rgba(255, 65, 65, 0.95)' : 'rgba(201, 168, 76, 0.92)',
-                               boxShadow: product.stock <= 1 ? '0 0 5px rgba(255,65,65,0.7)' : '0 0 5px rgba(201,168,76,0.6)',
+                               background: 'rgba(160, 160, 158, 0.9)',
+                               boxShadow: 'none',
                              }} />
                              Restam {product.stock}
                            </div>
