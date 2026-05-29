@@ -131,6 +131,20 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+/* ── Premium gray layer system ─────────────────────────────────────────── */
+:root {
+  --bg-base:     #1c1c1e;
+  --bg-surface:  #242426;
+  --bg-elevated: #2c2c2e;
+  --bg-header:   #1a1a1c;
+  --border:      #3a3a3c;
+  --border-light:#48484a;
+  --text-primary:#f5f5f7;
+  --text-secondary:#aeaeb2;
+  --text-muted:  #636366;
+  --gold:        #c9a84c;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

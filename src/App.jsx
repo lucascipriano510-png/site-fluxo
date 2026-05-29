@@ -3118,11 +3118,11 @@ function App() {
   }
 
   return (
-    <div className="app-shell min-h-screen bg-zinc-950 font-sans text-white pb-0 selection:bg-emerald-500 selection:text-zinc-950">
+    <div className="app-shell min-h-screen font-sans text-white pb-0 selection:bg-emerald-500 selection:text-zinc-950" style={{ background: 'var(--bg-base)' }}>
       
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
-        <div className="bg-zinc-800 text-zinc-300 overflow-hidden py-2.5 relative flex items-center justify-center border-b border-white/5">
+        <div className="overflow-hidden py-2.5 relative flex items-center justify-center border-b" style={{ background: 'var(--bg-header)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
           <div className="animate-marquee whitespace-nowrap text-[9px] font-black uppercase tracking-[0.25em] flex gap-12">
             {config.marqueePhrases.map((ph, i) => (<span key={i}>✦ {ph}</span>))}
             {config.marqueePhrases.map((ph, i) => (<span key={`dup-${i}`}>✦ {ph}</span>))}
@@ -3132,7 +3132,7 @@ function App() {
 
       {toast && <div className="fixed top-28 left-1/2 -translate-x-1/2 z-[200] animate-slide-down"><div className="px-6 py-3 rounded-full font-black text-[10px] uppercase bg-white text-zinc-950 shadow-2xl">{toast.message}</div></div>}
 
-      <header className="sticky top-0 z-40 isolate border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20 lg:h-28" style={{ background: '#27272a', backgroundColor: '#27272a', backgroundImage: 'none', opacity: 1, backdropFilter: 'none', WebkitBackdropFilter: 'none', filter: 'none', mixBlendMode: 'normal' }}>
+      <header className="sticky top-0 z-40 isolate border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20 lg:h-28" style={{ background: 'var(--bg-header)', backgroundColor: 'var(--bg-header)', backgroundImage: 'none', opacity: 1, backdropFilter: 'none', WebkitBackdropFilter: 'none', filter: 'none', mixBlendMode: 'normal' }}>
         <div className="w-full px-6 lg:px-16 h-full flex items-center gap-4">
 
           {/* LOGO */}
@@ -3287,7 +3287,7 @@ function App() {
       <main className="w-full px-6 lg:px-16 mt-6 lg:mt-10 space-y-5 lg:space-y-8 min-h-screen" data-testid="catalog-main">
         <div className="relative group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-          <input id="search-input" placeholder="O que você procura?" data-testid="input-search" className="w-full bg-zinc-900/50 backdrop-blur-sm border border-white/5 py-4 pl-14 pr-6 rounded-2xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/50 shadow-inner client-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <input id="search-input" placeholder="O que você procura?" data-testid="input-search" className="w-full border py-4 pl-14 pr-6 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
         
         <div id="catalog-section" className="flex gap-3 overflow-x-auto no-scrollbar pb-1 mask-linear native-x-scroll">
@@ -3314,7 +3314,7 @@ function App() {
             </button>
           )}
           {!kitsOnly && categories.map(cat => (
-            <button key={cat} onClick={() => setSelectedCategory(cat)} data-testid={`category-filter-${cat}`} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedCategory === cat ? 'bg-white text-zinc-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-transparent text-zinc-500 border-white/10 hover:border-white/30'}`}>{cat}</button>
+            <button key={cat} onClick={() => setSelectedCategory(cat)} data-testid={`category-filter-${cat}`} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedCategory === cat ? 'bg-white text-zinc-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]' : ''}`} style={selectedCategory !== cat ? { background: 'transparent', borderColor: 'var(--border)', color: 'var(--text-muted)' } : {}}>{cat}</button>
           ))}
         </div>
 
@@ -3547,7 +3547,10 @@ function App() {
                        whileInView={{ opacity: 1, y: 0 }}
                        viewport={{ once: true, margin: "100px" }}
                        transition={{ duration: 0.5, ease: "easeOut" }}
-                    className={`group relative bg-zinc-900 rounded-[24px] overflow-hidden border transition-all duration-300 flex flex-col shadow-lg touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : 'border-white/10'} ${isOutOfStock ? 'opacity-80' : 'hover:border-white/20 hover:-translate-y-0.5 cursor-pointer active:scale-[0.98]'}`}
+                    className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col shadow-lg touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : 'cursor-pointer active:scale-[0.98]'}`}
+                    style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)' }}
+                    onMouseEnter={e => { if (!isOutOfStock) { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border-light)'; } }}
+                    onMouseLeave={e => { if (!isOutOfStock) { e.currentTarget.style.background = 'var(--bg-surface)'; e.currentTarget.style.borderColor = 'var(--border)'; } }}
                     data-testid={`product-card-${product.id}`}
                   >
                     {/* X de fechar — aparece quando este card está selecionado */}
@@ -3560,7 +3563,7 @@ function App() {
                         <X size={14} />
                       </button>
                     )}
-                    {!isOutOfStock && !product.is_kit && product.stock <= 3 && <div className="absolute top-2 left-2 z-10 bg-amber-500 text-zinc-950 text-[8px] font-black uppercase px-2 py-1 rounded-md animate-pulse" data-testid={`badge-last-pieces-${product.id}`}>Restam {product.stock}</div>}
+                    {!isOutOfStock && !product.is_kit && product.stock <= 3 && <div className="absolute top-2 left-2 z-10 text-[8px] font-black uppercase px-2 py-1 rounded-md" style={{ background: 'var(--gold)', color: 'var(--bg-base)' }} data-testid={`badge-last-pieces-${product.id}`}>Restam {product.stock}</div>}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
 
                        <div className="aspect-[4/5] relative overflow-hidden">
@@ -3621,9 +3624,9 @@ function App() {
                           <div className="absolute top-3 right-3 bg-white text-zinc-950 p-2 rounded-full shadow-xl opacity-0 translate-y-[-4px] group-hover:opacity-100 group-hover:translate-y-0 transition-all pointer-events-none"><Plus size={16}/></div>
                        )}
                      </div>
-                      <div className="p-4 bg-zinc-950/50 flex-1 flex flex-col justify-between">
-                        <h3 className="font-black text-zinc-300 text-[10px] uppercase line-clamp-2 leading-tight group-hover:text-white transition-colors">{product.name}</h3>
-                        <p className={`font-black text-sm mt-2 ${isOutOfStock ? 'text-zinc-600 line-through' : 'text-white'}`}>{formatBRL(product.price || 0)}</p>
+                      <div className="p-4 flex-1 flex flex-col justify-between" style={{ background: 'var(--bg-surface)' }}>
+                        <h3 className="font-black text-[10px] uppercase line-clamp-2 leading-tight transition-colors" style={{ color: 'var(--text-secondary)' }}>{product.name}</h3>
+                        <p className="font-black text-sm mt-2" style={{ color: isOutOfStock ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>{formatBRL(product.price || 0)}</p>
                       </div>
                   </motion.div>
                 )
