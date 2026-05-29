@@ -3597,14 +3597,19 @@ function App() {
                                lineHeight: 1,
                              }}
                            >
-                             <span style={{
-                               width: '5px',
-                               height: '5px',
-                               borderRadius: '50%',
-                               flexShrink: 0,
-                               background: product.stock <= 1 ? 'rgba(255,80,80,0.95)' : 'rgba(180,180,178,0.7)',
-                               boxShadow: product.stock <= 1 ? '0 0 6px rgba(255,80,80,0.5)' : 'none',
-                             }} />
+                             {(() => {
+                               const realUnits = (product.sizes && product.sizes.length > 0)
+                                 ? product.sizes.reduce((sum, s) => sum + (typeof s === 'string' ? product.stock : Number(s.stock || 0)), 0)
+                                 : product.stock;
+                               const isAlmostGone = realUnits <= 1;
+                               return (
+                                 <span style={{
+                                   width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0,
+                                   background: isAlmostGone ? 'rgba(255,80,80,0.95)' : 'rgba(180,180,178,0.7)',
+                                   boxShadow: isAlmostGone ? '0 0 6px rgba(255,80,80,0.5)' : 'none',
+                                 }} />
+                               );
+                             })()}
                              Restam {product.stock}
                            </div>
                          )}
@@ -3666,10 +3671,10 @@ function App() {
                        )}
                      </div>
                       <div className="p-3 flex-1 flex flex-col justify-between" style={{ background: 'var(--bg-surface)' }}>
-                        <p className="font-black leading-none mt-0.5" style={{ color: isOutOfStock ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '18px', fontFamily: "'Anton', Impact, sans-serif", letterSpacing: '0.02em', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>
+                        <p className="leading-none mt-0.5" style={{ color: isOutOfStock ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>
                           {formatBRL(product.price || 0)}
                         </p>
-                        <h3 className="uppercase mt-1.5 line-clamp-1" style={{ color: 'var(--text-muted)', fontSize: '9px', fontWeight: '500', letterSpacing: '0.12em' }}>
+                        <h3 className="uppercase mt-1.5 line-clamp-1" style={{ color: 'var(--text-secondary)', fontSize: '9.5px', fontWeight: '500', letterSpacing: '0.1em' }}>
                           {product.name}
                         </h3>
                       </div>
