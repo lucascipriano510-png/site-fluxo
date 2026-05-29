@@ -3122,7 +3122,7 @@ function App() {
       
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
-        <div className="bg-[#A8A8A9] text-black overflow-hidden py-2.5 relative flex items-center justify-center border-b border-black/10">
+        <div className="bg-zinc-800 text-zinc-300 overflow-hidden py-2.5 relative flex items-center justify-center border-b border-white/5">
           <div className="animate-marquee whitespace-nowrap text-[9px] font-black uppercase tracking-[0.25em] flex gap-12">
             {config.marqueePhrases.map((ph, i) => (<span key={i}>✦ {ph}</span>))}
             {config.marqueePhrases.map((ph, i) => (<span key={`dup-${i}`}>✦ {ph}</span>))}
@@ -3132,7 +3132,7 @@ function App() {
 
       {toast && <div className="fixed top-28 left-1/2 -translate-x-1/2 z-[200] animate-slide-down"><div className="px-6 py-3 rounded-full font-black text-[10px] uppercase bg-white text-zinc-950 shadow-2xl">{toast.message}</div></div>}
 
-      <header className="sticky top-0 z-40 isolate border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20 lg:h-28" style={{ background: '#050505', backgroundColor: '#050505', backgroundImage: 'none', opacity: 1, backdropFilter: 'none', WebkitBackdropFilter: 'none', filter: 'none', mixBlendMode: 'normal' }}>
+      <header className="sticky top-0 z-40 isolate border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20 lg:h-28" style={{ background: '#27272a', backgroundColor: '#27272a', backgroundImage: 'none', opacity: 1, backdropFilter: 'none', WebkitBackdropFilter: 'none', filter: 'none', mixBlendMode: 'normal' }}>
         <div className="w-full px-6 lg:px-16 h-full flex items-center gap-4">
 
           {/* LOGO */}
