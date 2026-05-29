@@ -3536,7 +3536,7 @@ function App() {
            </div>
         ) : (
            <>
-           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '0 12px', width: '100%' }} data-testid="products-grid">
+           <div className="catalog-grid" data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
@@ -3547,7 +3547,7 @@ function App() {
                        whileInView={{ opacity: 1, y: 0 }}
                        viewport={{ once: true, margin: "100px" }}
                        transition={{ duration: 0.5, ease: "easeOut" }}
-                    className={`group relative rounded-2xl border transition-all duration-300 flex flex-col touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : 'cursor-pointer active:scale-[0.98]'}`}
+                    className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : 'cursor-pointer active:scale-[0.98]'}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     onMouseEnter={e => { if (!isOutOfStock) { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.boxShadow = '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.12)'; } }}
                     onMouseLeave={e => { if (!isOutOfStock) { e.currentTarget.style.background = 'var(--bg-surface)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)'; } }}
@@ -3568,7 +3568,8 @@ function App() {
                        <div className="aspect-[4/5] relative">
                          {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
                            <div
-                             style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0, 0, 0, 0.28)', backdropFilter: 'blur(20px) saturate(2)', WebkitBackdropFilter: 'blur(20px) saturate(2)', border: '0.5px solid rgba(255, 255, 255, 0.18)', borderRadius: '999px', color: 'rgba(255, 255, 255, 0.92)', fontSize: '10px', fontWeight: '500', letterSpacing: '0.08em', padding: '4px 10px', zIndex: 10 }}
+                             className="badge-glass"
+                             style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0, 0, 0, 0.28)', border: '0.5px solid rgba(255, 255, 255, 0.18)', borderRadius: '999px', color: 'rgba(255, 255, 255, 0.92)', fontSize: '10px', fontWeight: '500', letterSpacing: '0.08em', padding: '4px 10px', zIndex: 10 }}
                              data-testid={`badge-last-pieces-${product.id}`}
                            >
                              RESTAM {product.stock}
