@@ -3536,7 +3536,7 @@ function App() {
            </div>
         ) : (
            <>
-           <div className="products-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '0 8px', width: '100%' }} data-testid="products-grid">
+           <div className="products-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '0 12px', width: '100%' }} data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
@@ -3565,18 +3565,40 @@ function App() {
                     )}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
 
-                       <div className="aspect-[4/5] relative">
+                       <div className="aspect-[4/5] relative overflow-hidden">
                          {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
                            <div
                              data-testid={`badge-last-pieces-${product.id}`}
-                             style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(10, 10, 10, 0.45)', border: '0.5px solid rgba(255,255,255,0.14)', borderRadius: '999px', color: 'rgba(255,255,255,0.88)', fontSize: '9px', fontWeight: '500', letterSpacing: '0.1em', padding: '4px 9px', zIndex: 10, display: 'flex', alignItems: 'center', gap: '5px' }}
+                             style={{
+                               position: 'absolute',
+                               top: '11px',
+                               left: '11px',
+                               background: 'rgba(20, 20, 22, 0.32)',
+                               backdropFilter: 'blur(12px) saturate(1.6)',
+                               WebkitBackdropFilter: 'blur(12px) saturate(1.6)',
+                               border: '0.5px solid rgba(255,255,255,0.16)',
+                               borderRadius: '999px',
+                               color: 'rgba(255,255,255,0.95)',
+                               fontFamily: "'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace",
+                               fontSize: '9px',
+                               fontWeight: '500',
+                               letterSpacing: '0.14em',
+                               textTransform: 'uppercase',
+                               padding: '5px 11px 5px 9px',
+                               zIndex: 10,
+                               display: 'flex',
+                               alignItems: 'center',
+                               gap: '6px',
+                               transform: 'translateZ(0)',
+                               boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+                             }}
                            >
-                             <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'rgba(180,180,180,0.7)', flexShrink: 0, display: 'inline-block' }} />
-                             RESTAM {product.stock}
+                             <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(170,170,175,0.85)', flexShrink: 0, display: 'inline-block' }} />
+                             Restam {product.stock}
                            </div>
                          )}
-                         {/* Carrossel nativo — overflow-hidden aqui para não clipar o badge acima */}
-                         <div className="absolute inset-0 overflow-hidden rounded-t-2xl flex overflow-x-auto snap-x snap-mandatory no-scrollbar native-x-scroll">
+                         {/* Carrossel nativo — deslize para ver fotos adicionais */}
+                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar native-x-scroll">
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                                <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 4 && i === 0} />

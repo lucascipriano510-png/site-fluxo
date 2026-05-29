@@ -201,13 +201,7 @@
   }
 }
 
-/* Badge glassmorphism — !important para penetrar overflow-hidden contexts */
-.badge-glass {
-  -webkit-backdrop-filter: blur(20px) saturate(2) !important;
-  backdrop-filter: blur(20px) saturate(2) !important;
-  isolation: isolate;
-}
-
+/* Grid de produtos — 4 colunas no desktop */
 @media (min-width: 768px) {
   .products-grid-container {
     grid-template-columns: repeat(4, 1fr) !important;
