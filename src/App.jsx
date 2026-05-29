@@ -3536,7 +3536,7 @@ function App() {
            </div>
         ) : (
            <>
-           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[10px] px-3 lg:px-0" data-testid="products-grid">
+           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[8px] px-[8px] lg:px-0" data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
@@ -3565,8 +3565,8 @@ function App() {
                     )}
                     {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
                       <div
-                        className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase px-2.5 py-1"
-                        style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)', borderRadius: '100px', letterSpacing: '0.1em' }}
+                        className="absolute z-10 uppercase"
+                        style={{ top: '10px', left: '10px', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px) saturate(1.8)', WebkitBackdropFilter: 'blur(16px) saturate(1.8)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '100px', color: 'rgba(255,255,255,0.95)', fontSize: '10px', fontWeight: 500, letterSpacing: '0.08em', padding: '5px 10px' }}
                         data-testid={`badge-last-pieces-${product.id}`}
                       >
                         Restam {product.stock}
