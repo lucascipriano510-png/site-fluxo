@@ -3536,7 +3536,7 @@ function App() {
            </div>
         ) : (
            <>
-           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px] px-4 lg:px-0" data-testid="products-grid">
+           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[10px] px-3 lg:px-0" data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
@@ -3563,20 +3563,15 @@ function App() {
                         <X size={14} />
                       </button>
                     )}
-                    {!isOutOfStock && !product.is_kit && product.stock <= 3 && (() => {
-                      const dotColor = product.stock <= 1 ? 'rgba(255,80,80,0.9)' : product.stock === 2 ? 'rgba(201,168,76,0.9)' : 'rgba(255,255,255,0.7)';
-                      const borderColor = product.stock <= 1 ? 'rgba(255,80,80,0.4)' : product.stock === 2 ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.18)';
-                      return (
-                        <div
-                          className="absolute top-2 left-2 z-10 flex items-center gap-1.5 text-[8px] font-black uppercase px-2.5 py-1"
-                          style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: `1px solid ${borderColor}`, color: '#f5f5f7', borderRadius: '100px' }}
-                          data-testid={`badge-last-pieces-${product.id}`}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }} />
-                          Restam {product.stock}
-                        </div>
-                      );
-                    })()}
+                    {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
+                      <div
+                        className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase px-2.5 py-1"
+                        style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)', borderRadius: '100px', letterSpacing: '0.1em' }}
+                        data-testid={`badge-last-pieces-${product.id}`}
+                      >
+                        Restam {product.stock}
+                      </div>
+                    )}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
 
                        <div className="aspect-[4/5] relative overflow-hidden">
