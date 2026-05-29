@@ -3202,7 +3202,7 @@ function App() {
       {(activeBanners.length > 0 || !bannersLoaded) && (
         <section
           ref={bannerRef}
-          className="relative w-full max-w-md lg:max-w-none mx-auto aspect-[4/5] lg:aspect-[3/1] lg:max-h-[440px] overflow-hidden select-none"
+          className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-[3/1] lg:max-h-[440px] overflow-hidden select-none"
           style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
@@ -3536,7 +3536,7 @@ function App() {
            </div>
         ) : (
            <>
-           <div className="products-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '0 12px', width: '100%' }} data-testid="products-grid">
+           <div className="products-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '0 6px', width: '100%' }} data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
@@ -3571,29 +3571,36 @@ function App() {
                              data-testid={`badge-last-pieces-${product.id}`}
                              style={{
                                position: 'absolute',
-                               top: '11px',
-                               left: '11px',
-                               background: 'linear-gradient(135deg, rgba(40,40,44,0.55), rgba(20,20,22,0.45))',
-                               backdropFilter: 'blur(14px) saturate(1.8)',
-                               WebkitBackdropFilter: 'blur(14px) saturate(1.8)',
-                               border: '0.5px solid rgba(255,255,255,0.18)',
-                               borderRadius: '7px',
-                               color: 'rgba(255,255,255,0.96)',
+                               top: '10px',
+                               left: '10px',
+                               background: 'rgba(10, 10, 12, 0.18)',
+                               backdropFilter: 'blur(16px) saturate(2) brightness(1.08)',
+                               WebkitBackdropFilter: 'blur(16px) saturate(2) brightness(1.08)',
+                               border: '0.5px solid rgba(255,255,255,0.14)',
+                               borderRadius: '6px',
+                               color: 'rgba(245,245,243,0.94)',
                                fontFamily: "'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace",
-                               fontSize: '8.5px',
-                               fontWeight: '500',
-                               letterSpacing: '0.18em',
+                               fontSize: '8px',
+                               fontWeight: '400',
+                               letterSpacing: '0.2em',
                                textTransform: 'uppercase',
-                               padding: '5px 9px',
+                               padding: '5px 10px',
                                zIndex: 10,
                                transform: 'translateZ(0)',
-                               boxShadow: '0 4px 16px rgba(0,0,0,0.35), inset 0 0.5px 0 rgba(255,255,255,0.12)',
                                display: 'flex',
                                alignItems: 'center',
-                               gap: '6px',
+                               gap: '7px',
+                               boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.2)',
                              }}
                            >
-                             <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: product.stock <= 1 ? 'rgba(255,90,90,0.95)' : 'rgba(220,200,140,0.95)', flexShrink: 0, display: 'inline-block', boxShadow: product.stock <= 1 ? '0 0 6px rgba(255,90,90,0.7)' : '0 0 6px rgba(220,200,140,0.6)' }} />
+                             <span style={{
+                               width: '4px',
+                               height: '4px',
+                               borderRadius: '50%',
+                               flexShrink: 0,
+                               background: product.stock <= 1 ? 'rgba(255, 70, 70, 0.95)' : 'rgba(201, 168, 76, 0.9)',
+                               boxShadow: product.stock <= 1 ? '0 0 6px rgba(255,70,70,0.65)' : '0 0 6px rgba(201,168,76,0.55)',
+                             }} />
                              Restam {product.stock}
                            </div>
                          )}
