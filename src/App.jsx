@@ -3082,7 +3082,7 @@ function App() {
           </aside>
 
           {/* CONTEÚDO PRINCIPAL */}
-          <main className="flex-1 max-w-md mx-auto lg:max-w-none lg:mx-0 pb-24 lg:pb-8">
+          <main className="flex-1 max-w-[640px] mx-auto lg:max-w-none lg:mx-0 pb-24 lg:pb-8">
             <AdminTabErrorBoundary resetKey={adminTab}>
               {adminTab === 'dashboard' && <AdminDashboard leads={leads} products={products} />}
               {adminTab === 'inventory' && <AdminInventory products={products} setProducts={setProducts} showToast={showToast} availableCollections={availableCollections} productImageFile={productImageFile} setProductImageFile={setProductImageFile} uploadImage={uploadImage} />}
@@ -3573,27 +3573,27 @@ function App() {
                                position: 'absolute',
                                top: '11px',
                                left: '11px',
-                               background: 'rgba(20, 20, 22, 0.32)',
-                               backdropFilter: 'blur(12px) saturate(1.6)',
-                               WebkitBackdropFilter: 'blur(12px) saturate(1.6)',
-                               border: '0.5px solid rgba(255,255,255,0.16)',
-                               borderRadius: '999px',
-                               color: 'rgba(255,255,255,0.95)',
+                               background: 'linear-gradient(135deg, rgba(40,40,44,0.55), rgba(20,20,22,0.45))',
+                               backdropFilter: 'blur(14px) saturate(1.8)',
+                               WebkitBackdropFilter: 'blur(14px) saturate(1.8)',
+                               border: '0.5px solid rgba(255,255,255,0.18)',
+                               borderRadius: '7px',
+                               color: 'rgba(255,255,255,0.96)',
                                fontFamily: "'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace",
-                               fontSize: '9px',
+                               fontSize: '8.5px',
                                fontWeight: '500',
-                               letterSpacing: '0.14em',
+                               letterSpacing: '0.18em',
                                textTransform: 'uppercase',
-                               padding: '5px 11px 5px 9px',
+                               padding: '5px 9px',
                                zIndex: 10,
+                               transform: 'translateZ(0)',
+                               boxShadow: '0 4px 16px rgba(0,0,0,0.35), inset 0 0.5px 0 rgba(255,255,255,0.12)',
                                display: 'flex',
                                alignItems: 'center',
                                gap: '6px',
-                               transform: 'translateZ(0)',
-                               boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
                              }}
                            >
-                             <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(170,170,175,0.85)', flexShrink: 0, display: 'inline-block' }} />
+                             <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: product.stock <= 1 ? 'rgba(255,90,90,0.95)' : 'rgba(220,200,140,0.95)', flexShrink: 0, display: 'inline-block', boxShadow: product.stock <= 1 ? '0 0 6px rgba(255,90,90,0.7)' : '0 0 6px rgba(220,200,140,0.6)' }} />
                              Restam {product.stock}
                            </div>
                          )}
