@@ -201,11 +201,14 @@
   }
 }
 
-/* Grid de produtos — 4 colunas no desktop */
+/* Grid de produtos — 4 colunas no desktop, reset dos negative margins do mobile */
 @media (min-width: 768px) {
   .products-grid-container {
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 14px !important;
-    padding: 0 16px !important;
+    padding: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
   }
 }

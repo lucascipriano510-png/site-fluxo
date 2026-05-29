@@ -3536,7 +3536,7 @@ function App() {
            </div>
         ) : (
            <>
-           <div className="products-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '0 6px', width: '100%' }} data-testid="products-grid">
+           <div className="products-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '0 4px', marginLeft: '-20px', marginRight: '-20px', width: 'calc(100% + 40px)' }} data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
@@ -3573,24 +3573,24 @@ function App() {
                                position: 'absolute',
                                top: '10px',
                                left: '10px',
-                               background: 'rgba(10, 10, 12, 0.18)',
-                               backdropFilter: 'blur(16px) saturate(2) brightness(1.08)',
-                               WebkitBackdropFilter: 'blur(16px) saturate(2) brightness(1.08)',
-                               border: '0.5px solid rgba(255,255,255,0.14)',
-                               borderRadius: '6px',
-                               color: 'rgba(245,245,243,0.94)',
-                               fontFamily: "'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace",
-                               fontSize: '8px',
+                               background: 'rgba(10, 10, 12, 0.22)',
+                               backdropFilter: 'blur(16px) saturate(1.8)',
+                               WebkitBackdropFilter: 'blur(16px) saturate(1.8)',
+                               border: '0.5px solid rgba(255,255,255,0.15)',
+                               borderRadius: '5px',
+                               color: 'rgba(245,245,243,0.96)',
+                               fontFamily: "'Anton', Impact, 'Arial Narrow', sans-serif",
+                               fontSize: '10px',
                                fontWeight: '400',
-                               letterSpacing: '0.2em',
+                               letterSpacing: '0.12em',
                                textTransform: 'uppercase',
-                               padding: '5px 10px',
+                               padding: '4px 9px 3px',
                                zIndex: 10,
                                transform: 'translateZ(0)',
                                display: 'flex',
                                alignItems: 'center',
-                               gap: '7px',
-                               boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.2)',
+                               gap: '6px',
+                               boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.1), 0 4px 14px rgba(0,0,0,0.25)',
                              }}
                            >
                              <span style={{
@@ -3598,8 +3598,8 @@ function App() {
                                height: '4px',
                                borderRadius: '50%',
                                flexShrink: 0,
-                               background: product.stock <= 1 ? 'rgba(255, 70, 70, 0.95)' : 'rgba(201, 168, 76, 0.9)',
-                               boxShadow: product.stock <= 1 ? '0 0 6px rgba(255,70,70,0.65)' : '0 0 6px rgba(201,168,76,0.55)',
+                               background: product.stock <= 1 ? 'rgba(255, 65, 65, 0.95)' : 'rgba(201, 168, 76, 0.92)',
+                               boxShadow: product.stock <= 1 ? '0 0 5px rgba(255,65,65,0.7)' : '0 0 5px rgba(201,168,76,0.6)',
                              }} />
                              Restam {product.stock}
                            </div>
