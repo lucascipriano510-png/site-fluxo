@@ -3536,7 +3536,7 @@ function App() {
            </div>
         ) : (
            <>
-           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[8px] px-[8px] lg:px-0" data-testid="products-grid">
+           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', padding: '0 10px', width: '100%' }} data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                 return (
@@ -3565,11 +3565,10 @@ function App() {
                     )}
                     {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
                       <div
-                        className="absolute z-10 uppercase"
-                        style={{ top: '10px', left: '10px', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px) saturate(1.8)', WebkitBackdropFilter: 'blur(16px) saturate(1.8)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '100px', color: 'rgba(255,255,255,0.95)', fontSize: '10px', fontWeight: 500, letterSpacing: '0.08em', padding: '5px 10px' }}
+                        style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0, 0, 0, 0.28)', backdropFilter: 'blur(20px) saturate(2)', WebkitBackdropFilter: 'blur(20px) saturate(2)', border: '0.5px solid rgba(255, 255, 255, 0.18)', borderRadius: '999px', color: 'rgba(255, 255, 255, 0.92)', fontSize: '10px', fontWeight: '500', letterSpacing: '0.08em', padding: '4px 10px', zIndex: 10 }}
                         data-testid={`badge-last-pieces-${product.id}`}
                       >
-                        Restam {product.stock}
+                        RESTAM {product.stock}
                       </div>
                     )}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
