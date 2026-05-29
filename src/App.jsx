@@ -183,7 +183,9 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
 
   return (
     <div ref={wrapperRef} className="absolute inset-0">
-      {!loaded && <div className="absolute inset-0 bg-zinc-800 animate-pulse" />}
+      {!loaded && (
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%)', backgroundSize: '200% 100%', animation: 'skeleton-shine 1.4s ease-in-out infinite', zIndex: 1 }} />
+      )}
       {inView && (
         <img
           src={optimizeImage(src, 1200, 90)}
@@ -3571,35 +3573,37 @@ function App() {
                              data-testid={`badge-last-pieces-${product.id}`}
                              style={{
                                position: 'absolute',
-                               top: '10px',
-                               left: '10px',
-                               background: 'rgba(10, 10, 12, 0.22)',
-                               backdropFilter: 'blur(16px) saturate(1.8)',
-                               WebkitBackdropFilter: 'blur(16px) saturate(1.8)',
-                               border: '0.5px solid rgba(255,255,255,0.15)',
-                               borderRadius: '5px',
-                               color: 'rgba(200,200,198,0.82)',
-                               fontFamily: "'Anton', Impact, 'Arial Narrow', sans-serif",
-                               fontSize: '11px',
+                               top: '0',
+                               left: '0',
+                               background: 'rgba(0, 0, 0, 0.52)',
+                               backdropFilter: 'blur(20px) saturate(1.6)',
+                               WebkitBackdropFilter: 'blur(20px) saturate(1.6)',
+                               borderBottom: '0.5px solid rgba(255,255,255,0.1)',
+                               borderRight: '0.5px solid rgba(255,255,255,0.1)',
+                               borderTopLeftRadius: 'inherit',
+                               borderBottomRightRadius: '10px',
+                               color: 'rgba(255,255,255,0.55)',
+                               fontFamily: "'Anton', Impact, sans-serif",
+                               fontSize: '9.5px',
                                fontWeight: '400',
-                               letterSpacing: '0.12em',
+                               letterSpacing: '0.18em',
                                textTransform: 'uppercase',
-                               padding: '4px 9px 3px',
+                               padding: '7px 12px 6px',
                                zIndex: 10,
                                transform: 'translateZ(0)',
                                display: 'flex',
                                alignItems: 'center',
-                               gap: '6px',
-                               boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.1), 0 4px 14px rgba(0,0,0,0.25)',
+                               gap: '7px',
+                               lineHeight: 1,
                              }}
                            >
                              <span style={{
-                               width: '6px',
-                               height: '6px',
+                               width: '5px',
+                               height: '5px',
                                borderRadius: '50%',
                                flexShrink: 0,
-                               background: 'rgba(160, 160, 158, 0.9)',
-                               boxShadow: 'none',
+                               background: product.stock <= 1 ? 'rgba(255,80,80,0.95)' : 'rgba(180,180,178,0.7)',
+                               boxShadow: product.stock <= 1 ? '0 0 6px rgba(255,80,80,0.5)' : 'none',
                              }} />
                              Restam {product.stock}
                            </div>
@@ -3661,9 +3665,13 @@ function App() {
                           <div className="absolute top-3 right-3 bg-white text-zinc-950 p-2 rounded-full shadow-xl opacity-0 translate-y-[-4px] group-hover:opacity-100 group-hover:translate-y-0 transition-all pointer-events-none"><Plus size={16}/></div>
                        )}
                      </div>
-                      <div className="p-4 flex-1 flex flex-col justify-between" style={{ background: 'var(--bg-surface)' }}>
-                        <h3 className="font-black text-[10px] uppercase line-clamp-2 leading-tight transition-colors" style={{ color: 'var(--text-secondary)' }}>{product.name}</h3>
-                        <p className="font-black text-sm mt-2" style={{ color: isOutOfStock ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>{formatBRL(product.price || 0)}</p>
+                      <div className="p-3 flex-1 flex flex-col justify-between" style={{ background: 'var(--bg-surface)' }}>
+                        <p className="font-black leading-none mt-0.5" style={{ color: isOutOfStock ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '18px', fontFamily: "'Anton', Impact, sans-serif", letterSpacing: '0.02em', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>
+                          {formatBRL(product.price || 0)}
+                        </p>
+                        <h3 className="uppercase mt-1.5 line-clamp-1" style={{ color: 'var(--text-muted)', fontSize: '9px', fontWeight: '500', letterSpacing: '0.12em' }}>
+                          {product.name}
+                        </h3>
                       </div>
                   </motion.div>
                 )
