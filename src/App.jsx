@@ -3563,17 +3563,17 @@ function App() {
                         <X size={14} />
                       </button>
                     )}
-                    {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
-                      <div
-                        style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0, 0, 0, 0.28)', backdropFilter: 'blur(20px) saturate(2)', WebkitBackdropFilter: 'blur(20px) saturate(2)', border: '0.5px solid rgba(255, 255, 255, 0.18)', borderRadius: '999px', color: 'rgba(255, 255, 255, 0.92)', fontSize: '10px', fontWeight: '500', letterSpacing: '0.08em', padding: '4px 10px', zIndex: 10 }}
-                        data-testid={`badge-last-pieces-${product.id}`}
-                      >
-                        RESTAM {product.stock}
-                      </div>
-                    )}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
 
                        <div className="aspect-[4/5] relative overflow-hidden">
+                         {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
+                           <div
+                             style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0, 0, 0, 0.28)', backdropFilter: 'blur(20px) saturate(2)', WebkitBackdropFilter: 'blur(20px) saturate(2)', border: '0.5px solid rgba(255, 255, 255, 0.18)', borderRadius: '999px', color: 'rgba(255, 255, 255, 0.92)', fontSize: '10px', fontWeight: '500', letterSpacing: '0.08em', padding: '4px 10px', zIndex: 10 }}
+                             data-testid={`badge-last-pieces-${product.id}`}
+                           >
+                             RESTAM {product.stock}
+                           </div>
+                         )}
                          {/* Carrossel nativo — deslize para ver fotos adicionais */}
                          <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar native-x-scroll">
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
