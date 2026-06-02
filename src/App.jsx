@@ -2904,10 +2904,16 @@ function App() {
     return ['TODOS', ...Array.from(set)];
   }, [products, selectedCategory, activeCollectionFilter]);
 
-  // Se a subcategoria selecionada deixar de existir após trocar de categoria, reseta.
-  // Só depois que produtos carregarem — evita matar sub vinda da URL.
+  const _subValidated = React.useRef(false);
   useEffect(() => {
     if (!products || products.length === 0) return;
+    // Só valida depois que availableSubcategories tiver dados reais
+    if (availableSubcategories.length <= 1) return; // só tem 'TODOS' = ainda carregando
+    if (!_subValidated.current) {
+      _subValidated.current = true;
+      // Sub da URL está disponível — mantém, não reseta
+      if (selectedSubcategory !== 'TODOS' && availableSubcategories.includes(selectedSubcategory)) return;
+    }
     if (selectedSubcategory !== 'TODOS' && !availableSubcategories.includes(selectedSubcategory)) {
       setSelectedSubcategory('TODOS');
     }
@@ -3071,11 +3077,14 @@ function App() {
     return ['TODOS', ...Array.from(set)];
   }, [products, selectedCategory, selectedSubcategory, activeCollectionFilter]);
 
-  // Se a categoria mudar e o tamanho selecionado não existir mais, volta para "TODOS"
-  // IMPORTANTE: só roda depois que os produtos carregarem — evita resetar um filtro
-  // vindo da URL (?tamanho=GG) antes do catálogo estar disponível.
+  const _sizeValidated = React.useRef(false);
   useEffect(() => {
     if (!products || products.length === 0) return;
+    if (availableSizes.length === 0) return; // ainda carregando
+    if (!_sizeValidated.current) {
+      _sizeValidated.current = true;
+      if (selectedSize !== 'TODOS' && availableSizes.includes(selectedSize)) return;
+    }
     if (selectedSize !== 'TODOS' && !availableSizes.includes(selectedSize)) {
       setSelectedSize('TODOS');
     }
