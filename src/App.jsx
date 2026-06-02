@@ -196,6 +196,8 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
           decoding="async"
           fetchPriority={priority ? 'high' : 'low'}
           onLoad={() => setLoaded(true)}
+          draggable={false}
+          style={{ pointerEvents: 'none' }}
           className={`w-full h-full object-contain transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''} transition-transform`}
         />
       )}
@@ -3496,7 +3498,6 @@ function App() {
               {/* HERO — card grande, presença de loja real */}
               <motion.button
                 type="button"
-                onClick={() => handleProductClick(hero)}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '120px' }}
@@ -3508,12 +3509,12 @@ function App() {
                   {/* Glow ambiente */}
                   <div className="absolute -inset-3 bg-gradient-to-b from-white/8 via-white/2 to-transparent rounded-[36px] blur-2xl opacity-70 pointer-events-none" aria-hidden="true" />
                   {/* Borda platina */}
-                  <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5">
-                    <div className="rounded-[27px] bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+                  <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5" style={{ isolation: 'isolate' }}>
+                    <div className="rounded-[27px] bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]" style={{ position: 'relative' }}>
                       <div className="aspect-[4/5] relative">
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y', borderRadius: '27px' }}>
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y', borderRadius: '27px', pointerEvents: 'auto', zIndex: 1, WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }}>
                           {heroImages.map((imgSrc, i) => (
-                            <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
+                            <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative', pointerEvents: 'none' }}>
                               <ProductImage src={imgSrc} alt={hero.name} priority={i === 0} sizes="92vw" />
                             </div>
                           ))}
@@ -3528,7 +3529,7 @@ function App() {
                           </div>
                         )}
                         {/* Conteúdo sobre a imagem */}
-                        <div className="absolute inset-x-0 bottom-0 p-5 z-10">
+                        <div className="absolute inset-x-0 bottom-0 p-5 z-10" onClick={() => handleProductClick(hero)} style={{ cursor: 'pointer' }}>
                           <div className="flex items-center gap-2 mb-2.5">
                             <span className="text-[8px] font-black uppercase tracking-[0.35em] text-white/55">Em destaque</span>
                             <span className="h-px flex-1 bg-white/15" />
