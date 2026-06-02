@@ -3717,9 +3717,9 @@ function App() {
                            </div>
                          )}
                          {/* Carrossel nativo — deslize para ver fotos adicionais */}
-                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', willChange: 'scroll-position' }}>
+                         <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x' }}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
-                             <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
+                             <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                                <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 4 && i === 0} />
                              </div>
                            ))}
@@ -4655,6 +4655,7 @@ function App() {
         }
         
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
         .mask-linear { -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); mask-image: linear-gradient(to right, black 85%, transparent 100%); }
         .animate-in { animation: fadeIn 0.5s ease-out; }
         .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
