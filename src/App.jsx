@@ -3440,7 +3440,7 @@ function App() {
                   <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5">
                     <div className="rounded-[27px] overflow-hidden bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
                       <div className="aspect-[4/5] relative overflow-hidden">
-                        <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar native-x-scroll">
+                        <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll">
                           {heroImages.map((imgSrc, i) => (
                             <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                               <ProductImage src={imgSrc} alt={hero.name} priority={i === 0} sizes="92vw" />
@@ -3490,7 +3490,7 @@ function App() {
                   </div>
                   <div
                     ref={featuredRailRef}
-                    className="flex gap-3 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-9 px-6 native-x-scroll"
+                    className="flex gap-3 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-9 px-6 carousel-scroll"
                     data-testid="featured-rail"
                   >
                     {rest.map((product, idx) => {
@@ -3511,7 +3511,7 @@ function App() {
                           <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/4">
                             <div className="rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
                               <div className="aspect-[3/4] relative overflow-hidden">
-                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar native-x-scroll">
+                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll">
                                   {fg.map((imgSrc, i) => (
                                     <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                                       <ProductImage src={imgSrc} alt={product.name} priority={idx < 1 && i === 0} sizes="55vw" />
@@ -3649,7 +3649,7 @@ function App() {
                            </div>
                          )}
                          {/* Carrossel nativo — deslize para ver fotos adicionais */}
-                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar native-x-scroll">
+                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll">
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                                <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 4 && i === 0} />
@@ -3927,7 +3927,7 @@ function App() {
               <div className="relative w-full bg-zinc-900 pt-12 shrink-0">
                 <div className="relative w-full aspect-[4/3] overflow-hidden">
                   <div
-                    className="flex h-full overflow-x-auto snap-x snap-mandatory no-scrollbar native-x-scroll"
+                    className="flex h-full overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll"
                     onScroll={(e) => {
                       const idx = Math.round(e.currentTarget.scrollLeft / (e.currentTarget.clientWidth || 1));
                       if (productGallery[idx] && productGallery[idx] !== activeProductImage) setActiveProductImage(productGallery[idx]);
@@ -4526,6 +4526,12 @@ function App() {
           touch-action: pan-x pan-y;
           overscroll-behavior-x: contain;
           overscroll-behavior-y: auto;
+        }
+
+        .carousel-scroll {
+          touch-action: pan-x;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior-x: contain;
         }
 
         img {
