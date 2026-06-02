@@ -3496,25 +3496,24 @@ function App() {
               </div>
 
               {/* HERO — card grande, presença de loja real */}
-              <motion.button
-                type="button"
+              <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '120px' }}
                 transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                className="block w-full text-left touch-manipulation active:scale-[0.985] transition-transform"
+                className="block w-full text-left touch-manipulation"
                 data-testid={`featured-hero-${hero.id}`}
               >
                 <div className="mx-6 lg:mx-auto lg:max-w-[420px] relative">
                   {/* Glow ambiente */}
                   <div className="absolute -inset-3 bg-gradient-to-b from-white/8 via-white/2 to-transparent rounded-[36px] blur-2xl opacity-70 pointer-events-none" aria-hidden="true" />
                   {/* Borda platina */}
-                  <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5" style={{ isolation: 'isolate' }}>
-                    <div className="rounded-[27px] bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]" style={{ position: 'relative' }}>
+                  <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5">
+                    <div className="rounded-[27px] bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
                       <div className="aspect-[4/5] relative">
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y', borderRadius: '27px', pointerEvents: 'auto', zIndex: 1, WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }}>
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x' }}>
                           {heroImages.map((imgSrc, i) => (
-                            <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative', pointerEvents: 'none' }}>
+                            <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                               <ProductImage src={imgSrc} alt={hero.name} priority={i === 0} sizes="92vw" />
                             </div>
                           ))}
@@ -3551,7 +3550,7 @@ function App() {
                     </div>
                   </div>
                 </div>
-              </motion.button>
+              </motion.div>
 
               {/* Rail secundário — demais destaques */}
               {rest.length > 0 && (
