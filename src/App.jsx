@@ -3568,23 +3568,21 @@ function App() {
                       const fg = [product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean);
                       const isLowStock = (product.stock || 0) > 0 && product.stock <= 3;
                       return (
-                        <motion.button
+                        <motion.div
                           key={product.id}
-                          type="button"
-                          onClick={() => handleProductClick(product)}
                           initial={{ opacity: 0, y: 16 }}
                           whileInView={{ opacity: 1, y: 0 }}
                           viewport={{ once: true, margin: '80px' }}
                           transition={{ duration: 0.5, delay: idx * 0.07, ease: [0.16, 1, 0.3, 1] }}
-                          className="shrink-0 w-[54%] max-w-[210px] snap-start text-left touch-manipulation active:scale-[0.97] transition-transform"
+                          className="shrink-0 w-[54%] max-w-[210px] snap-start text-left touch-manipulation"
                           data-testid={`featured-card-${product.id}`}
                         >
                           <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/4">
                             <div className="rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
                               <div className="aspect-[3/4] relative overflow-hidden">
-                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', willChange: 'scroll-position' }}>
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' }}>
                                   {fg.map((imgSrc, i) => (
-                                    <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
+                                    <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                                       <ProductImage src={imgSrc} alt={product.name} priority={idx < 1 && i === 0} sizes="55vw" />
                                     </div>
                                   ))}
@@ -3595,7 +3593,7 @@ function App() {
                                 <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
                               </div>
                               <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                              <div className="px-3 pt-2.5 pb-3 bg-zinc-900">
+                              <div className="px-3 pt-2.5 pb-3 bg-zinc-900" onClick={() => handleProductClick(product)} style={{ cursor: 'pointer' }}>
                                 {isLowStock && (
                                   <p className="text-[7px] font-black uppercase tracking-widest text-red-400/80 mb-1.5">Últimas {product.stock} peças</p>
                                 )}
@@ -3609,7 +3607,7 @@ function App() {
                               </div>
                             </div>
                           </div>
-                        </motion.button>
+                        </motion.div>
                       );
                     })}
                     <div className="shrink-0 w-2" aria-hidden="true" />
@@ -4627,7 +4625,7 @@ function App() {
         }
 
         .carousel-scroll {
-          touch-action: pan-x;
+          touch-action: pan-x pan-y;
           -webkit-overflow-scrolling: touch;
           overscroll-behavior-x: contain;
           will-change: scroll-position;
