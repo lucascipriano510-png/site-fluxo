@@ -3516,7 +3516,7 @@ function App() {
                           <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/4">
                             <div className="rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
                               <div className="aspect-[3/4] relative overflow-hidden">
-                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
+                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', willChange: 'scroll-position' }}>
                                   {fg.map((imgSrc, i) => (
                                     <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                                       <ProductImage src={imgSrc} alt={product.name} priority={idx < 1 && i === 0} sizes="55vw" />
@@ -3654,7 +3654,7 @@ function App() {
                            </div>
                          )}
                          {/* Carrossel nativo — deslize para ver fotos adicionais */}
-                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
+                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', willChange: 'scroll-position' }}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                                <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 4 && i === 0} />
@@ -4556,7 +4556,6 @@ function App() {
           touch-action: pan-x;
           -webkit-overflow-scrolling: touch;
           overscroll-behavior-x: contain;
-          scroll-snap-type: x mandatory;
           will-change: scroll-position;
         }
 
