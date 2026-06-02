@@ -4,7 +4,7 @@ import {
   Plus, Minus, Trash2, X, Search, LayoutDashboard, 
   ShoppingBag, Home, Power, Package, 
   TrendingUp, Box, MessageCircle,
-  Zap, Share2, Info, Star, ChevronRight, ChevronLeft, ArrowRight,
+  Zap, Share2, Info, Star, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, ArrowRight,
   RefreshCcw, Layers, Settings, Tag, 
   AlertCircle, DollarSign, MapPin, Edit3, User, Phone, 
   CheckCircle2, Camera, Save, ArrowLeft, BarChart3,
@@ -684,6 +684,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
         search_tags: searchTags.length > 0 ? searchTags : null,
         bot_description: botDescription.trim() || null,
         promotional_price: promotionalPrice !== '' ? parseFloat(promotionalPrice) : null,
+        featured_order: editMode !== 'new' && typeof editMode.featured_order === 'number' ? editMode.featured_order : 999,
       };
       const updatedProducts = editMode === 'new' ? [data, ...products] : products.map(p => p.id === data.id ? data : p);
       setProducts(updatedProducts);
@@ -1567,11 +1568,47 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
   );
 };
 
-const AdminConfig = ({ config, setConfig, showToast }) => {
+const AdminConfig = ({ config, setConfig, showToast, products, setProducts }) => {
   const [logoPreview, setLogoPreview] = useState(config.logoUrl || '');
   const [logoZoomPreview, setLogoZoomPreview] = useState(config.logoZoom || 1.5);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [phrases, setPhrases] = useState(config.marqueePhrases || []);
+  const [featuredList, setFeaturedList] = useState(() =>
+    (products || [])
+      .filter(p => p.featured)
+      .sort((a, b) => (a.featured_order ?? 999) - (b.featured_order ?? 999))
+  );
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const moveUp = (i) => {
+    if (i === 0) return;
+    const list = [...featuredList];
+    [list[i - 1], list[i]] = [list[i], list[i - 1]];
+    setFeaturedList(list);
+  };
+  const moveDown = (i) => {
+    if (i === featuredList.length - 1) return;
+    const list = [...featuredList];
+    [list[i], list[i + 1]] = [list[i + 1], list[i]];
+    setFeaturedList(list);
+  };
+  const handleSaveOrder = async () => {
+    setIsSavingOrder(true);
+    try {
+      const updated = featuredList.map((p, idx) => ({ ...p, featured_order: idx + 1 }));
+      for (const p of updated) {
+        await upsertProduct(p);
+      }
+      setProducts(prev => prev.map(p => {
+        const u = updated.find(u => u.id === p.id);
+        return u || p;
+      }));
+      showToast('Ordem dos destaques atualizada!', 'success');
+    } catch {
+      showToast('Erro ao salvar ordem.', 'error');
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
 
   const handleLogoFileChange = (e) => {
     const file = e.target.files[0];
@@ -1675,7 +1712,28 @@ const AdminConfig = ({ config, setConfig, showToast }) => {
           </div>
           <input name="pixelId" defaultValue={config.pixelId} placeholder="Facebook Pixel ID" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white outline-none" />
         </div>
-        
+
+        <div className="bg-zinc-900 p-6 rounded-[32px] border border-white/5 space-y-4">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2 flex items-center gap-2"><Star size={14}/> Ordem dos Destaques</h4>
+          {featuredList.length === 0 ? (
+            <p className="text-[11px] text-zinc-600 text-center py-4">Nenhum produto em destaque no momento.</p>
+          ) : (
+            <div>
+              {featuredList.map((p, i) => (
+                <div key={p.id} className="flex items-center gap-3 py-2.5 border-b border-white/5">
+                  <img src={p.image} alt={p.name} className="w-10 h-10 rounded-lg object-cover shrink-0 bg-zinc-800" />
+                  <span className="flex-1 text-[11px] font-bold text-white truncate">{p.name}</span>
+                  <div className="flex gap-1 shrink-0">
+                    <button type="button" onClick={() => moveUp(i)} disabled={i === 0} className="w-7 h-7 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all touch-manipulation flex items-center justify-center disabled:opacity-30"><ChevronUp size={13}/></button>
+                    <button type="button" onClick={() => moveDown(i)} disabled={i === featuredList.length - 1} className="w-7 h-7 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all touch-manipulation flex items-center justify-center disabled:opacity-30"><ChevronDown size={13}/></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <button type="button" onClick={handleSaveOrder} disabled={isSavingOrder || featuredList.length === 0} className="bg-emerald-500 text-zinc-950 font-black text-[11px] uppercase tracking-widest rounded-2xl py-4 w-full mt-4 active:scale-95 transition-transform disabled:opacity-50">{isSavingOrder ? 'Salvando...' : 'Salvar Ordem'}</button>
+        </div>
+
         <button type="submit" disabled={isUploadingLogo} className="w-full py-5 bg-white text-zinc-950 rounded-[28px] font-black uppercase text-[11px] tracking-widest active:scale-95 shadow-xl">{isUploadingLogo ? 'Processando...' : 'Aplicar Mudanças'}</button>
       </form>
     </div>
@@ -3102,7 +3160,7 @@ function App() {
               {adminTab === 'inventory' && <AdminInventory products={products} setProducts={setProducts} showToast={showToast} availableCollections={availableCollections} productImageFile={productImageFile} setProductImageFile={setProductImageFile} uploadImage={uploadImage} />}
               {adminTab === 'leads' && <AdminLeads leads={leads} setLeads={setLeads} products={products} setProducts={setProducts} showToast={showToast} config={config} />}
               {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} />}
-              {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} />}
+              {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} products={products} setProducts={setProducts} />}
               {adminTab === 'rastreio' && <AdminRastreio />}
               {adminTab === 'crm' && <AdminCRM showToast={showToast} config={config} />}
             </AdminTabErrorBoundary>
@@ -3387,7 +3445,9 @@ function App() {
         {(() => {
           const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
           if (!isDefaultView) return null;
-          const featured = (products || []).filter(p => p.featured && (p.is_kit || (p.stock || 0) > 0));
+          const featured = (products || [])
+            .filter(p => p.featured && (p.is_kit || (p.stock || 0) > 0))
+            .sort((a, b) => (a.featured_order ?? 999) - (b.featured_order ?? 999));
           if (featured.length === 0) return null;
           const hero = featured[0];
           const rest = featured.slice(1);
