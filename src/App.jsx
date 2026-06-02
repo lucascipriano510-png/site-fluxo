@@ -2405,6 +2405,8 @@ function App() {
   const currentBannerSlideRef = useRef(0);
   const activeBannersLengthRef = useRef(0);
   const featuredRailRef = useRef(null);
+  const mobileGalleryRef = useRef(null);
+  const desktopGalleryRef = useRef(null);
   const featuredPeekedRef = useRef(false);
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
@@ -3440,7 +3442,10 @@ function App() {
                   <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5">
                     <div className="rounded-[27px] overflow-hidden bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
                       <div className="aspect-[4/5] relative overflow-hidden">
-                        <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll">
+                        <div
+                          className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
+                          style={{ touchAction: 'pan-x pan-y', overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
+                        >
                           {heroImages.map((imgSrc, i) => (
                             <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                               <ProductImage src={imgSrc} alt={hero.name} priority={i === 0} sizes="92vw" />
@@ -3511,7 +3516,7 @@ function App() {
                           <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/4">
                             <div className="rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
                               <div className="aspect-[3/4] relative overflow-hidden">
-                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll">
+                                <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
                                   {fg.map((imgSrc, i) => (
                                     <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                                       <ProductImage src={imgSrc} alt={product.name} priority={idx < 1 && i === 0} sizes="55vw" />
@@ -3649,7 +3654,7 @@ function App() {
                            </div>
                          )}
                          {/* Carrossel nativo — deslize para ver fotos adicionais */}
-                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll">
+                         <div className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
                                <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 4 && i === 0} />
@@ -3927,6 +3932,7 @@ function App() {
               <div className="relative w-full bg-zinc-900 pt-12 shrink-0">
                 <div className="relative w-full aspect-[4/3] overflow-hidden">
                   <div
+                    ref={mobileGalleryRef}
                     className="flex h-full overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll"
                     onScroll={(e) => {
                       const idx = Math.round(e.currentTarget.scrollLeft / (e.currentTarget.clientWidth || 1));
@@ -3952,7 +3958,16 @@ function App() {
                 {productGallery.length > 1 && (
                   <div className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar bg-zinc-950 border-b border-white/5" style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
                     {productGallery.map((g, i) => (
-                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}>
+                      <button key={i} onClick={() => {
+                          setActiveProductImage(g);
+                          const idx = productGallery.indexOf(g);
+                          if (mobileGalleryRef.current && idx !== -1) {
+                            mobileGalleryRef.current.scrollTo({
+                              left: idx * mobileGalleryRef.current.clientWidth,
+                              behavior: 'smooth'
+                            });
+                          }
+                        }} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}>
                         <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
                       </button>
                     ))}
@@ -4103,7 +4118,16 @@ function App() {
                 {productGallery.length > 1 && (
                   <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar" style={{ touchAction: 'pan-x' }}>
                     {productGallery.map((g, i) => (
-                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
+                      <button key={i} onClick={() => {
+                          setActiveProductImage(g);
+                          const idx = productGallery.indexOf(g);
+                          if (desktopGalleryRef.current && idx !== -1) {
+                            desktopGalleryRef.current.scrollTo({
+                              left: idx * desktopGalleryRef.current.clientWidth,
+                              behavior: 'smooth'
+                            });
+                          }
+                        }} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
                         <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
                       </button>
                     ))}
@@ -4532,6 +4556,8 @@ function App() {
           touch-action: pan-x;
           -webkit-overflow-scrolling: touch;
           overscroll-behavior-x: contain;
+          scroll-snap-type: x mandatory;
+          will-change: scroll-position;
         }
 
         img {
