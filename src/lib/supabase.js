@@ -42,6 +42,7 @@ export async function upsertProduct(product) {
     search_tags: Array.isArray(product.search_tags) && product.search_tags.length > 0 ? product.search_tags : null,
     bot_description: product.bot_description || null,
     promotional_price: product.promotional_price != null ? Number(product.promotional_price) : null,
+    featured_order: product.featured_order != null ? Number(product.featured_order) : 999,
   };
   const { data, error } = await supabase
     .from('products')
