@@ -3583,7 +3583,7 @@ function App() {
                                 <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' }}>
                                   {fg.map((imgSrc, i) => (
                                     <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                                      <ProductImage src={imgSrc} alt={product.name} priority={idx < 1 && i === 0} sizes="55vw" />
+                                      <ProductImage src={imgSrc} alt={product.name} priority={i === 0} sizes="55vw" />
                                     </div>
                                   ))}
                                 </div>
