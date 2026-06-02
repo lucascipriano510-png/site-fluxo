@@ -3640,16 +3640,15 @@ function App() {
            <div className="products-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '0 4px', marginLeft: '-20px', marginRight: '-20px', width: 'calc(100% + 40px)' }} data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
+               const hasMultipleImages = [product.image, ...(Array.isArray(product.gallery) ? product.gallery : [])].filter(Boolean).length > 1;
                 return (
                   <motion.div
                     key={product.id}
-                    onClick={() => handleProductClick(product)}
                     initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "80px" }}
                     transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: Math.min(idx, 5) * 0.06 }}
-                    whileTap={!isOutOfStock ? { scale: 0.97 } : {}}
-                    className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : 'cursor-pointer active:scale-[0.98]'}`}
+                    className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     onMouseEnter={e => { if (!isOutOfStock) { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.boxShadow = '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.12)'; } }}
                     onMouseLeave={e => { if (!isOutOfStock) { e.currentTarget.style.background = 'var(--bg-surface)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)'; } }}
@@ -3667,7 +3666,11 @@ function App() {
                     )}
                     {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
 
-                       <div className="aspect-[4/5] relative overflow-hidden">
+                       <div
+                         className="aspect-[4/5] relative overflow-hidden"
+                         onClick={!hasMultipleImages ? () => !isOutOfStock && handleProductClick(product) : undefined}
+                         style={!hasMultipleImages && !isOutOfStock ? { cursor: 'pointer' } : undefined}
+                       >
                          {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
                            <div
                              data-testid={`badge-last-pieces-${product.id}`}
@@ -3770,14 +3773,19 @@ function App() {
                           <div className="absolute top-3 right-3 bg-white text-zinc-950 p-2 rounded-full shadow-xl opacity-0 translate-y-[-4px] group-hover:opacity-100 group-hover:translate-y-0 transition-all pointer-events-none"><Plus size={16}/></div>
                        )}
                      </div>
-                      <div className="p-3 flex-1 flex flex-col justify-between" style={{ background: 'var(--bg-surface)' }}>
+                      <motion.div
+                        className="p-3 flex-1 flex flex-col justify-between"
+                        style={{ background: 'var(--bg-surface)', cursor: isOutOfStock ? 'default' : 'pointer' }}
+                        onClick={() => !isOutOfStock && handleProductClick(product)}
+                        whileTap={!isOutOfStock ? { scale: 0.98 } : {}}
+                      >
                         <p className="leading-none mt-0.5" style={{ color: isOutOfStock ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>
                           {formatBRL(product.price || 0)}
                         </p>
                         <h3 className="uppercase mt-1.5 line-clamp-1" style={{ color: 'var(--text-secondary)', fontSize: '9.5px', fontWeight: '500', letterSpacing: '0.1em' }}>
                           {product.name}
                         </h3>
-                      </div>
+                      </motion.div>
                   </motion.div>
                 )
              })}
