@@ -112,7 +112,7 @@ export async function fetchBanners() {
   const { data, error } = await supabase
     .from('banners')
     .select('*')
-    .order('id', { ascending: true });
+    .order('banner_order', { ascending: true });
   if (error) throw error;
   return data || [];
 }
@@ -127,6 +127,8 @@ export async function upsertBanner(banner) {
     collection_name: banner.collection_name || null,
     image: banner.image || '',
     active: !!banner.active,
+    banner_order: typeof banner.banner_order === 'number' ? banner.banner_order : 999,
+    external_link: banner.external_link || null,
     updated_at: new Date().toISOString(),
   };
   const { data, error } = await supabase

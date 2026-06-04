@@ -1514,14 +1514,16 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
         imageUrl = await uploadImage(bannerImageFile);
       }
       const fd = new FormData(e.target);
-      const data = { 
-        id: editBannerMode === 'new' ? Date.now() : editBannerMode.id, 
-        title: fd.get('title'), 
-        subtitle: fd.get('subtitle'), 
-        buttonText: fd.get('buttonText'), 
+      const data = {
+        id: editBannerMode === 'new' ? Date.now() : editBannerMode.id,
+        title: fd.get('title'),
+        subtitle: fd.get('subtitle'),
+        buttonText: fd.get('buttonText'),
         collection_name: fd.get('collection_name'),
-        image: imageUrl, 
-        active: fd.get('active') === 'on' 
+        image: imageUrl,
+        active: fd.get('active') === 'on',
+        banner_order: parseInt(fd.get('banner_order') || '999', 10),
+        external_link: fd.get('external_link') || null,
       };
       setBanners(editBannerMode === 'new' ? [...banners, data] : (banners || []).map(b => b.id === data.id ? data : b));
       showToast('Banner salvo!'); 
@@ -1542,7 +1544,7 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
           {(banners || []).map(b => (
             <div key={b.id} className={`bg-zinc-900 p-4 rounded-[24px] border flex items-center gap-4 ${b.active ? 'border-emerald-500/30' : 'border-white/5 opacity-60'}`}>
               <img src={b.image} className="w-20 h-12 rounded-lg object-cover" alt="Banner" />
-              <div className="flex-1 truncate"><h4 className="font-black text-white text-[10px] uppercase truncate">{b.title}</h4></div>
+              <div className="flex-1 truncate"><h4 className="font-black text-white text-[10px] uppercase truncate">{b.title}</h4><span style={{ fontSize: 9, color: '#52525b', fontWeight: 900 }}>#{b.banner_order}</span></div>
               <div className="flex gap-1"><button onClick={() => setEditBannerMode(b)} className="p-2 bg-white/5 rounded-lg text-zinc-400"><Edit3 size={12}/></button><button onClick={() => setBanners((banners || []).filter(i => i.id !== b.id))} className="p-2 bg-red-500/10 rounded-lg text-red-500"><Trash2 size={12}/></button></div>
             </div>
           ))}
@@ -1552,16 +1554,42 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
           <button type="button" onClick={() => setEditBannerMode(null)} className="absolute top-6 right-6 text-zinc-500"><X/></button>
           <div className="relative overflow-hidden bg-zinc-950 border-2 border-dashed border-white/10 rounded-[20px] aspect-video flex flex-col items-center justify-center cursor-pointer">
             {previewBannerImage ? <img src={previewBannerImage} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Preview" /> : <ImagePlus size={32} className="text-zinc-800" />}
-            <span className="relative z-10 text-[9px] font-black uppercase text-white">Carregar Banner 16:9</span>
+            <span className="relative z-10 text-[9px] font-black uppercase text-white">Carregar Banner 4:5 · Mobile (1080×1350px recomendado)</span>
             <input type="file" accept="image/*" onChange={handleBannerFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
           </div>
-          <input name="title" defaultValue={editBannerMode?.title} placeholder="Título" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none" required />
+          <span style={{ fontSize: 9, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Use proporção 4:5 (vertical) para mobile e o site adapta automaticamente</span>
+          <input name="title" defaultValue={editBannerMode?.title} placeholder="Título (opcional)" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none" />
           <input name="subtitle" defaultValue={editBannerMode?.subtitle} placeholder="Subtítulo" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none" />
 	          <input name="buttonText" defaultValue={editBannerMode?.buttonText || 'VER PEÇAS'} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase" required />
 	          <div className="space-y-1">
 	            <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Nome da Coleção (Ex: Lacoste)</label>
 	            <input name="collection_name" defaultValue={editBannerMode?.collection_name} placeholder="Digite o nome da coleção..." className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase" />
 	          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 9, fontWeight: 900, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em', paddingLeft: 8 }}>
+              Link externo (opcional — substitui filtro de coleção)
+            </label>
+            <input
+              name="external_link"
+              defaultValue={editBannerMode?.external_link || ''}
+              placeholder="https://... (deixe vazio para usar filtro de coleção)"
+              className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none"
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 9, fontWeight: 900, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em', paddingLeft: 4 }}>
+              Ordem de exibição
+            </label>
+            <input
+              type="number"
+              name="banner_order"
+              min="1"
+              max="999"
+              defaultValue={editBannerMode === 'new' ? 999 : (editBannerMode?.banner_order ?? 999)}
+              className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none"
+            />
+            <span style={{ fontSize: 9, color: '#52525b', paddingLeft: 4 }}>1 = primeiro a aparecer</span>
+          </div>
           <label className="flex items-center gap-3 bg-zinc-950 p-4 rounded-2xl border border-white/5"><input type="checkbox" name="active" defaultChecked={editBannerMode === 'new' ? true : editBannerMode?.active} className="w-5 h-5 accent-emerald-500" /><span className="text-[11px] font-black uppercase text-white">Ativo no site</span></label>
           <button type="submit" disabled={isUploadingBanner} className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-[20px] font-black uppercase text-[10px] tracking-widest">{isUploadingBanner ? 'Salvando...' : 'Confirmar'}</button>
         </form>
@@ -3337,13 +3365,19 @@ function App() {
                         <span className="text-[9px] font-black uppercase tracking-[0.28em] text-white/55">{banner.collection_name}</span>
                       </div>
                     )}
-                    <h2 className="text-[2.6rem] font-black uppercase leading-[0.92] tracking-tight text-white mb-2.5 drop-shadow-2xl">{banner.title}</h2>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-7">{banner.subtitle}</p>
+                    {banner.title && <h2 className="text-[2.6rem] font-black uppercase leading-[0.92] tracking-tight text-white mb-2.5 drop-shadow-2xl">{banner.title}</h2>}
+                    {banner.subtitle && <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-7">{banner.subtitle}</p>}
                     {banner.buttonText && (
                       <button
                         onClick={() => {
-                          if (banner.collection_name) { setActiveCollectionFilter(banner.collection_name); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }
-                          else { document.getElementById('search-input')?.focus(); }
+                          if (banner.external_link) {
+                            window.open(banner.external_link, '_blank', 'noopener');
+                          } else if (banner.collection_name) {
+                            setActiveCollectionFilter(banner.collection_name);
+                            document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
+                          } else {
+                            document.getElementById('search-input')?.focus();
+                          }
                         }}
                         className="self-start flex items-center gap-2 bg-white text-zinc-950 px-7 py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform shadow-[0_8px_30px_rgba(255,255,255,0.18)] touch-manipulation"
                       >
