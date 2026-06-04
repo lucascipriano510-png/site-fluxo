@@ -205,7 +205,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
   );
 };
 
-const BannerImage = ({ src, alt, active }) => {
+const BannerImage = ({ src, alt, active, focusPoint = 'center 35%' }) => {
   const [loaded, setLoaded] = React.useState(false);
 
   React.useEffect(() => {
@@ -222,6 +222,7 @@ const BannerImage = ({ src, alt, active }) => {
         srcSet={buildSrcSet(src, [640, 900, 1280, 1920, 2560], 90)}
         sizes="100vw"
         className={`w-full h-full object-cover opacity-80 transition-opacity duration-300 ${loaded ? 'opacity-80' : 'opacity-0'}`}
+        style={{ objectPosition: focusPoint }}
         alt={alt}
         loading={active ? 'eager' : 'lazy'}
         decoding="async"
@@ -3353,7 +3354,7 @@ function App() {
               return (
                 <div key={idx} className="w-full h-full shrink-0 relative overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
                   <div className="absolute inset-0" style={{ transform: isActive ? 'scale(1.09)' : 'scale(1)', transition: isActive ? 'transform 10s ease-out' : 'transform 0.6s ease', transformOrigin: '55% 45%' }}>
-                    <BannerImage src={banner.image} alt={banner.title || 'Banner'} active={isActive} />
+                    <BannerImage src={banner.image} alt={banner.title || 'Banner'} active={isActive} focusPoint={banner.focus_point || 'center 35%'} />
                   </div>
                   <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-zinc-950/75 to-transparent pointer-events-none" />
                   <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />
