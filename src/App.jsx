@@ -2817,9 +2817,29 @@ function App() {
 
       // Monta mensagem WhatsApp
       const itemsText = itensNormalizados
-        .map((item) => `• ${item.name} | Tam: ${item.size} | R$ ${item.price.toFixed(2)} x${item.qty}`)
-        .join('\n');
-      const message = `Olá, acabei de finalizar meu pedido na ${config.brandName}.\n\nCliente: ${customerName}\nWhatsApp: ${customerPhone}\n\nItens:\n${itemsText}\n\nTotal: R$ ${totalPedido.toFixed(2)}\nPedido: #${orderNum}`;
+        .map((item) => {
+          const prodOriginal = products.find(p => p.id === item.id);
+          const categoria = prodOriginal?.category || '';
+          const subcategoria = prodOriginal?.subcategory || '';
+          const subLine = subcategoria ? ` | Sub: ${subcategoria}` : '';
+          return `• ${item.name}\n  SKU: ${item.sku} | Tam: ${item.size}${subLine} | Cat: ${categoria}\n  Qtd: ${item.qty}x | R$ ${item.price.toFixed(2)}`;
+        })
+        .join('\n\n');
+      const message = [
+        `🛍️ NOVO PEDIDO — ${config.brandName}`,
+        ``,
+        `📋 Pedido: #${orderNum}`,
+        ``,
+        `👤 Cliente: ${customerName}`,
+        `📱 WhatsApp: ${customerPhone}`,
+        ``,
+        `🧾 ITENS DO PEDIDO:`,
+        itemsText,
+        ``,
+        `💰 Total: R$ ${totalPedido.toFixed(2)}`,
+        ``,
+        `⚡ Enviado via ${config.brandName}`,
+      ].join('\n');
 
       // Usa whatsapp do config (fallback pro hardcoded caso vazio)
       const waNumber = String(config?.whatsapp || '5534984148067').replace(/\D/g, '');
