@@ -226,7 +226,7 @@ const BannerImage = ({ src, alt, active }) => {
         src={optimizeImage(src, 1920, 90)}
         srcSet={buildSrcSet(src, [640, 900, 1280, 1920, 2560], 90)}
         sizes="100vw"
-        className={`w-full h-full object-cover opacity-80 transition-opacity duration-300 ${loaded ? 'opacity-80' : 'opacity-0'}`}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         style={{ objectPosition: 'center 55%' }}
         alt={alt}
         loading={active ? 'eager' : 'lazy'}
