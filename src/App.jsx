@@ -30,6 +30,11 @@ import { criarAtendimentoFromPedido } from './lib/crm';
 // ==========================================
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const formatBRL = (v) => BRL.format(Number(v) || 0);
+const getCatImgData = (val) => {
+  if (!val) return { url: null, pos: '50% 50%' };
+  if (typeof val === 'string') return { url: val, pos: '50% 50%' };
+  return { url: val.url || null, pos: val.pos || '50% 50%' };
+};
 const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'fluxo-dark-ultimate';
 const LEAD_STORAGE_KEY = '@fluxo-outlet:lead-data-v3';
 const BANNERS_STORAGE_KEY = `@${APP_ID}:banners`;
@@ -1612,6 +1617,8 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uplo
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [categoryImages, setCategoryImages] = useState(config.category_images || {});
   const [uploadingCategory, setUploadingCategory] = useState(null);
+  const [cropModal, setCropModal] = useState(null);
+  const cropDragRef = useRef({ active: false, startX: 0, startY: 0, startPosX: 50, startPosY: 50 });
   useEffect(() => {
     setCategoryImages(config.category_images || {});
   }, [config.category_images]);
@@ -1620,16 +1627,36 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uplo
     setUploadingCategory(categoryName);
     try {
       const url = await uploadImage(file);
-      const updated = { ...categoryImages, [categoryName]: url };
-      setCategoryImages(updated);
-      setConfig(prev => ({ ...prev, category_images: updated }));
-      showToast(`Imagem de "${categoryName}" salva!`, 'success');
+      const existing = getCatImgData(categoryImages[categoryName]);
+      setCropModal({ cat: categoryName, url, posX: 50, posY: 50 });
     } catch (err) {
       showToast('Erro ao enviar imagem: ' + err.message, 'error');
     } finally {
       setUploadingCategory(null);
     }
   };
+  const handleConfirmCrop = () => {
+    const { cat, url, posX, posY } = cropModal;
+    const updated = { ...categoryImages, [cat]: { url, pos: `${posX}% ${posY}%` } };
+    setCategoryImages(updated);
+    setConfig(prev => ({ ...prev, category_images: updated }));
+    setCropModal(null);
+    showToast(`Imagem de "${cat}" salva!`, 'success');
+  };
+  const handleCropPointerDown = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    cropDragRef.current = { active: true, startX: e.clientX, startY: e.clientY, startPosX: cropModal.posX, startPosY: cropModal.posY };
+  };
+  const handleCropPointerMove = (e) => {
+    if (!cropDragRef.current.active) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dx = e.clientX - cropDragRef.current.startX;
+    const dy = e.clientY - cropDragRef.current.startY;
+    const newX = Math.max(0, Math.min(100, cropDragRef.current.startPosX + (dx / rect.width) * 100));
+    const newY = Math.max(0, Math.min(100, cropDragRef.current.startPosY + (dy / rect.height) * 100));
+    setCropModal(prev => ({ ...prev, posX: Math.round(newX), posY: Math.round(newY) }));
+  };
+  const handleCropPointerUp = () => { cropDragRef.current.active = false; };
   const handleCategoryImageRemove = (categoryName) => {
     const updated = { ...categoryImages };
     delete updated[categoryName];
@@ -1808,13 +1835,15 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uplo
               .filter((v, i, a) => a.indexOf(v) === i)
               .sort()
             ].map(cat => {
-              const imgUrl = cat === 'TODOS' ? null : categoryImages[cat];
+              const catData = getCatImgData(cat === 'TODOS' ? null : categoryImages[cat]);
+              const imgUrl = catData.url;
+              const imgPos = catData.pos;
               const isUploading = uploadingCategory === cat;
               return (
                 <div key={cat} className="flex items-center gap-4 p-3 bg-zinc-950 rounded-2xl border border-white/5">
                   <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-white/10 bg-black flex items-center justify-center relative">
                     {imgUrl ? (
-                      <img src={imgUrl} className="w-full h-full object-cover" alt={cat} />
+                      <img src={imgUrl} className="w-full h-full object-cover" style={{ objectPosition: imgPos }} alt={cat} />
                     ) : config.logoUrl ? (
                       <img src={config.logoUrl} className="w-8 h-8 object-contain mix-blend-screen opacity-60" alt="logo" />
                     ) : (
@@ -1862,6 +1891,75 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uplo
 
         <button type="submit" disabled={isUploadingLogo} className="w-full py-5 bg-white text-zinc-950 rounded-[28px] font-black uppercase text-[11px] tracking-widest active:scale-95 shadow-xl">{isUploadingLogo ? 'Processando...' : 'Aplicar Mudanças'}</button>
       </form>
+
+      {/* Modal de enquadramento */}
+      {cropModal && (
+        <div className="fixed inset-0 z-[500] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-6">
+          <div className="bg-zinc-900 rounded-[32px] border border-white/10 w-full max-w-sm p-6 space-y-5 shadow-2xl">
+            <div className="text-center">
+              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Enquadrar Imagem</p>
+              <h3 className="text-lg font-black text-white uppercase">{cropModal.cat}</h3>
+            </div>
+
+            {/* Círculo arrastável */}
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className="w-48 h-48 rounded-full overflow-hidden border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-grab active:cursor-grabbing select-none"
+                style={{ touchAction: 'none' }}
+                onPointerDown={handleCropPointerDown}
+                onPointerMove={handleCropPointerMove}
+                onPointerUp={handleCropPointerUp}
+                onPointerCancel={handleCropPointerUp}
+              >
+                <img
+                  src={cropModal.url}
+                  className="w-full h-full object-cover pointer-events-none"
+                  style={{ objectPosition: `${cropModal.posX}% ${cropModal.posY}%` }}
+                  alt=""
+                  draggable={false}
+                />
+              </div>
+              <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Arraste para enquadrar</p>
+            </div>
+
+            {/* Sliders de controle fino */}
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Horizontal</label>
+                  <span className="text-[9px] font-black text-zinc-400">{cropModal.posX}%</span>
+                </div>
+                <input type="range" min="0" max="100" value={cropModal.posX}
+                  onChange={e => setCropModal(prev => ({ ...prev, posX: Number(e.target.value) }))}
+                  className="w-full accent-emerald-500 h-1.5 cursor-pointer"
+                />
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Vertical</label>
+                  <span className="text-[9px] font-black text-zinc-400">{cropModal.posY}%</span>
+                </div>
+                <input type="range" min="0" max="100" value={cropModal.posY}
+                  onChange={e => setCropModal(prev => ({ ...prev, posY: Number(e.target.value) }))}
+                  className="w-full accent-emerald-500 h-1.5 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Botões */}
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setCropModal(null)}
+                className="flex-1 py-3 bg-zinc-800 text-zinc-400 rounded-xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform">
+                Cancelar
+              </button>
+              <button type="button" onClick={handleConfirmCrop}
+                className="flex-1 py-3 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform">
+                Usar esta imagem
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -3643,7 +3741,9 @@ function App() {
           )}
           {!kitsOnly && categories.map((cat) => {
             const isActive = selectedCategory === cat;
-            const imgUrl = cat !== 'TODOS' ? (config.category_images || {})[cat] : null;
+            const catImgData = getCatImgData(cat !== 'TODOS' ? (config.category_images || {})[cat] : null);
+            const imgUrl = catImgData.url;
+            const imgPos = catImgData.pos;
             const hasLogo = !!config.logoUrl;
             return (
               <motion.button
@@ -3660,7 +3760,7 @@ function App() {
                     : 'border-white/10 hover:border-white/30'
                 }`}>
                   {imgUrl ? (
-                    <img src={imgUrl} alt={cat} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    <img src={imgUrl} alt={cat} className="w-full h-full object-cover" style={{ objectPosition: imgPos }} loading="lazy" decoding="async" />
                   ) : hasLogo ? (
                     <img src={config.logoUrl} alt={cat} className="w-8 h-8 object-contain mix-blend-screen opacity-50" loading="lazy" />
                   ) : (
