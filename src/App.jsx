@@ -1708,7 +1708,8 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uplo
       pixelId: fd.get('pixelId'),
       logoUrl: logoPreview,
       logoZoom: parseFloat(fd.get('logoZoom') || 1.5),
-      marqueePhrases: phrases.filter(p => p.trim() !== '')
+      marqueePhrases: phrases.filter(p => p.trim() !== ''),
+      category_images: categoryImages,
     };
     setConfig(newConfig);
     showToast('Sistema Atualizado!', 'success');
