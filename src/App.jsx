@@ -1490,38 +1490,138 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
   );
 };
 
-const StarRating = ({ value = 0, count = 0, size = 'sm', interactive = false, onChange }) => {
+const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, setShowUserDrawer, setDrawerTab, showToast }) => {
+  const rating = ratingsMap[product.id];
+  const avg = rating?.avg || 0;
+  const count = rating?.count || 0;
+  const [pending, setPending] = React.useState(null);
   const [hovered, setHovered] = React.useState(null);
-  const display = hovered !== null ? hovered : value;
-  const px = size === 'lg' ? 28 : size === 'md' ? 16 : 11;
+  const [submitting, setSubmitting] = React.useState(false);
+  const [myRating, setMyRating] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!userProfile?.phone) return;
+    fetchExistingReview(product.id, userProfile.phone)
+      .then(existing => { if (existing) setMyRating(existing.rating); })
+      .catch(() => {});
+  }, [product.id, userProfile?.phone]);
+
+  const display = pending ?? hovered ?? (myRating || avg);
+
+  const handleStarClick = (i) => {
+    if (!userProfile) {
+      setShowUserDrawer(true);
+      setDrawerTab('profile');
+      showToast('Crie seu perfil Fluxo para avaliar.', 'success');
+      return;
+    }
+    if (myRating) {
+      showToast(`Você já avaliou com ${myRating} estrela${myRating > 1 ? 's' : ''}.`, 'success');
+      return;
+    }
+    setPending(i);
+  };
+
+  const handleConfirm = async () => {
+    if (!pending || submitting) return;
+    setSubmitting(true);
+    try {
+      await submitReview({ productId: product.id, customerName: userProfile.name, customerPhone: userProfile.phone, rating: pending });
+      setMyRating(pending);
+      setPending(null);
+      const updated = await fetchRatingsBatch([product.id]);
+      setRatingsMap(prev => ({ ...prev, ...updated }));
+      showToast('Avaliação enviada! Obrigado 🙏', 'success');
+    } catch (err) {
+      if (err.message?.includes('unique') || err.message?.includes('duplicate')) {
+        showToast('Você já avaliou este produto.', 'success');
+      } else {
+        showToast('Erro ao enviar avaliação.', 'success');
+      }
+      setPending(null);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => { setPending(null); setHovered(null); };
+
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2 flex-wrap">
       <div className="flex items-center gap-0.5">
-        {[1,2,3,4,5].map(i => (
-          <span
-            key={i}
-            onMouseEnter={() => interactive && setHovered(i)}
-            onMouseLeave={() => interactive && setHovered(null)}
-            onClick={() => interactive && onChange?.(i)}
-            style={{ cursor: interactive ? 'pointer' : 'default', display: 'flex', alignItems: 'center', userSelect: 'none' }}
-          >
-            <svg width={px} height={px} viewBox="0 0 20 20" fill="none">
-              <path
-                d="M10 1.5l2.47 5.01 5.53.8-4 3.9.94 5.49L10 14.1l-4.94 2.6.94-5.49-4-3.9 5.53-.8L10 1.5z"
-                fill={i <= display ? '#f59e0b' : 'none'}
-                stroke={i <= display ? '#f59e0b' : 'rgba(255,255,255,0.15)'}
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-        ))}
+        {[1,2,3,4,5].map(i => {
+          const filled = i <= (pending ?? hovered ?? (myRating || Math.round(avg)));
+          return (
+            <motion.button
+              key={i}
+              type="button"
+              whileTap={{ scale: 0.82 }}
+              onMouseEnter={() => !pending && !myRating && setHovered(i)}
+              onMouseLeave={() => !pending && setHovered(null)}
+              onClick={(e) => { e.stopPropagation(); handleStarClick(i); }}
+              className="touch-manipulation"
+              style={{ background: 'none', border: 'none', padding: '1px', cursor: myRating ? 'default' : 'pointer' }}
+            >
+              <motion.svg
+                width={13} height={13} viewBox="0 0 20 20" fill="none"
+                animate={{ scale: filled && pending === i ? [1, 1.35, 1] : 1 }}
+                transition={{ duration: 0.25 }}
+              >
+                <path
+                  d="M10 1.5l2.47 5.01 5.53.8-4 3.9.94 5.49L10 14.1l-4.94 2.6.94-5.49-4-3.9 5.53-.8L10 1.5z"
+                  fill={filled ? '#f59e0b' : 'none'}
+                  stroke={filled ? '#f59e0b' : 'rgba(255,255,255,0.15)'}
+                  strokeWidth="1.5" strokeLinejoin="round"
+                />
+              </motion.svg>
+            </motion.button>
+          );
+        })}
       </div>
-      {count > 0 && (
-        <span style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(161,161,170,0.8)', lineHeight: 1 }}>
-          {Number.isInteger(value) ? value : value.toFixed(1)} · {count}
-        </span>
-      )}
+      <AnimatePresence mode="wait">
+        {!pending ? (
+          <motion.span
+            key="count"
+            initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -4 }}
+            transition={{ duration: 0.18 }}
+            style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(113,113,122,0.9)', lineHeight: 1, userSelect: 'none' }}
+          >
+            {count === 0 ? '0 avaliações' : `${avg} · ${count}`}
+          </motion.span>
+        ) : (
+          <motion.div
+            key="actions"
+            initial={{ opacity: 0, x: -6, scale: 0.85 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: -6, scale: 0.85 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center gap-1.5"
+          >
+            <motion.button type="button" whileTap={{ scale: 0.82 }} onClick={(e) => { e.stopPropagation(); handleCancel(); }}
+              className="touch-manipulation flex items-center justify-center"
+              style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', cursor: 'pointer', flexShrink: 0 }}
+            >
+              <svg width={10} height={10} viewBox="0 0 20 20" fill="none">
+                <path d="M5 5l10 10M15 5L5 15" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round"/>
+              </svg>
+            </motion.button>
+            <motion.button type="button" whileTap={{ scale: 0.82 }} onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
+              disabled={submitting}
+              className="touch-manipulation flex items-center justify-center"
+              style={{ width: '22px', height: '22px', borderRadius: '50%', background: submitting ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', cursor: submitting ? 'default' : 'pointer', flexShrink: 0, boxShadow: submitting ? 'none' : '0 0 8px rgba(16,185,129,0.2)' }}
+            >
+              {submitting ? (
+                <svg width={9} height={9} viewBox="0 0 20 20" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}>
+                  <circle cx="10" cy="10" r="8" stroke="rgba(16,185,129,0.4)" strokeWidth="2.5"/>
+                  <path d="M10 2a8 8 0 018 8" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"/>
+                </svg>
+              ) : (
+                <svg width={10} height={10} viewBox="0 0 20 20" fill="none">
+                  <path d="M4 10l5 5 7-8" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1534,15 +1634,22 @@ const ProductReviewsList = ({ productId }) => {
       .then(data => setReviews(data))
       .finally(() => setLoading(false));
   }, [productId]);
-  if (loading) return <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest py-3">Carregando avaliações...</p>;
-  if (reviews.length === 0) return null;
+  if (loading || reviews.length === 0) return null;
   return (
-    <div className="space-y-3 pt-4 border-t border-white/5 mt-4">
-      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Avaliações ({reviews.length})</p>
+    <div className="space-y-2.5 pt-4 mt-2 border-t border-white/5">
+      <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Avaliações ({reviews.length})</p>
       {reviews.map(rv => (
-        <div key={rv.id} className="bg-zinc-900 rounded-2xl p-4 border border-white/5 space-y-2">
+        <div key={rv.id} className="bg-zinc-900 rounded-2xl p-4 border border-white/5 space-y-1.5">
           <div className="flex items-center justify-between">
-            <StarRating value={rv.rating} count={0} size="sm" />
+            <div className="flex items-center gap-0.5">
+              {[1,2,3,4,5].map(i => (
+                <svg key={i} width={11} height={11} viewBox="0 0 20 20" fill="none">
+                  <path d="M10 1.5l2.47 5.01 5.53.8-4 3.9.94 5.49L10 14.1l-4.94 2.6.94-5.49-4-3.9 5.53-.8L10 1.5z"
+                    fill={i <= rv.rating ? '#f59e0b' : 'none'} stroke={i <= rv.rating ? '#f59e0b' : 'rgba(255,255,255,0.12)'}
+                    strokeWidth="1.5" strokeLinejoin="round" />
+                </svg>
+              ))}
+            </div>
             <span className="text-[9px] text-zinc-600 font-bold">{new Date(rv.created_at).toLocaleDateString('pt-BR')}</span>
           </div>
           <p className="text-[10px] font-black text-white uppercase tracking-wide">{rv.customer_name.split(' ')[0]}</p>
@@ -2772,13 +2879,6 @@ function App() {
 
   // ── Avaliações ──
   const [ratingsMap, setRatingsMap] = useState({});
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewTarget, setReviewTarget] = useState(null);
-  const [reviewStep, setReviewStep] = useState(1);
-  const [reviewRating, setReviewRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState('');
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewExisting, setReviewExisting] = useState(null);
 
   const [toast, setToast] = useState(null);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
@@ -3479,58 +3579,6 @@ function App() {
       .then(map => setRatingsMap(map))
       .catch(() => {});
   }, [products]);
-
-  const handleOpenReview = async (product) => {
-    if (!userProfile) {
-      setShowUserDrawer(true);
-      setDrawerTab('profile');
-      showToast('Crie seu perfil Fluxo para avaliar produtos.', 'info');
-      return;
-    }
-    const existing = await fetchExistingReview(product.id, userProfile.phone);
-    setReviewExisting(existing);
-    setReviewTarget({ productId: product.id, productName: product.name });
-    setReviewRating(existing?.rating || 0);
-    setReviewComment('');
-    setReviewStep(1);
-    setShowReviewModal(true);
-  };
-
-  const handleSubmitReview = async () => {
-    if (reviewRating === 0) { showToast('Selecione uma nota de 1 a 5 estrelas.', 'error'); return; }
-    setReviewSubmitting(true);
-    try {
-      await submitReview({
-        productId: reviewTarget.productId,
-        customerName: userProfile.name,
-        customerPhone: userProfile.phone,
-        rating: reviewRating,
-        comment: reviewComment.trim() || null,
-      });
-      const updated = await fetchRatingsBatch([reviewTarget.productId]);
-      setRatingsMap(prev => ({ ...prev, ...updated }));
-      showToast('Avaliação enviada! Obrigado 🙏', 'success');
-      setShowReviewModal(false);
-      setReviewTarget(null);
-    } catch (err) {
-      if (err.message?.includes('unique') || err.message?.includes('duplicate')) {
-        showToast('Você já avaliou este produto.', 'error');
-      } else {
-        showToast('Erro ao enviar avaliação.', 'error');
-      }
-    } finally {
-      setReviewSubmitting(false);
-    }
-  };
-
-  const handleCloseReviewModal = () => {
-    setShowReviewModal(false);
-    setReviewTarget(null);
-    setReviewRating(0);
-    setReviewComment('');
-    setReviewStep(1);
-    setReviewExisting(null);
-  };
 
   const handleOpenUserDrawer = () => {
     if (userProfile?.phone) {
@@ -4276,17 +4324,17 @@ function App() {
                         <h3 className="uppercase mt-1.5 line-clamp-1" style={{ color: 'var(--text-secondary)', fontSize: '9.5px', fontWeight: '500', letterSpacing: '0.1em' }}>
                           {product.name}
                         </h3>
-                        {(() => {
-                          const r = ratingsMap[product.id];
-                          if (!r || r.count === 0) return null;
-                          return <div className="mt-1.5"><StarRating value={r.avg} count={r.count} size="sm" /></div>;
-                        })()}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleOpenReview(product); }}
-                          className="mt-2 text-[8px] font-black uppercase tracking-widest text-zinc-600 hover:text-emerald-500 transition-colors touch-manipulation"
-                        >
-                          {userProfile ? '+ Avaliar' : '★ Avaliar'}
-                        </button>
+                        <div onClick={e => e.stopPropagation()} className="mt-1.5">
+                          <StarRatingInline
+                            product={product}
+                            ratingsMap={ratingsMap}
+                            userProfile={userProfile}
+                            setRatingsMap={setRatingsMap}
+                            setShowUserDrawer={setShowUserDrawer}
+                            setDrawerTab={setDrawerTab}
+                            showToast={showToast}
+                          />
+                        </div>
                       </motion.div>
                   </motion.div>
                 )
@@ -4559,24 +4607,17 @@ function App() {
                   ) : (
                     <p className="text-3xl font-black text-emerald-500 mt-2 tracking-tighter">{formatBRL(selectedProduct.price || 0)}</p>
                   )}
-                  {(() => {
-                    const r = ratingsMap[selectedProduct.id];
-                    return (
-                      <div className="flex items-center gap-4 mt-2">
-                        {r && r.count > 0 ? (
-                          <StarRating value={r.avg} count={r.count} size="md" />
-                        ) : (
-                          <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Sem avaliações ainda</span>
-                        )}
-                        <button
-                          onClick={() => handleOpenReview(selectedProduct)}
-                          className="text-[9px] font-black uppercase tracking-widest text-emerald-500 border border-emerald-500/30 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors"
-                        >
-                          {userProfile ? 'Avaliar' : '+ Avalie'}
-                        </button>
-                      </div>
-                    );
-                  })()}
+                  <div className="mt-2">
+                    <StarRatingInline
+                      product={selectedProduct}
+                      ratingsMap={ratingsMap}
+                      userProfile={userProfile}
+                      setRatingsMap={setRatingsMap}
+                      setShowUserDrawer={setShowUserDrawer}
+                      setDrawerTab={setDrawerTab}
+                      showToast={showToast}
+                    />
+                  </div>
                 </div>
 
                 {/* Size selector — todos os tamanhos, esgotados visíveis como disabled */}
@@ -5351,91 +5392,6 @@ function App() {
                     );
                   })}
                 </div>
-              )}
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-      {showReviewModal && reviewTarget && (
-        <motion.div
-          key="review-modal-overlay"
-          className="fixed inset-x-0 z-[300] flex items-end justify-center"
-          style={viewportOverlayStyle}
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={handleCloseReviewModal} />
-          <motion.div
-            className="relative bg-zinc-950 w-full max-w-md rounded-t-[32px] border-t border-white/10 shadow-2xl overflow-hidden"
-            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-10 h-1 bg-white/15 rounded-full" />
-            <div className="px-6 pt-8 pb-8 space-y-5">
-              {reviewExisting ? (
-                <>
-                  <div className="text-center space-y-2">
-                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Você já avaliou</p>
-                    <h3 className="text-base font-black text-white uppercase leading-tight">{reviewTarget.productName}</h3>
-                    <div className="flex justify-center pt-1"><StarRating value={reviewExisting.rating} count={0} size="lg" /></div>
-                    <p className="text-[11px] text-zinc-500 font-bold pt-1">Sua nota: {reviewExisting.rating}/5 estrelas</p>
-                  </div>
-                  <button onClick={handleCloseReviewModal} className="w-full py-4 bg-zinc-900 border border-white/10 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest">Fechar</button>
-                </>
-              ) : reviewStep === 1 ? (
-                <>
-                  <div className="text-center space-y-1">
-                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Avaliar produto</p>
-                    <h3 className="text-base font-black text-white uppercase leading-tight">{reviewTarget.productName}</h3>
-                  </div>
-                  <div className="flex flex-col items-center gap-3 py-2">
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-                      {reviewRating === 0 ? 'Toque para selecionar' : reviewRating === 1 ? '😕 Ruim' : reviewRating === 2 ? '😐 Regular' : reviewRating === 3 ? '🙂 Bom' : reviewRating === 4 ? '😊 Muito bom' : '🔥 Excelente'}
-                    </p>
-                    <StarRating value={reviewRating} count={0} size="lg" interactive onChange={setReviewRating} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Comentário (opcional)</label>
-                    <textarea
-                      rows={2}
-                      placeholder="O que achou do produto?"
-                      value={reviewComment}
-                      onChange={e => setReviewComment(e.target.value)}
-                      className="w-full p-4 bg-zinc-900 border border-white/5 rounded-2xl text-[14px] text-white outline-none focus:border-emerald-500/30 resize-none font-medium client-input"
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <button onClick={handleCloseReviewModal} className="flex-1 py-4 bg-zinc-900 border border-white/10 text-zinc-400 rounded-2xl font-black text-[10px] uppercase tracking-widest">Cancelar</button>
-                    <button
-                      onClick={() => { if (reviewRating === 0) { showToast('Selecione ao menos 1 estrela.', 'error'); return; } setReviewStep(2); }}
-                      className="flex-1 py-4 bg-white text-zinc-950 rounded-2xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform"
-                    >Continuar →</button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-center space-y-2">
-                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Confirmar avaliação</p>
-                    <h3 className="text-base font-black text-white uppercase leading-tight">{reviewTarget.productName}</h3>
-                    <div className="flex justify-center pt-1"><StarRating value={reviewRating} count={0} size="lg" /></div>
-                    {reviewComment ? (
-                      <p className="text-[12px] text-zinc-400 font-medium italic leading-relaxed bg-zinc-900 rounded-xl px-4 py-3 border border-white/5 mt-2">"{reviewComment}"</p>
-                    ) : null}
-                    <p className="text-[10px] text-zinc-600 font-bold pt-1">Como {userProfile?.name?.split(' ')[0]} · {userProfile?.phone}</p>
-                  </div>
-                  <p className="text-[9px] text-zinc-600 font-bold text-center uppercase tracking-widest">Esta ação não pode ser desfeita</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => setReviewStep(1)} className="flex-1 py-4 bg-zinc-900 border border-white/10 text-zinc-400 rounded-2xl font-black text-[10px] uppercase tracking-widest">← Voltar</button>
-                    <button
-                      onClick={handleSubmitReview}
-                      disabled={reviewSubmitting}
-                      className="flex-1 py-4 bg-emerald-500 text-zinc-950 rounded-2xl font-black text-[10px] uppercase tracking-widest disabled:opacity-50 active:scale-95 transition-transform shadow-[0_8px_24px_rgba(16,185,129,0.3)]"
-                    >{reviewSubmitting ? 'Enviando...' : 'Confirmar ✓'}</button>
-                  </div>
-                </>
               )}
             </div>
           </motion.div>

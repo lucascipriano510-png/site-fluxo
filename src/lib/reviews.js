@@ -40,18 +40,12 @@ export const fetchExistingReview = async (productId, phone) => {
   return data || null;
 };
 
-export const submitReview = async ({ productId, customerName, customerPhone, rating, comment }) => {
+export const submitReview = async ({ productId, customerName, customerPhone, rating }) => {
   const { data, error } = await supabase
     .from('product_reviews')
-    .insert([{
-      product_id: productId,
-      customer_name: customerName,
-      customer_phone: customerPhone,
-      rating,
-      comment: comment || null,
-    }])
-    .select()
-    .single();
+    .insert([{ product_id: productId, customer_name: customerName,
+               customer_phone: customerPhone, rating }])
+    .select().single();
   if (error) throw new Error(error.message);
   return data;
 };
