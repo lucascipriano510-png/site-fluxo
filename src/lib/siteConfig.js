@@ -15,6 +15,7 @@ export const DEFAULT_CONFIG = {
     'COLEÇÕES LIMITADAS',
     'DESIGN AUTÊNTICO E EXCLUSIVO',
   ],
+  category_images: {},
 };
 
 // row supabase -> shape usado no app (camelCase)
@@ -27,6 +28,7 @@ const rowToConfig = (row) => ({
   logoUrl: row.logo_url || '',
   logoZoom: Number(row.logo_zoom || 1.5),
   marqueePhrases: Array.isArray(row.marquee_phrases) ? row.marquee_phrases : DEFAULT_CONFIG.marqueePhrases,
+  category_images: (row.category_images && typeof row.category_images === 'object') ? row.category_images : {},
 });
 
 // Busca a config global (id='main')
@@ -53,6 +55,7 @@ export async function upsertSiteConfig(config) {
     logo_url: String(config.logoUrl || ''),
     logo_zoom: Number(config.logoZoom || 1.5),
     marquee_phrases: Array.isArray(config.marqueePhrases) ? config.marqueePhrases : [],
+    category_images: (config.category_images && typeof config.category_images === 'object') ? config.category_images : {},
   };
   const { data, error } = await supabase
     .from('site_config')

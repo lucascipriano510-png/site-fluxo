@@ -1599,7 +1599,7 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
   );
 };
 
-const AdminConfig = ({ config, setConfig, showToast, products, setProducts }) => {
+const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uploadImage }) => {
   const [logoPreview, setLogoPreview] = useState(config.logoUrl || '');
   const [logoZoomPreview, setLogoZoomPreview] = useState(config.logoZoom || 1.5);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -1610,6 +1610,33 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts }) =>
       .sort((a, b) => (a.featured_order ?? 999) - (b.featured_order ?? 999))
   );
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [categoryImages, setCategoryImages] = useState(config.category_images || {});
+  const [uploadingCategory, setUploadingCategory] = useState(null);
+  useEffect(() => {
+    setCategoryImages(config.category_images || {});
+  }, [config.category_images]);
+  const handleCategoryImageUpload = async (categoryName, file) => {
+    if (!file) return;
+    setUploadingCategory(categoryName);
+    try {
+      const url = await uploadImage(file);
+      const updated = { ...categoryImages, [categoryName]: url };
+      setCategoryImages(updated);
+      setConfig(prev => ({ ...prev, category_images: updated }));
+      showToast(`Imagem de "${categoryName}" salva!`, 'success');
+    } catch (err) {
+      showToast('Erro ao enviar imagem: ' + err.message, 'error');
+    } finally {
+      setUploadingCategory(null);
+    }
+  };
+  const handleCategoryImageRemove = (categoryName) => {
+    const updated = { ...categoryImages };
+    delete updated[categoryName];
+    setCategoryImages(updated);
+    setConfig(prev => ({ ...prev, category_images: updated }));
+    showToast(`Imagem de "${categoryName}" removida.`, 'success');
+  };
   const moveUp = (i) => {
     if (i === 0) return;
     const list = [...featuredList];
@@ -1763,6 +1790,73 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts }) =>
             </div>
           )}
           <button type="button" onClick={handleSaveOrder} disabled={isSavingOrder || featuredList.length === 0} className="bg-emerald-500 text-zinc-950 font-black text-[11px] uppercase tracking-widest rounded-2xl py-4 w-full mt-4 active:scale-95 transition-transform disabled:opacity-50">{isSavingOrder ? 'Salvando...' : 'Salvar Ordem'}</button>
+        </div>
+
+        {/* SEÇÃO: Imagens de Categoria */}
+        <div className="bg-zinc-900 p-6 rounded-[32px] border border-white/5 space-y-4">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2 flex items-center gap-2">
+            <Layers size={14}/> Imagens de Categoria
+          </h4>
+          <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-relaxed">
+            Opcional. Sem imagem, a categoria exibe fundo preto com a logo da loja.
+          </p>
+          <div className="space-y-3">
+            {['TODOS', ...(products || [])
+              .filter(p => !p.is_kit && p.category)
+              .map(p => p.category)
+              .filter((v, i, a) => a.indexOf(v) === i)
+              .sort()
+            ].map(cat => {
+              const imgUrl = cat === 'TODOS' ? null : categoryImages[cat];
+              const isUploading = uploadingCategory === cat;
+              return (
+                <div key={cat} className="flex items-center gap-4 p-3 bg-zinc-950 rounded-2xl border border-white/5">
+                  <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-white/10 bg-black flex items-center justify-center relative">
+                    {imgUrl ? (
+                      <img src={imgUrl} className="w-full h-full object-cover" alt={cat} />
+                    ) : config.logoUrl ? (
+                      <img src={config.logoUrl} className="w-8 h-8 object-contain mix-blend-screen opacity-60" alt="logo" />
+                    ) : (
+                      <span className="text-[11px] font-black text-zinc-600 uppercase">{cat.slice(0,2)}</span>
+                    )}
+                  </div>
+                  <span className="flex-1 text-[11px] font-black uppercase text-white tracking-widest">{cat}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {imgUrl && (
+                      <button
+                        type="button"
+                        onClick={() => handleCategoryImageRemove(cat)}
+                        className="p-2 bg-red-500/10 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                        title="Remover imagem"
+                      >
+                        <Trash2 size={13}/>
+                      </button>
+                    )}
+                    {cat !== 'TODOS' && (
+                      <label className={`p-2 rounded-xl cursor-pointer transition-colors flex items-center justify-center ${isUploading ? 'bg-zinc-800 text-zinc-600' : 'bg-zinc-800 text-zinc-400 hover:text-emerald-500 border border-white/5'}`}>
+                        {isUploading ? (
+                          <span className="text-[9px] font-black uppercase text-zinc-500">...</span>
+                        ) : (
+                          <Upload size={13}/>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={isUploading}
+                          onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (f) handleCategoryImageUpload(cat, f);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <button type="submit" disabled={isUploadingLogo} className="w-full py-5 bg-white text-zinc-950 rounded-[28px] font-black uppercase text-[11px] tracking-widest active:scale-95 shadow-xl">{isUploadingLogo ? 'Processando...' : 'Aplicar Mudanças'}</button>
@@ -3262,7 +3356,7 @@ function App() {
               {adminTab === 'inventory' && <AdminInventory products={products} setProducts={setProducts} showToast={showToast} availableCollections={availableCollections} productImageFile={productImageFile} setProductImageFile={setProductImageFile} uploadImage={uploadImage} />}
               {adminTab === 'leads' && <AdminLeads leads={leads} setLeads={setLeads} products={products} setProducts={setProducts} showToast={showToast} config={config} />}
               {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} />}
-              {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} products={products} setProducts={setProducts} />}
+              {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} products={products} setProducts={setProducts} uploadImage={uploadImage} />}
               {adminTab === 'rastreio' && <AdminRastreio />}
               {adminTab === 'crm' && <AdminCRM showToast={showToast} config={config} />}
             </AdminTabErrorBoundary>
@@ -3520,20 +3614,23 @@ function App() {
           <input id="search-input" placeholder="O que você procura?" data-testid="input-search" className="w-full border py-4 pl-14 pr-6 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
         
-        <div id="catalog-section" className="flex gap-3 overflow-x-auto no-scrollbar pb-1 mask-linear native-x-scroll">
+        <div id="catalog-section" className="flex gap-3 overflow-x-auto no-scrollbar pb-1 mask-linear native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
           {/* Botão destacado de KITS — sempre primeiro */}
           {(products || []).some(p => p.is_kit) && (
-            <button
-              key="__kits__"
-              onClick={() => { setKitsOnly(v => !v); }}
-              data-testid="category-filter-KITS"
-              className={`relative px-4 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border-2 transition-all touch-manipulation flex items-center gap-1.5 ${kitsOnly
-                ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-zinc-950 border-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.45)]'
-                : 'bg-zinc-950 text-amber-400 border-amber-400/50 hover:border-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.18)]'}`}
-            >
-              <Zap size={12} className={kitsOnly ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'} />
-              KITS
-            </button>
+            <div className="flex flex-col items-center gap-2 shrink-0">
+              <button
+                key="__kits__"
+                onClick={() => { setKitsOnly(v => !v); }}
+                data-testid="category-filter-KITS"
+                className={`relative px-4 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border-2 transition-all touch-manipulation flex items-center gap-1.5 ${kitsOnly
+                  ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-zinc-950 border-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.45)]'
+                  : 'bg-zinc-950 text-amber-400 border-amber-400/50 hover:border-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.18)]'}`}
+              >
+                <Zap size={12} className={kitsOnly ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'} />
+                KITS
+              </button>
+              <span className="text-[9px] font-black uppercase tracking-widest text-transparent select-none">·</span>
+            </div>
           )}
           {kitsOnly && (
             <button
@@ -3543,9 +3640,42 @@ function App() {
               <ChevronLeft size={12} /> Voltar
             </button>
           )}
-          {!kitsOnly && categories.map(cat => (
-            <motion.button key={cat} onClick={() => setSelectedCategory(cat)} data-testid={`category-filter-${cat}`} whileTap={{ scale: 0.94 }} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedCategory === cat ? 'bg-white text-zinc-950 border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]' : ''}`} style={selectedCategory !== cat ? { background: 'transparent', borderColor: 'var(--border)', color: 'var(--text-muted)' } : {}}>{cat}</motion.button>
-          ))}
+          {!kitsOnly && categories.map((cat) => {
+            const isActive = selectedCategory === cat;
+            const imgUrl = cat !== 'TODOS' ? (config.category_images || {})[cat] : null;
+            const hasLogo = !!config.logoUrl;
+            return (
+              <motion.button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                data-testid={`category-filter-${cat}`}
+                whileTap={{ scale: 0.92 }}
+                className="flex flex-col items-center gap-2 shrink-0 touch-manipulation"
+                style={{ minWidth: '60px' }}
+              >
+                <div className={`w-[58px] h-[58px] rounded-full overflow-hidden border-2 transition-all duration-200 bg-black flex items-center justify-center relative ${
+                  isActive
+                    ? 'border-emerald-500 shadow-[0_0_14px_rgba(16,185,129,0.45)]'
+                    : 'border-white/10 hover:border-white/30'
+                }`}>
+                  {imgUrl ? (
+                    <img src={imgUrl} alt={cat} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                  ) : hasLogo ? (
+                    <img src={config.logoUrl} alt={cat} className="w-8 h-8 object-contain mix-blend-screen opacity-50" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full bg-zinc-950" />
+                  )}
+                  {imgUrl && <div className="absolute inset-0 bg-black/25 pointer-events-none" />}
+                  {isActive && <div className="absolute inset-[3px] rounded-full border border-emerald-500/40 pointer-events-none" />}
+                </div>
+                <span className={`text-[9px] font-black uppercase tracking-widest leading-none transition-colors ${
+                  isActive ? 'text-emerald-400' : 'text-zinc-500'
+                }`}>
+                  {cat}
+                </span>
+              </motion.button>
+            );
+          })}
         </div>
 
 
