@@ -3354,7 +3354,7 @@ function App() {
   const _sizeValidated = React.useRef(false);
   useEffect(() => {
     if (!products || products.length === 0) return;
-    if (availableSizes.length === 0) return; // ainda carregando
+    if (availableSizes.length <= 1) return; // ainda carregando
     if (!_sizeValidated.current) {
       _sizeValidated.current = true;
       if (selectedSize !== 'TODOS' && availableSizes.includes(selectedSize)) return;
