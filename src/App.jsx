@@ -2483,6 +2483,36 @@ function App() {
   const [productImageFile, setProductImageFile] = useState(null);
   const [bannerImageFile, setBannerImageFile] = useState(null);
   const [currentLead, setCurrentLead] = useState({ name: '', phone: '' });
+
+  // ── Perfil do usuário (localStorage) ──
+  const [userProfile, setUserProfileState] = useState(() => {
+    try {
+      const raw = localStorage.getItem('@fluxo-outlet:user-profile');
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
+  const saveUserProfile = (data) => {
+    const profile = { ...data, createdAt: data.createdAt || new Date().toISOString() };
+    try { localStorage.setItem('@fluxo-outlet:user-profile', JSON.stringify(profile)); } catch {}
+    setUserProfileState(profile);
+  };
+  const clearUserProfile = () => {
+    try { localStorage.removeItem('@fluxo-outlet:user-profile'); } catch {}
+    setUserProfileState(null);
+  };
+
+  // Pré-preenche checkout quando perfil existe
+  useEffect(() => {
+    if (userProfile?.name && userProfile?.phone) {
+      setCurrentLead({ name: userProfile.name, phone: userProfile.phone });
+    }
+  }, [userProfile]);
+
+  // ── Drawer de usuário ──
+  const [showUserDrawer, setShowUserDrawer] = useState(false);
+  const [drawerTab, setDrawerTab] = useState('profile');
+  const [profileForm, setProfileForm] = useState({ name: '', phone: '' });
+
   const [toast, setToast] = useState(null);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [whatsappLink, setWhatsappLink] = useState('');
@@ -3176,6 +3206,18 @@ function App() {
     }
   };
 
+  const handleOpenUserDrawer = () => {
+    if (userProfile?.phone) {
+      setDrawerTab('orders');
+      setMyOrdersPhone(userProfile.phone);
+      setTimeout(() => handleSearchMyOrders(), 100);
+    } else {
+      setDrawerTab('profile');
+      setProfileForm({ name: '', phone: '' });
+    }
+    setShowUserDrawer(true);
+  };
+
   const adminNavItems = [
     { key: 'dashboard', icon: <LayoutDashboard size={18}/>, label: 'Painel' },
     { key: 'inventory', icon: <Box size={18}/>, label: 'Estoque' },
@@ -3327,9 +3369,35 @@ function App() {
 
           {/* AÇÕES — direita */}
           <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => setShowMyOrders(true)} data-testid="btn-header-my-orders" className="p-2 text-zinc-400 hover:text-emerald-500 transition-colors touch-manipulation" title="Meus Pedidos">
-              <ClipboardList size={20} />
-            </button>
+            {/* AVATAR USUÁRIO FLUXO */}
+            {(() => {
+              const initials = userProfile?.name
+                ? userProfile.name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('')
+                : null;
+              return (
+                <button
+                  onClick={handleOpenUserDrawer}
+                  data-testid="btn-header-my-orders"
+                  title={userProfile ? `Olá, ${userProfile.name.split(' ')[0]}` : 'Minha Conta'}
+                  className={`relative w-9 h-9 rounded-full flex items-center justify-center touch-manipulation transition-all duration-200 active:scale-90 shrink-0 ${
+                    userProfile
+                      ? 'bg-emerald-500/15 border-2 border-emerald-500/60 hover:border-emerald-400'
+                      : 'bg-zinc-900 border border-white/15 hover:border-white/40 hover:bg-zinc-800'
+                  }`}
+                >
+                  {initials ? (
+                    <span className="text-[11px] font-black text-emerald-400 leading-none select-none">
+                      {initials}
+                    </span>
+                  ) : (
+                    <User size={15} className="text-zinc-400" />
+                  )}
+                  {userProfile && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-zinc-950 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                  )}
+                </button>
+              );
+            })()}
             <button onClick={() => setShowCart(true)} data-testid="btn-header-cart" className="relative p-2 touch-manipulation">
               <motion.div
                 animate={cartBounce ? { scale: [1, 1.3, 0.9, 1.1, 1], rotate: [0, -8, 6, -3, 0] } : { scale: 1 }}
@@ -4636,6 +4704,258 @@ function App() {
 	                  );
 	                })
 	              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+      {showUserDrawer && (
+        <motion.div
+          key="user-drawer-overlay"
+          className="fixed inset-x-0 z-[200] flex items-end justify-center overflow-hidden"
+          style={viewportOverlayStyle}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+            onClick={() => setShowUserDrawer(false)}
+          />
+
+          {/* Panel */}
+          <motion.div
+            className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] border-t border-white/10 shadow-2xl flex flex-col overflow-hidden"
+            style={{ maxHeight: viewportPanelMaxHeight }}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {/* Drag handle */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/20 rounded-full pointer-events-none z-10" />
+
+            {/* Fechar */}
+            <button
+              onClick={() => setShowUserDrawer(false)}
+              className="absolute top-4 right-4 z-20 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Header do drawer */}
+            <div className="px-7 pt-10 pb-5 shrink-0">
+              {userProfile ? (
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-full bg-emerald-500/15 border-2 border-emerald-500/50 flex items-center justify-center shrink-0">
+                    <span className="text-lg font-black text-emerald-400 leading-none select-none">
+                      {userProfile.name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest">Usuário Fluxo</p>
+                    <h3 className="text-lg font-black text-white uppercase leading-tight truncate">
+                      {userProfile.name.split(' ')[0]}
+                    </h3>
+                    <p className="text-[11px] font-bold text-zinc-500 mt-0.5">+55 {userProfile.phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center shrink-0">
+                    <User size={24} className="text-zinc-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Bem-vindo</p>
+                    <h3 className="text-lg font-black text-white uppercase leading-tight">Minha Conta</h3>
+                    <p className="text-[10px] text-zinc-600 mt-0.5 font-bold">Crie seu perfil Fluxo</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Tabs — só aparece se identificado */}
+            {userProfile && (
+              <div className="px-5 pb-3 shrink-0">
+                <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-900 rounded-2xl border border-white/5">
+                  <button
+                    onClick={() => setDrawerTab('profile')}
+                    className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                      drawerTab === 'profile'
+                        ? 'bg-white text-zinc-950 shadow'
+                        : 'text-zinc-500 hover:text-white'
+                    }`}
+                  >
+                    Perfil
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDrawerTab('orders');
+                      if (myOrdersResults === null && userProfile?.phone) {
+                        setMyOrdersPhone(userProfile.phone);
+                        setTimeout(() => handleSearchMyOrders(), 100);
+                      }
+                    }}
+                    className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                      drawerTab === 'orders'
+                        ? 'bg-emerald-500 text-zinc-950 shadow'
+                        : 'text-zinc-500 hover:text-white'
+                    }`}
+                  >
+                    Pedidos
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Corpo scrollável */}
+            <div className="flex-1 overflow-y-auto px-7 pb-10 pt-2 space-y-4">
+
+              {/* TAB PERFIL */}
+              {(drawerTab === 'profile' || !userProfile) && (
+                <div className="space-y-4 animate-in">
+                  {!userProfile && (
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">
+                      Salve seu nome e WhatsApp para agilizar seus próximos pedidos. Totalmente opcional.
+                    </p>
+                  )}
+
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Nome completo</label>
+                      <input
+                        placeholder="Ex: João Silva"
+                        className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
+                        value={userProfile ? userProfile.name : profileForm.name}
+                        onChange={e => {
+                          if (userProfile) {
+                            saveUserProfile({ ...userProfile, name: e.target.value });
+                          } else {
+                            setProfileForm(f => ({ ...f, name: e.target.value }));
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">WhatsApp (com DDD)</label>
+                      <input
+                        placeholder="Ex: 34999999999"
+                        type="tel"
+                        className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
+                        value={userProfile ? userProfile.phone : profileForm.phone}
+                        onChange={e => {
+                          const v = e.target.value.replace(/\D/g, '');
+                          if (userProfile) {
+                            saveUserProfile({ ...userProfile, phone: v });
+                          } else {
+                            setProfileForm(f => ({ ...f, phone: v }));
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Botão salvar — só anônimo */}
+                  {!userProfile && (
+                    <button
+                      onClick={() => {
+                        const name = profileForm.name.trim();
+                        const phone = profileForm.phone.replace(/\D/g, '');
+                        if (!name) { showToast('Informe seu nome.', 'error'); return; }
+                        if (phone.length < 10) { showToast('WhatsApp inválido (mín. 10 dígitos com DDD).', 'error'); return; }
+                        saveUserProfile({ name, phone });
+                        setDrawerTab('orders');
+                        setMyOrdersPhone(phone);
+                        setTimeout(() => handleSearchMyOrders(), 150);
+                        showToast('Perfil Fluxo criado!', 'success');
+                      }}
+                      className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation shadow-[0_10px_30px_rgba(16,185,129,0.2)]"
+                    >
+                      Salvar Perfil Fluxo
+                    </button>
+                  )}
+
+                  {/* Botão sair — só identificado */}
+                  {userProfile && (
+                    <button
+                      onClick={() => {
+                        clearUserProfile();
+                        setMyOrdersResults(null);
+                        setMyOrdersPhone('');
+                        setCurrentLead({ name: '', phone: '' });
+                        setShowUserDrawer(false);
+                        showToast('Perfil removido.', 'success');
+                      }}
+                      className="w-full py-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation flex items-center justify-center gap-2"
+                    >
+                      <LogOut size={14} /> Sair da Conta Fluxo
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* TAB PEDIDOS */}
+              {drawerTab === 'orders' && userProfile && (
+                <div className="space-y-3 animate-in">
+                  {myOrdersLoading && (
+                    <div className="text-center py-10 text-emerald-500 text-[10px] font-black uppercase tracking-widest animate-pulse">
+                      Buscando pedidos...
+                    </div>
+                  )}
+                  {!myOrdersLoading && myOrdersResults === null && (
+                    <div className="text-center py-10 text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+                      Carregando...
+                    </div>
+                  )}
+                  {!myOrdersLoading && myOrdersResults !== null && myOrdersResults.length === 0 && (
+                    <div className="text-center py-10 text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+                      Nenhum pedido encontrado para este número.
+                    </div>
+                  )}
+                  {!myOrdersLoading && (myOrdersResults || []).map((row) => {
+                    const its = typeof row.items === 'string'
+                      ? (() => { try { return JSON.parse(row.items); } catch { return []; } })()
+                      : (row.items || []);
+                    const st = String(row.status || 'NOVO').toUpperCase();
+                    const stMap = { 'CONFIRMED': 'CONCLUÍDO', 'CONCLUIDO': 'CONCLUÍDO', 'CANCELLED': 'CANCELADO' };
+                    const status = stMap[st] || st;
+                    const color = status === 'CONCLUÍDO'
+                      ? 'text-emerald-500 bg-emerald-500/10'
+                      : status === 'CANCELADO'
+                        ? 'text-red-500 bg-red-500/10'
+                        : status === 'EM ATENDIMENTO'
+                          ? 'text-amber-500 bg-amber-500/10'
+                          : 'text-blue-500 bg-blue-500/10';
+                    return (
+                      <div key={row.id} className="bg-zinc-900 rounded-2xl p-4 border border-white/5">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-black uppercase text-white">#{row.order_number}</span>
+                          <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${color}`}>{status}</span>
+                        </div>
+                        <div className="text-[9px] text-zinc-500 font-bold uppercase mb-2">
+                          {row.created_at ? new Date(row.created_at).toLocaleString('pt-BR') : ''}
+                        </div>
+                        <div className="space-y-1">
+                          {(its || []).map((it, i) => (
+                            <div key={i} className="text-[10px] text-zinc-300 font-bold flex justify-between">
+                              <span className="truncate pr-2">{it.qty || 1}x {it.name} <span className="text-emerald-500">({it.size || 'U'})</span></span>
+                              <span className="text-zinc-500 shrink-0">{formatBRL(it.price || 0)}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex justify-between items-center pt-2 mt-2 border-t border-white/5">
+                          <span className="text-[9px] text-zinc-500 font-black uppercase">Total</span>
+                          <span className="text-[13px] font-black text-emerald-500">{formatBRL(row.value || 0)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>
