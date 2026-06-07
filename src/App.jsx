@@ -1492,7 +1492,7 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
 
 const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, setShowUserDrawer, setDrawerTab, showToast }) => {
   const rating = ratingsMap[product.id];
-  const avg = rating?.avg || 0;
+  const mode = rating?.mode || 0;
   const count = rating?.count || 0;
   const [pending, setPending] = React.useState(null);
   const [hovered, setHovered] = React.useState(null);
@@ -1506,7 +1506,7 @@ const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, set
       .catch(() => {});
   }, [product.id, userProfile?.phone]);
 
-  const display = pending ?? hovered ?? (myRating || avg);
+  const display = pending ?? hovered ?? (myRating || mode);
 
   const handleStarClick = (i) => {
     if (!userProfile) {
@@ -1550,7 +1550,7 @@ const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, set
     <div className="flex items-center gap-2 flex-wrap">
       <div className="flex items-center gap-0.5">
         {[1,2,3,4,5].map(i => {
-          const filled = i <= (pending ?? hovered ?? (myRating || Math.round(avg)));
+          const filled = i <= (pending ?? hovered ?? (myRating || mode));
           return (
             <motion.button
               key={i}
@@ -1586,7 +1586,7 @@ const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, set
             transition={{ duration: 0.18 }}
             style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(113,113,122,0.9)', lineHeight: 1, userSelect: 'none' }}
           >
-            {count === 0 ? '0 avaliações' : `${avg} · ${count}`}
+            {count === 0 ? '0 avaliações' : `${mode}★ · ${count}`}
           </motion.span>
         ) : (
           <motion.div

@@ -9,13 +9,19 @@ export const fetchRatingsBatch = async (productIds) => {
   if (error || !data) return {};
   const map = {};
   data.forEach(r => {
-    if (!map[r.product_id]) map[r.product_id] = { sum: 0, count: 0 };
-    map[r.product_id].sum += r.rating;
+    if (!map[r.product_id]) map[r.product_id] = { votes: {}, count: 0 };
+    map[r.product_id].votes[r.rating] = (map[r.product_id].votes[r.rating] || 0) + 1;
     map[r.product_id].count += 1;
   });
   Object.keys(map).forEach(id => {
-    const { sum, count } = map[id];
-    map[id] = { avg: Math.round((sum / count) * 10) / 10, count };
+    const { votes, count } = map[id];
+    // moda: nota com mais votos; em empate, a maior nota vence
+    let mode = 0, maxVotes = 0;
+    Object.entries(votes).forEach(([rating, v]) => {
+      const r = Number(rating);
+      if (v > maxVotes || (v === maxVotes && r > mode)) { mode = r; maxVotes = v; }
+    });
+    map[id] = { mode, count };
   });
   return map;
 };
