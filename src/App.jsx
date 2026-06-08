@@ -4187,10 +4187,8 @@ function App() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "80px" }}
                     transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: Math.min(idx, 5) * 0.06 }}
-                    className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
-                    style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
-                    onMouseEnter={e => { if (!isOutOfStock) { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.boxShadow = '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.12)'; } }}
-                    onMouseLeave={e => { if (!isOutOfStock) { e.currentTarget.style.background = 'var(--bg-surface)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)'; } }}
+                    className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
+                    style={{ height: '300px', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
                   >
                     {/* X de fechar — aparece quando este card está selecionado */}
@@ -4203,128 +4201,123 @@ function App() {
                         <X size={14} />
                       </button>
                     )}
-                    {!isOutOfStock && (product.sales || 0) >= 10 && <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}><Flame size={9}/> Top</div>}
 
-                       <div
-                         className="aspect-[4/5] relative overflow-hidden"
-                         onClick={!hasMultipleImages ? () => !isOutOfStock && handleProductClick(product) : undefined}
-                         style={!hasMultipleImages && !isOutOfStock ? { cursor: 'pointer' } : undefined}
-                       >
-                         {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
-                           <div
-                             data-testid={`badge-last-pieces-${product.id}`}
-                             style={{
-                               position: 'absolute',
-                               top: '0',
-                               left: '0',
-                               background: 'rgba(0, 0, 0, 0.52)',
-                               backdropFilter: 'blur(20px) saturate(1.6)',
-                               WebkitBackdropFilter: 'blur(20px) saturate(1.6)',
-                               borderBottom: '0.5px solid rgba(255,255,255,0.1)',
-                               borderRight: '0.5px solid rgba(255,255,255,0.1)',
-                               borderTopLeftRadius: 'inherit',
-                               borderBottomRightRadius: '10px',
-                               color: 'rgba(255,255,255,0.55)',
-                               fontFamily: "'Anton', Impact, sans-serif",
-                               fontSize: '9.5px',
-                               fontWeight: '400',
-                               letterSpacing: '0.18em',
-                               textTransform: 'uppercase',
-                               padding: '7px 12px 6px',
-                               zIndex: 10,
-                               transform: 'translateZ(0)',
-                               display: 'flex',
-                               alignItems: 'center',
-                               gap: '7px',
-                               lineHeight: 1,
-                             }}
-                           >
-                             {(() => {
-                               const realUnits = (product.sizes && product.sizes.length > 0)
-                                 ? product.sizes.reduce((sum, s) => sum + (typeof s === 'string' ? product.stock : Number(s.stock || 0)), 0)
-                                 : product.stock;
-                               const isAlmostGone = realUnits <= 1;
-                               return (
-                                 <span style={{
-                                   width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0,
-                                   background: isAlmostGone ? 'rgba(255,80,80,0.95)' : 'rgba(180,180,178,0.7)',
-                                   boxShadow: isAlmostGone ? '0 0 6px rgba(255,80,80,0.5)' : 'none',
-                                 }} />
-                               );
-                             })()}
-                             Restam {product.stock}
-                           </div>
-                         )}
-                         {/* Carrossel nativo — deslize para ver fotos adicionais */}
-                         <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' }}>
-                           {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
-                             <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 4 && i === 0} />
-                             </div>
-                           ))}
-                         </div>
-                        
-                        {isOutOfStock && (
-                           <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px] flex items-center justify-center">
-                               <span className="bg-zinc-950 text-white text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/20 shadow-2xl">Esgotado</span>
-                           </div>
-                        )}
+                    {/* Badge TOP */}
+                    {!isOutOfStock && (product.sales || 0) >= 10 && (
+                      <div className="absolute top-2 right-2 z-20 bg-gradient-to-r from-red-600 to-red-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-[0_0_10px_rgba(239,68,68,0.5)] flex items-center gap-1" data-testid={`badge-best-seller-${product.id}`}>
+                        <Flame size={9}/> Top
+                      </div>
+                    )}
 
-                        {!isOutOfStock && (() => {
-                           const avail = (product.sizes || [])
-                             .map(s => ({ name: typeof s === 'string' ? s : s.size, stock: typeof s === 'string' ? (product.stock || 0) : Number(s.stock || 0) }))
-                             .filter(s => s.name && s.stock > 0);
-                           if (avail.length === 0) return null;
-                           const visible = avail.slice(0, 4);
-                           const extra = avail.length - visible.length;
+                    {/* Imagem full-bleed */}
+                    <div
+                      className="absolute inset-0"
+                      onClick={!hasMultipleImages ? () => !isOutOfStock && handleProductClick(product) : undefined}
+                      style={!hasMultipleImages && !isOutOfStock ? { cursor: 'pointer' } : undefined}
+                    >
+                      {/* Badge RESTAM X */}
+                      {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
+                        <div
+                          data-testid={`badge-last-pieces-${product.id}`}
+                          style={{
+                            position: 'absolute', top: '0', left: '0',
+                            background: 'rgba(0, 0, 0, 0.52)',
+                            backdropFilter: 'blur(20px) saturate(1.6)',
+                            WebkitBackdropFilter: 'blur(20px) saturate(1.6)',
+                            borderBottom: '0.5px solid rgba(255,255,255,0.1)',
+                            borderRight: '0.5px solid rgba(255,255,255,0.1)',
+                            borderTopLeftRadius: 'inherit',
+                            borderBottomRightRadius: '10px',
+                            color: 'rgba(255,255,255,0.55)',
+                            fontFamily: "'Anton', Impact, sans-serif",
+                            fontSize: '9.5px', fontWeight: '400',
+                            letterSpacing: '0.18em', textTransform: 'uppercase',
+                            padding: '7px 12px 6px', zIndex: 20,
+                            transform: 'translateZ(0)',
+                            display: 'flex', alignItems: 'center', gap: '7px', lineHeight: 1,
+                          }}
+                        >
+                          {(() => {
+                            const realUnits = (product.sizes && product.sizes.length > 0)
+                              ? product.sizes.reduce((sum, s) => sum + (typeof s === 'string' ? product.stock : Number(s.stock || 0)), 0)
+                              : product.stock;
+                            const isAlmostGone = realUnits <= 1;
                             return (
-                               <div
-                                 className="absolute bottom-0 left-0 z-10 flex overflow-hidden bg-white/10 backdrop-blur-md border-t border-r border-white/20 rounded-tr-md shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
-                                 data-testid={`product-sizes-${product.id}`}
-                               >
-                                 <style>{`
-                                   @keyframes shineSize {
-                                     0% { transform: translateX(-150%) skewX(-15deg); }
-                                     20%, 100% { transform: translateX(200%) skewX(-15deg); }
-                                   }
-                                 `}</style>
-                                 <span className="pointer-events-none absolute inset-0 overflow-hidden">
-                                   <span className="absolute top-0 left-0 h-full w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: 'shineSize 4s ease-in-out infinite' }} />
-                                 </span>
-                                 {visible.map(s => (
-                                   <span
-                                     key={s.name}
-                                     className="relative w-[22px] h-[22px] flex items-center justify-center text-[10px] font-bold text-white/95 border-r border-white/10 last:border-r-0"
-                                   >
-                                     {s.name}
-                                   </span>
-                                 ))}
-                                 {extra > 0 && (
-                                   <span className="relative w-[22px] h-[22px] flex items-center justify-center text-[10px] font-bold text-white/95">
-                                     +{extra}
-                                   </span>
-                                 )}
-                               </div>
+                              <span style={{
+                                width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0,
+                                background: isAlmostGone ? 'rgba(255,80,80,0.95)' : 'rgba(180,180,178,0.7)',
+                                boxShadow: isAlmostGone ? '0 0 6px rgba(255,80,80,0.5)' : 'none',
+                              }} />
                             );
-                         })()}
+                          })()}
+                          Restam {product.stock}
+                        </div>
+                      )}
 
-                       {!isOutOfStock && (
-                          <div className="absolute top-3 right-3 bg-white text-zinc-950 p-2 rounded-full shadow-xl opacity-0 translate-y-[-4px] group-hover:opacity-100 group-hover:translate-y-0 transition-all pointer-events-none"><Plus size={16}/></div>
-                       )}
-                     </div>
-                      <motion.div
-                        className="p-3 flex-1 flex flex-col justify-between"
-                        style={{ background: 'var(--bg-surface)', cursor: isOutOfStock ? 'default' : 'pointer' }}
-                        onClick={() => !isOutOfStock && handleProductClick(product)}
-                        whileTap={!isOutOfStock ? { scale: 0.98 } : {}}
-                      >
-                        <p className="leading-none mt-0.5" style={{ color: isOutOfStock ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>
-                          {formatBRL(product.price || 0)}
-                        </p>
-                        <h3 className="uppercase mt-1.5 line-clamp-1" style={{ color: 'var(--text-secondary)', fontSize: '9.5px', fontWeight: '500', letterSpacing: '0.1em' }}>
+                      {/* Carrossel nativo */}
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' }}>
+                        {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
+                          <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
+                            <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 4 && i === 0} />
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Overlay esgotado */}
+                      {isOutOfStock && (
+                        <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px] flex items-center justify-center" style={{ zIndex: 15 }}>
+                          <span className="bg-zinc-950 text-white text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/20 shadow-2xl">Esgotado</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Botão + hover desktop */}
+                    {!isOutOfStock && (
+                      <div className="absolute top-3 right-3 z-10 bg-white text-zinc-950 p-2 rounded-full shadow-xl opacity-0 translate-y-[-4px] group-hover:opacity-100 group-hover:translate-y-0 transition-all pointer-events-none">
+                        <Plus size={16}/>
+                      </div>
+                    )}
+
+                    {/* Glass footer flutuante */}
+                    <motion.div
+                      className="glass3d absolute bottom-0 left-0 right-0"
+                      style={{ borderRadius: '0 0 16px 16px', padding: '10px 12px 12px', cursor: isOutOfStock ? 'default' : 'pointer' }}
+                      onClick={() => !isOutOfStock && handleProductClick(product)}
+                      whileTap={!isOutOfStock ? { scale: 0.98 } : {}}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <p style={{ color: isOutOfStock ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '15px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', lineHeight: 1 }}>
+                            {formatBRL(product.price || 0)}
+                          </p>
+                          {/* Tamanhos disponíveis */}
+                          {!isOutOfStock && (() => {
+                            const avail = (product.sizes || [])
+                              .map(s => ({ name: typeof s === 'string' ? s : s.size, stock: typeof s === 'string' ? (product.stock || 0) : Number(s.stock || 0) }))
+                              .filter(s => s.name && s.stock > 0);
+                            if (avail.length === 0) return null;
+                            const visible = avail.slice(0, 4);
+                            const extra = avail.length - visible.length;
+                            return (
+                              <div className="flex items-center gap-0.5 shrink-0" data-testid={`product-sizes-${product.id}`}>
+                                {visible.map(s => (
+                                  <span key={s.name} className="w-[20px] h-[20px] flex items-center justify-center text-[9px] font-bold text-white/90 rounded bg-white/10 border border-white/15">
+                                    {s.name}
+                                  </span>
+                                ))}
+                                {extra > 0 && (
+                                  <span className="w-[20px] h-[20px] flex items-center justify-center text-[9px] font-bold text-white/90 rounded bg-white/10 border border-white/15">
+                                    +{extra}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        <h3 className="uppercase line-clamp-1 mb-1.5" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '9px', fontWeight: '500', letterSpacing: '0.1em' }}>
                           {product.name}
                         </h3>
-                        <div onClick={e => e.stopPropagation()} className="mt-1.5">
+                        <div onClick={e => e.stopPropagation()}>
                           <StarRatingInline
                             product={product}
                             ratingsMap={ratingsMap}
@@ -4335,7 +4328,8 @@ function App() {
                             showToast={showToast}
                           />
                         </div>
-                      </motion.div>
+                      </div>
+                    </motion.div>
                   </motion.div>
                 )
              })}
