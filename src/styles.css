@@ -224,6 +224,7 @@
   --color-glass3d: hsl(222 0% 32% / 0);
   --noise-glass3d: url("https://www.transparenttextures.com/patterns/egg-shell.png");
 
+  position: relative;
   z-index: 4;
   box-shadow:
     0 0 0.75px hsl(205 20% 10% / 0.2),
