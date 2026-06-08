@@ -2515,6 +2515,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
 // 4. APLICATIVO PRINCIPAL (ROOT COMPONENT)
 // ==========================================
 function App() {
+  const prefersReducedMotion = useReducedMotion();
   // ======= PRODUTOS: agora vivem no Supabase =======
   const [productsRaw, setProductsRaw] = useState(DEFAULT_PRODUCTS);
   const [productsLoaded, setProductsLoaded] = useState(false);
@@ -4183,14 +4184,18 @@ function App() {
                 return (
                   <motion.div
                     key={product.id}
-                    initial={{ opacity: 0, y: 24 }}
+                    initial={{ opacity: 0, y: 28 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "80px" }}
-                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: Math.min(idx, 5) * 0.06 }}
-                    className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
+                    transition={{ type: 'spring', damping: 22, stiffness: 180, delay: Math.min(idx, 5) * 0.07 }}
+                    whileHover={!isOutOfStock && !prefersReducedMotion ? {
+                      y: -6,
+                      boxShadow: '0 32px 64px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.14)',
+                      transition: { type: 'spring', damping: 18, stiffness: 280 }
+                    } : {}}
+                    whileTap={!isOutOfStock ? { scale: 0.975, transition: { type: 'spring', damping: 25, stiffness: 400 } } : {}}
+                    className={`group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
-                    onMouseEnter={e => { if (!isOutOfStock) { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.boxShadow = '0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.12)'; } }}
-                    onMouseLeave={e => { if (!isOutOfStock) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)'; } }}
                     data-testid={`product-card-${product.id}`}
                   >
                     {/* X de fechar — aparece quando este card está selecionado */}
@@ -4313,12 +4318,28 @@ function App() {
                        )}
                      </div>
                       <motion.div
-                        className="glass3d p-3 flex-1 flex flex-col justify-between"
-                        style={{ cursor: isOutOfStock ? 'default' : 'pointer' }}
+                        className="p-3 flex-1 flex flex-col justify-between"
+                        style={{
+                          cursor: isOutOfStock ? 'default' : 'pointer',
+                          position: 'relative',
+                          zIndex: 4,
+                          background: 'linear-gradient(to bottom, hsl(222 14% 13% / 0.55) 0%, hsl(222 14% 11% / 0.95) 100%)',
+                          backdropFilter: 'blur(14px) saturate(1.5) brightness(1.08)',
+                          WebkitBackdropFilter: 'blur(14px) saturate(1.5) brightness(1.08)',
+                          backgroundImage: 'url("https://www.transparenttextures.com/patterns/egg-shell.png")',
+                          backgroundSize: '100px',
+                          boxShadow: '0 -1px 0 rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04)',
+                        }}
+                        animate={prefersReducedMotion ? {} : { y: [0, -2.5, 0] }}
+                        transition={prefersReducedMotion ? {} : {
+                          duration: 3.8,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                          repeatType: 'loop',
+                        }}
                         onClick={() => !isOutOfStock && handleProductClick(product)}
-                        whileTap={!isOutOfStock ? { scale: 0.98 } : {}}
                       >
-                        <div>
+                        <div style={{ position: 'relative', zIndex: 6 }}>
                           <p className="leading-none mt-0.5" style={{ color: isOutOfStock ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>
                             {formatBRL(product.price || 0)}
                           </p>
