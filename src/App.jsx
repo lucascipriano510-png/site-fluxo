@@ -4346,9 +4346,7 @@ function App() {
                               <motion.button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
-                                animate={prefersReducedMotion ? {} : { y: [0, -3, 0] }}
-                                transition={prefersReducedMotion ? {} : { duration: 3.8, repeat: Infinity, ease: 'easeInOut', repeatType: 'loop' }}
-                                whileHover={prefersReducedMotion ? {} : { scale: 1.04, y: 0, transition: { duration: 0.15, ease: 'easeOut' } }}
+                                whileHover={prefersReducedMotion ? {} : { scale: 1.04, transition: { duration: 0.15, ease: 'easeOut' } }}
                                 whileTap={prefersReducedMotion ? {} : { scale: 0.96, transition: { duration: 0.08 } }}
                                 style={{
                                   height: '32px', padding: '0 14px', borderRadius: '6px', flexShrink: 0,
@@ -4359,8 +4357,30 @@ function App() {
                                   boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
                                   cursor: 'pointer', fontFamily: 'inherit', outline: 'none',
                                   touchAction: 'manipulation',
+                                  position: 'relative', overflow: 'hidden',
                                 }}
                               >
+                                {!prefersReducedMotion && (
+                                  <>
+                                    <style>{`
+                                      @keyframes shineBuy {
+                                        0%,60% { transform: translateX(-180%) skewX(-18deg); }
+                                        100%    { transform: translateX(280%) skewX(-18deg); }
+                                      }
+                                    `}</style>
+                                    <span aria-hidden="true" style={{
+                                      position: 'absolute', inset: 0, overflow: 'hidden',
+                                      borderRadius: 'inherit', pointerEvents: 'none',
+                                    }}>
+                                      <span style={{
+                                        position: 'absolute', top: 0, left: 0,
+                                        width: '28%', height: '100%',
+                                        background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.13), transparent)',
+                                        animation: 'shineBuy 6s ease-in-out infinite',
+                                      }} />
+                                    </span>
+                                  </>
+                                )}
                                 COMPRAR
                               </motion.button>
                             )}
