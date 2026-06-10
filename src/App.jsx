@@ -1535,11 +1535,10 @@ const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, set
       setRatingsMap(prev => ({ ...prev, ...updated }));
       showToast('Avaliação enviada! Obrigado 🙏', 'success');
     } catch (err) {
-      console.error('[review error]', err);
       if (err.message?.includes('unique') || err.message?.includes('duplicate')) {
         showToast('Você já avaliou este produto.', 'success');
       } else {
-        showToast('Erro: ' + (err.message || 'desconhecido'), 'success');
+        showToast('Erro ao enviar avaliação.', 'success');
       }
       setPending(null);
     } finally {
