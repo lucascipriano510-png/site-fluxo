@@ -4313,12 +4313,12 @@ function App() {
                                >
                                  <style>{`
                                    @keyframes shineSize {
-                                     0% { transform: translateX(-150%) skewX(-15deg); }
-                                     20%, 100% { transform: translateX(200%) skewX(-15deg); }
+                                     0%, 60% { transform: translateX(-180%) skewX(-18deg); }
+                                     100%     { transform: translateX(280%) skewX(-18deg); }
                                    }
                                  `}</style>
                                  <span className="pointer-events-none absolute inset-0 overflow-hidden">
-                                   <span className="absolute top-0 left-0 h-full w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: 'shineSize 4s ease-in-out infinite' }} />
+                                   <span className="absolute top-0 left-0 h-full w-[28%]" style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.13), transparent)', animation: 'shineSize 6s ease-in-out infinite' }} />
                                  </span>
                                  {visible.map(s => (
                                    <span
