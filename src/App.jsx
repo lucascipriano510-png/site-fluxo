@@ -1499,7 +1499,7 @@ const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, set
   const [submitting, setSubmitting] = React.useState(false);
   const [myRating, setMyRating] = React.useState(null);
 
-  const userId = userProfile?.phone || userProfile?.id || null;
+  const userId = userProfile?.phone?.trim() || userProfile?.id || null;
 
   React.useEffect(() => {
     if (!userId) return;
@@ -1528,7 +1528,7 @@ const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, set
     if (!pending || submitting) return;
     setSubmitting(true);
     try {
-      await submitReview({ productId: product.id, customerName: userProfile.name || '', customerPhone: userId, rating: pending });
+      await submitReview({ productId: product.id, customerName: userProfile.name?.trim() || userId, customerPhone: userId, rating: pending });
       setMyRating(pending);
       setPending(null);
       const updated = await fetchRatingsBatch([product.id]);
@@ -2855,7 +2855,14 @@ function App() {
   const [userProfile, setUserProfileState] = useState(() => {
     try {
       const raw = localStorage.getItem('@fluxo-outlet:user-profile');
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      const profile = JSON.parse(raw);
+      // Garante que perfis antigos (sem id) recebem um UUID persistente
+      if (profile && !profile.id) {
+        profile.id = crypto.randomUUID();
+        try { localStorage.setItem('@fluxo-outlet:user-profile', JSON.stringify(profile)); } catch {}
+      }
+      return profile;
     } catch { return null; }
   });
   const saveUserProfile = (data) => {
