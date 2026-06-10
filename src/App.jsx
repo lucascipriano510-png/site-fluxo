@@ -4330,13 +4330,6 @@ function App() {
                           backgroundSize: '100px',
                           boxShadow: '0 -1px 0 rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04)',
                         }}
-                        animate={prefersReducedMotion ? {} : { y: [0, -2.5, 0] }}
-                        transition={prefersReducedMotion ? {} : {
-                          duration: 3.8,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                          repeatType: 'loop',
-                        }}
                         onClick={() => !isOutOfStock && handleProductClick(product)}
                       >
                         <div style={{ position: 'relative', zIndex: 6 }}>
@@ -4353,7 +4346,9 @@ function App() {
                               <motion.button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
-                                whileHover={prefersReducedMotion ? {} : { scale: 1.04, transition: { duration: 0.15, ease: 'easeOut' } }}
+                                animate={prefersReducedMotion ? {} : { y: [0, -3, 0] }}
+                                transition={prefersReducedMotion ? {} : { duration: 3.8, repeat: Infinity, ease: 'easeInOut', repeatType: 'loop' }}
+                                whileHover={prefersReducedMotion ? {} : { scale: 1.04, y: 0, transition: { duration: 0.15, ease: 'easeOut' } }}
                                 whileTap={prefersReducedMotion ? {} : { scale: 0.96, transition: { duration: 0.08 } }}
                                 style={{
                                   height: '32px', padding: '0 14px', borderRadius: '6px', flexShrink: 0,
