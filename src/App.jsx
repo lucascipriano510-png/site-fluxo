@@ -3867,7 +3867,7 @@ function App() {
                             document.getElementById('search-input')?.focus();
                           }
                         }}
-                        className="self-start flex items-center gap-2 bg-white text-zinc-950 px-7 py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform shadow-[0_8px_30px_rgba(255,255,255,0.18)] touch-manipulation"
+                        className="self-start flex items-center gap-2 bg-white text-zinc-950 px-7 py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform shadow-[0_8px_30px_rgba(255,255,255,0.18)] touch-manipulation ring-2 ring-gray-400"
                       >
                         {banner.buttonText} <ArrowRight size={11} />
                       </button>
