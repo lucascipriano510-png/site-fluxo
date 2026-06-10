@@ -1571,8 +1571,8 @@ const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, set
               >
                 <path
                   d="M10 1.5l2.47 5.01 5.53.8-4 3.9.94 5.49L10 14.1l-4.94 2.6.94-5.49-4-3.9 5.53-.8L10 1.5z"
-                  fill={filled ? '#f59e0b' : 'none'}
-                  stroke={filled ? '#f59e0b' : 'rgba(255,255,255,0.15)'}
+                  fill={filled ? '#f59e0b' : 'rgba(255,255,255,0.08)'}
+                  stroke={filled ? '#f59e0b' : 'rgba(255,255,255,0.28)'}
                   strokeWidth="1.5" strokeLinejoin="round"
                 />
               </motion.svg>
