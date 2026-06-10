@@ -5492,19 +5492,23 @@ function App() {
         {showQuickMenu && (
           <motion.div
             key="quick-menu-overlay"
-            className="fixed inset-0 z-[200] flex flex-col justify-end"
+            className="fixed inset-0 z-[200] flex"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowQuickMenu(false)} />
             <motion.div
-              className="relative bg-zinc-950 rounded-t-[36px] border-t border-white/10 shadow-2xl overflow-y-auto"
-              style={{ maxHeight: '88dvh' }}
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="relative bg-zinc-950 border-r border-white/10 rounded-r-[28px] shadow-2xl overflow-y-auto flex flex-col"
+              style={{ width: '82vw', maxWidth: '340px', height: '100dvh', paddingTop: 'env(safe-area-inset-top)' }}
+              initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
+              transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="w-12 h-1.5 bg-white/25 rounded-full mx-auto mt-3 mb-4" />
-              <div className="px-5 space-y-6" style={{ paddingBottom: 'max(40px, env(safe-area-inset-bottom))' }}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pt-6 pb-4 border-b border-white/5 shrink-0">
+                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Menu</span>
+                <button type="button" onClick={() => setShowQuickMenu(false)} className="text-zinc-500 hover:text-white touch-manipulation p-1"><X size={18} /></button>
+              </div>
+              <div className="px-5 space-y-6 py-6 flex-1 overflow-y-auto">
 
                 {/* Bloco 1 — Busca */}
                 <div className="relative">
