@@ -12,7 +12,7 @@ import {
   Barcode, QrCode, AlertTriangle, Upload, Image as ImageIcon,
   Maximize2, ZoomIn, Bell, Clock, Truck, Check, XCircle,
   Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, ImagePlus,
-  GripVertical, Instagram, ShieldQuestion, Globe, HelpCircle, ScanLine, Scan
+  GripVertical, Instagram, ShieldQuestion, Globe, HelpCircle, ScanLine, Scan, Menu
 } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct as deleteProductRemote, fetchBanners, upsertBanner, deleteBanner as deleteBannerRemote, uploadImage, fetchAllKitItems, fetchKitItems, saveKitItems } from './lib/supabase';
 import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, updateOrderValue, restoreOrderStock } from './lib/orders';
@@ -2883,6 +2883,7 @@ function App() {
   }, [userProfile]);
 
   // ── Drawer de usuário ──
+  const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [showUserDrawer, setShowUserDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState('profile');
   const [profileForm, setProfileForm] = useState({ name: '', phone: '' });
@@ -3761,7 +3762,7 @@ function App() {
           </button>
 
           {/* SEARCH — mobile: ícone à esquerda, desktop: some (busca está no main) */}
-          <button className="p-2 text-zinc-400 hover:text-white shrink-0 touch-manipulation lg:hidden order-first" onClick={() => document.getElementById('search-input').focus()} data-testid="btn-header-search"><Search size={22} /></button>
+          <button className="p-2 text-zinc-400 hover:text-white shrink-0 touch-manipulation lg:hidden order-first" onClick={() => setShowQuickMenu(true)} data-testid="btn-header-search"><Menu size={22} /></button>
 
           {/* SPACER desktop */}
           <div className="hidden lg:block flex-1" />
@@ -5484,6 +5485,91 @@ function App() {
           </motion.div>
         </motion.div>
       )}
+      </AnimatePresence>
+
+      {/* ── Quick Menu Drawer ── */}
+      <AnimatePresence>
+        {showQuickMenu && (
+          <motion.div
+            key="quick-menu-overlay"
+            className="fixed inset-0 z-[200] flex flex-col justify-end"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowQuickMenu(false)} />
+            <motion.div
+              className="relative bg-zinc-950 rounded-t-[36px] border-t border-white/10 shadow-2xl overflow-y-auto"
+              style={{ maxHeight: '88dvh' }}
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="w-12 h-1.5 bg-white/25 rounded-full mx-auto mt-3 mb-4" />
+              <div className="px-5 space-y-6" style={{ paddingBottom: 'max(40px, env(safe-area-inset-bottom))' }}>
+
+                {/* Bloco 1 — Busca */}
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={18} />
+                  <input
+                    ref={el => { if (el && showQuickMenu) setTimeout(() => el.focus(), 120); }}
+                    type="text"
+                    placeholder="O que você procura?"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } }}
+                    className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-10 text-[16px] font-bold text-white outline-none focus:border-emerald-500/40"
+                  />
+                  {searchQuery && (
+                    <button type="button" onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white touch-manipulation">
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Bloco 2 — Tamanhos */}
+                {availableSizes.length > 1 && (
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-3">Filtrar por tamanho</p>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1" style={{ scrollSnapType: 'x mandatory' }}>
+                      {availableSizes.map(sz => (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => { setSelectedSize(sz); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+                          style={{ scrollSnapAlign: 'start', flexShrink: 0 }}
+                          className={`px-4 py-2 rounded-xl text-[12px] font-black border transition-all touch-manipulation ${selectedSize === sz ? 'bg-white text-zinc-950 border-white' : 'bg-zinc-900 border-white/10 text-zinc-400'}`}
+                        >
+                          {sz}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bloco 3 — Rastrear pedido */}
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-3">Rastrear meu pedido</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      placeholder="WhatsApp com DDD"
+                      value={myOrdersPhone}
+                      onChange={e => setMyOrdersPhone(e.target.value)}
+                      className="flex-1 bg-zinc-900 border border-white/10 rounded-2xl py-4 px-5 text-[16px] font-bold text-white outline-none focus:border-emerald-500/40 min-w-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { handleSearchMyOrders(); setShowUserDrawer(true); setDrawerTab('orders'); setShowQuickMenu(false); }}
+                      className="bg-emerald-500 text-zinc-950 font-black rounded-2xl px-5 py-4 text-[13px] shrink-0 touch-manipulation active:scale-95 transition-transform"
+                    >
+                      Buscar
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       <style>{`
