@@ -1499,12 +1499,14 @@ const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, set
   const [submitting, setSubmitting] = React.useState(false);
   const [myRating, setMyRating] = React.useState(null);
 
+  const userId = userProfile?.phone || userProfile?.id || null;
+
   React.useEffect(() => {
-    if (!userProfile?.phone) return;
-    fetchExistingReview(product.id, userProfile.phone)
+    if (!userId) return;
+    fetchExistingReview(product.id, userId)
       .then(existing => { if (existing) setMyRating(existing.rating); })
       .catch(() => {});
-  }, [product.id, userProfile?.phone]);
+  }, [product.id, userId]);
 
   const display = pending ?? hovered ?? (myRating || mode);
 
@@ -1526,7 +1528,7 @@ const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, set
     if (!pending || submitting) return;
     setSubmitting(true);
     try {
-      await submitReview({ productId: product.id, customerName: userProfile.name, customerPhone: userProfile.phone, rating: pending });
+      await submitReview({ productId: product.id, customerName: userProfile.name || '', customerPhone: userId, rating: pending });
       setMyRating(pending);
       setPending(null);
       const updated = await fetchRatingsBatch([product.id]);
@@ -2857,7 +2859,7 @@ function App() {
     } catch { return null; }
   });
   const saveUserProfile = (data) => {
-    const profile = { ...data, createdAt: data.createdAt || new Date().toISOString() };
+    const profile = { ...data, id: data.id || crypto.randomUUID(), createdAt: data.createdAt || new Date().toISOString() };
     try { localStorage.setItem('@fluxo-outlet:user-profile', JSON.stringify(profile)); } catch {}
     setUserProfileState(profile);
   };
@@ -3450,11 +3452,26 @@ function App() {
     }
   }, [productsLoaded, products]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+  const sortedProducts = useMemo(() => {
+    return [...filteredProducts].sort((a, b) => {
+      const aMode  = ratingsMap[a.id]?.mode  || 0;
+      const bMode  = ratingsMap[b.id]?.mode  || 0;
+      if (bMode !== aMode) return bMode - aMode;
+      const aCount = ratingsMap[a.id]?.count || 0;
+      const bCount = ratingsMap[b.id]?.count || 0;
+      if (bCount !== aCount) return bCount - aCount;
+      const aSales = a.sales || 0;
+      const bSales = b.sales || 0;
+      if (bSales !== aSales) return bSales - aSales;
+      return 0;
+    });
+  }, [filteredProducts, ratingsMap]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE));
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
-    return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
-  }, [filteredProducts, currentPage]);
+    return sortedProducts.slice(start, start + PRODUCTS_PER_PAGE);
+  }, [sortedProducts, currentPage]);
 
   // Sempre que os filtros/busca mudarem, volta para a primeira página.
   // IMPORTANTE: não dispara no mount inicial — preserva a página vinda da URL (?page=N).
