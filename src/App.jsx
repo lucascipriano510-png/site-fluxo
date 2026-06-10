@@ -4340,13 +4340,38 @@ function App() {
                         onClick={() => !isOutOfStock && handleProductClick(product)}
                       >
                         <div style={{ position: 'relative', zIndex: 6 }}>
-                          <p className="leading-none mt-0.5" style={{ color: isOutOfStock ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>
-                            {formatBRL(product.price || 0)}
-                          </p>
-                          <h3 className="uppercase mt-1.5 line-clamp-1" style={{ color: 'var(--text-secondary)', fontSize: '9.5px', fontWeight: '500', letterSpacing: '0.1em' }}>
+                          {/* Linha 1 — nome */}
+                          <h3 className="uppercase line-clamp-1 mb-1.5" style={{ color: '#9CA3AF', fontSize: '9.5px', fontWeight: '500', letterSpacing: '0.1em' }}>
                             {product.name}
                           </h3>
-                          <div onClick={e => e.stopPropagation()} className="mt-1.5">
+                          {/* Linha 2 — preço + botão */}
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : '#F3F4F6', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none' }}>
+                              {formatBRL(product.price || 0)}
+                            </p>
+                            {!isOutOfStock && (
+                              <motion.button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
+                                whileHover={prefersReducedMotion ? {} : { scale: 1.04, transition: { duration: 0.15, ease: 'easeOut' } }}
+                                whileTap={prefersReducedMotion ? {} : { scale: 0.96, transition: { duration: 0.08 } }}
+                                style={{
+                                  height: '32px', padding: '0 14px', borderRadius: '6px', flexShrink: 0,
+                                  background: 'linear-gradient(135deg, #D4D4D4 0%, #A8A8A8 50%, #C8C8C8 100%)',
+                                  color: '#1a1a1a', fontWeight: '700', fontSize: '10px',
+                                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                                  border: '1px solid rgba(255,255,255,0.15)',
+                                  boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+                                  cursor: 'pointer', fontFamily: 'inherit', outline: 'none',
+                                  touchAction: 'manipulation',
+                                }}
+                              >
+                                COMPRAR
+                              </motion.button>
+                            )}
+                          </div>
+                          {/* Linha 3 — estrelas */}
+                          <div onClick={e => e.stopPropagation()}>
                             <StarRatingInline
                               product={product}
                               ratingsMap={ratingsMap}
