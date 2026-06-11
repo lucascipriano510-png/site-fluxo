@@ -2884,8 +2884,7 @@ function App() {
 
   // ── Drawer de usuário ──
   const [showQuickMenu, setShowQuickMenu] = useState(false);
-  const [showSizeFilter, setShowSizeFilter] = useState(false);
-  const [expandedSizeCategory, setExpandedSizeCategory] = useState(null);
+  const [noveltyMode, setNoveltyMode] = useState(false);
   const [showUserDrawer, setShowUserDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState('profile');
   const [profileForm, setProfileForm] = useState({ name: '', phone: '' });
@@ -3321,10 +3320,8 @@ function App() {
   };
 
   const filteredProducts = useMemo(() => {
-    return (products || []).filter(p => {
-      // Produtos com is_active === false ficam ocultos para o cliente
+    const base = (products || []).filter(p => {
       if (p.is_active === false) return false;
-      // Modo KITS: só exibe produtos marcados como kit (e ignora estoque/tamanho/categoria)
       if (kitsOnly) {
         if (!p.is_kit) return false;
         const q = searchQuery.toLowerCase().trim();
@@ -3332,7 +3329,6 @@ function App() {
         const tokens = q.split(/\s+/).filter(Boolean);
         return tokens.length === 0 || tokens.every(t => haystack.includes(t));
       }
-      // Catálogo normal: esconde kits (eles ficam só na seção KITS)
       if (p.is_kit) return false;
       if (p.stock <= 0) return false;
       const matchesCat = selectedCategory === 'TODOS' || p.category === selectedCategory;
@@ -3350,7 +3346,12 @@ function App() {
       const matchesCollection = !activeCollectionFilter || p.collection_name === activeCollectionFilter;
       return matchesCat && matchesSub && matchesSearch && matchesSize && matchesCollection;
     });
-  }, [kitsOnly, selectedCategory, selectedSubcategory, searchQuery, selectedSize, products, activeCollectionFilter]);
+    if (!noveltyMode) return base;
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const recent = base.filter(p => p.created_at && new Date(p.created_at) > thirtyDaysAgo);
+    if (recent.length > 0) return recent;
+    return [...base].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 8);
+  }, [noveltyMode, kitsOnly, selectedCategory, selectedSubcategory, searchQuery, selectedSize, products, activeCollectionFilter]);
 
   // Subcategorias disponíveis dentro da categoria atual (ignora produtos sem estoque)
   const availableSubcategories = useMemo(() => {
@@ -3553,21 +3554,10 @@ function App() {
     return ['TODOS', ...Array.from(set)];
   }, [products, selectedCategory, selectedSubcategory, activeCollectionFilter]);
 
-  const categorySizesMap = useMemo(() => {
-    const map = {};
-    (products || []).forEach(p => {
-      if (!p.category || p.stock <= 0 || p.is_kit) return;
-      if (!map[p.category]) map[p.category] = new Set();
-      (p.sizes || []).forEach(s => {
-        const name = String((typeof s === 'string' ? s : s.size) || '').trim().toUpperCase();
-        const stock = typeof s === 'string' ? (p.stock || 0) : Number(s.stock || 0);
-        if (name && stock > 0) map[p.category].add(name);
-      });
-    });
-    return Object.fromEntries(
-      Object.entries(map).filter(([, v]) => v.size > 0).map(([k, v]) => [k, [...v]])
-    );
-  }, [products]);
+
+  useEffect(() => {
+    setNoveltyMode(false);
+  }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery, kitsOnly, activeCollectionFilter]);
 
   const _sizeValidated = React.useRef(false);
   useEffect(() => {
@@ -4020,6 +4010,15 @@ function App() {
               <span className="text-xs font-black uppercase text-white">{activeCollectionFilter}</span>
             </div>
             <button onClick={() => setActiveCollectionFilter(null)} className="p-2 bg-zinc-300 text-zinc-950 rounded-xl active:scale-90 transition-transform"><X size={14}/></button>
+          </div>
+        )}
+        {noveltyMode && (
+          <div className="flex items-center justify-between bg-zinc-500/10 border border-zinc-400/20 p-4 rounded-2xl animate-in">
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black uppercase text-zinc-300 tracking-widest">Filtro Ativo</span>
+              <span className="text-xs font-black uppercase text-white">🔥 Novidades</span>
+            </div>
+            <button onClick={() => setNoveltyMode(false)} className="p-2 bg-zinc-300 text-zinc-950 rounded-xl active:scale-90 transition-transform"><X size={14}/></button>
           </div>
         )}
 
@@ -5526,9 +5525,9 @@ function App() {
                 <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Menu</span>
                 <button type="button" onClick={() => setShowQuickMenu(false)} className="text-zinc-500 hover:text-white touch-manipulation p-1"><X size={18} /></button>
               </div>
-              <div className="px-5 space-y-6 py-6 flex-1 overflow-y-auto">
+              <div className="px-5 space-y-5 py-4 flex-1 overflow-y-auto" style={{ paddingBottom: 'max(40px, env(safe-area-inset-bottom))' }}>
 
-                {/* Bloco 1 — Busca */}
+                {/* Bloco A — Busca */}
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={18} />
                   <input
@@ -5536,7 +5535,7 @@ function App() {
                     type="text"
                     placeholder="O que você procura?"
                     value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    onChange={e => { setSearchQuery(e.target.value); if (e.target.value) { setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } }}
                     onKeyDown={e => { if (e.key === 'Enter') { setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } }}
                     className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-10 text-[16px] font-bold text-white outline-none focus:border-emerald-500/40"
                   />
@@ -5547,69 +5546,67 @@ function App() {
                   )}
                 </div>
 
-                {/* Bloco 2 — Filtro por categoria + tamanho */}
-                {Object.keys(categorySizesMap).length > 0 && (
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => setShowSizeFilter(v => !v)}
-                      className="flex items-center justify-between w-full touch-manipulation"
-                    >
-                      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Filtrar por tamanho</p>
-                      <ChevronDown size={14} className={`text-zinc-500 transition-transform duration-200 ${showSizeFilter ? 'rotate-180' : ''}`} />
+                {/* Bloco B — Atalhos de descoberta */}
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { emoji: '🔥', label: 'Novidades', active: noveltyMode, action: () => { setNoveltyMode(true); setSelectedCategory('TODOS'); setSelectedSize('TODOS'); setKitsOnly(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                    { emoji: '⭐', label: 'Top', active: !noveltyMode && !kitsOnly && selectedCategory === 'TODOS' && selectedSize === 'TODOS', action: () => { setSelectedCategory('TODOS'); setSelectedSize('TODOS'); setKitsOnly(false); setNoveltyMode(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                    { emoji: '🎁', label: 'Kits', active: kitsOnly, action: () => { setKitsOnly(true); setNoveltyMode(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                  ].map(({ emoji, label, active, action }) => (
+                    <button key={label} type="button" onClick={action} className={`bg-zinc-900 border rounded-2xl py-3 flex flex-col items-center gap-1 touch-manipulation active:scale-95 transition-transform ${active ? 'border-emerald-500/50' : 'border-white/10'}`}>
+                      <span className="text-lg leading-none">{emoji}</span>
+                      <span className={`text-[9px] font-black uppercase tracking-widest ${active ? 'text-emerald-400' : 'text-zinc-400'}`}>{label}</span>
                     </button>
-                    {showSizeFilter && (
-                      <div className="mt-3 space-y-1.5">
-                        {Object.entries(categorySizesMap).map(([cat, sizes]) => (
-                          <div key={cat}>
-                            <button
-                              type="button"
-                              onClick={() => setExpandedSizeCategory(v => v === cat ? null : cat)}
-                              className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-white/5 touch-manipulation active:scale-[0.98] transition-transform"
-                            >
-                              <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide">{cat}</span>
-                              <ChevronRight size={13} className={`text-zinc-500 transition-transform duration-200 ${expandedSizeCategory === cat ? 'rotate-90' : ''}`} />
-                            </button>
-                            {expandedSizeCategory === cat && (
-                              <div className="flex flex-wrap gap-2 pt-2 pb-1 px-1">
-                                {sizes.map(sz => (
-                                  <button
-                                    key={sz}
-                                    type="button"
-                                    onClick={() => { setSelectedCategory(cat); setSelectedSize(sz); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }}
-                                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black border touch-manipulation transition-all ${selectedSize === sz && selectedCategory === cat ? 'bg-white text-zinc-950 border-white' : 'bg-zinc-800 border-white/10 text-zinc-400'}`}
-                                  >
-                                    {sz}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                  ))}
+                </div>
 
-                {/* Bloco 3 — Rastrear pedido */}
+                <div className="h-px bg-white/5" />
+
+                {/* Bloco C — Categorias */}
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-3">Rastrear meu pedido</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="tel"
-                      placeholder="WhatsApp com DDD"
-                      value={myOrdersPhone}
-                      onChange={e => setMyOrdersPhone(e.target.value)}
-                      className="flex-1 bg-zinc-900 border border-white/10 rounded-2xl py-4 px-5 text-[16px] font-bold text-white outline-none focus:border-emerald-500/40 min-w-0"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { handleSearchMyOrders(); setShowUserDrawer(true); setDrawerTab('orders'); setShowQuickMenu(false); }}
-                      className="bg-emerald-500 text-zinc-950 font-black rounded-2xl px-5 py-4 text-[13px] shrink-0 touch-manipulation active:scale-95 transition-transform"
-                    >
-                      Buscar
-                    </button>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-3">Categorias</p>
+                  <div className="space-y-1.5">
+                    {categories.filter(c => c !== 'TODOS').map(cat => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => { setSelectedCategory(cat); setSelectedSubcategory('TODOS'); setSelectedSize('TODOS'); setNoveltyMode(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+                        className={`w-full flex items-center justify-between bg-zinc-900/50 rounded-2xl px-4 py-3.5 touch-manipulation active:scale-[0.98] transition-transform border ${selectedCategory === cat ? 'border-emerald-500/30' : 'border-transparent'}`}
+                      >
+                        <span className={`font-black text-[12px] uppercase ${selectedCategory === cat ? 'text-emerald-400' : 'text-white'}`}>{cat}</span>
+                        {selectedCategory === cat ? <Check size={14} className="text-emerald-500 shrink-0" /> : <ChevronRight size={14} className="text-zinc-600 shrink-0" />}
+                      </button>
+                    ))}
                   </div>
+                </div>
+
+                <div className="h-px bg-white/5" />
+
+                {/* Bloco D — Suporte */}
+                <div className="space-y-2">
+                  <a
+                    href={`https://wa.me/${config.whatsapp}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 bg-zinc-900 border border-white/10 rounded-2xl px-4 py-3.5 touch-manipulation active:scale-[0.98] transition-transform"
+                  >
+                    <MessageCircle size={16} className="text-emerald-500 shrink-0" />
+                    <div>
+                      <p className="font-black text-[11px] uppercase text-white">WhatsApp</p>
+                      <p className="text-[9px] text-zinc-500">Tire dúvidas antes de comprar</p>
+                    </div>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => { handleOpenUserDrawer(); setShowQuickMenu(false); }}
+                    className="w-full flex items-center gap-3 bg-zinc-900 border border-white/10 rounded-2xl px-4 py-3.5 touch-manipulation active:scale-[0.98] transition-transform"
+                  >
+                    <Package size={16} className="text-zinc-400 shrink-0" />
+                    <div className="text-left">
+                      <p className="font-black text-[11px] uppercase text-white">Meus Pedidos</p>
+                      <p className="text-[9px] text-zinc-500">Consulte seu histórico</p>
+                    </div>
+                  </button>
                 </div>
 
               </div>
