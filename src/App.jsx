@@ -2885,6 +2885,8 @@ function App() {
   // ── Drawer de usuário ──
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [noveltyMode, setNoveltyMode] = useState(false);
+  const [showSizeFilter, setShowSizeFilter] = useState(false);
+  const [expandedSizeCategory, setExpandedSizeCategory] = useState(null);
   const [showUserDrawer, setShowUserDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState('profile');
   const [profileForm, setProfileForm] = useState({ name: '', phone: '' });
@@ -3554,6 +3556,21 @@ function App() {
     return ['TODOS', ...Array.from(set)];
   }, [products, selectedCategory, selectedSubcategory, activeCollectionFilter]);
 
+  const categorySizesMap = useMemo(() => {
+    const map = {};
+    (products || []).forEach(p => {
+      if (!p.category || p.stock <= 0 || p.is_kit) return;
+      if (!map[p.category]) map[p.category] = new Set();
+      (p.sizes || []).forEach(s => {
+        const name = String((typeof s === 'string' ? s : s.size) || '').trim().toUpperCase();
+        const stock = typeof s === 'string' ? (p.stock || 0) : Number(s.stock || 0);
+        if (name && stock > 0) map[p.category].add(name);
+      });
+    });
+    return Object.fromEntries(
+      Object.entries(map).filter(([, v]) => v.size > 0).map(([k, v]) => [k, [...v]])
+    );
+  }, [products]);
 
   useEffect(() => {
     setNoveltyMode(false);
@@ -5562,22 +5579,47 @@ function App() {
 
                 <div className="h-px bg-white/5" />
 
-                {/* Tamanhos */}
-                {availableSizes.length > 1 && (
+                {/* Tamanhos — accordion por categoria */}
+                {Object.keys(categorySizesMap).length > 0 && (
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-3">Tamanho</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {availableSizes.map(sz => (
-                        <button
-                          key={sz}
-                          type="button"
-                          onClick={() => { setSelectedSize(sz); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }}
-                          className={`px-4 py-2 rounded-xl text-[12px] font-black border transition-all touch-manipulation ${selectedSize === sz ? 'bg-white text-zinc-950 border-white' : 'bg-zinc-900 border-white/10 text-zinc-400'}`}
-                        >
-                          {sz}
-                        </button>
-                      ))}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowSizeFilter(v => !v)}
+                      className="flex items-center justify-between w-full touch-manipulation"
+                    >
+                      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Filtrar por tamanho</p>
+                      <ChevronDown size={14} className={`text-zinc-500 transition-transform duration-200 ${showSizeFilter ? 'rotate-180' : ''}`} />
+                    </button>
+                    {showSizeFilter && (
+                      <div className="mt-3 space-y-1.5">
+                        {Object.entries(categorySizesMap).map(([cat, sizes]) => (
+                          <div key={cat}>
+                            <button
+                              type="button"
+                              onClick={() => setExpandedSizeCategory(v => v === cat ? null : cat)}
+                              className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-white/5 touch-manipulation active:scale-[0.98] transition-transform"
+                            >
+                              <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide">{cat}</span>
+                              <ChevronRight size={13} className={`text-zinc-500 transition-transform duration-200 ${expandedSizeCategory === cat ? 'rotate-90' : ''}`} />
+                            </button>
+                            {expandedSizeCategory === cat && (
+                              <div className="flex flex-wrap gap-2 pt-2 pb-1 px-1">
+                                {sizes.map(sz => (
+                                  <button
+                                    key={sz}
+                                    type="button"
+                                    onClick={() => { setSelectedCategory(cat); setSelectedSize(sz); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+                                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black border touch-manipulation transition-all ${selectedSize === sz && selectedCategory === cat ? 'bg-white text-zinc-950 border-white' : 'bg-zinc-800 border-white/10 text-zinc-400'}`}
+                                  >
+                                    {sz}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
