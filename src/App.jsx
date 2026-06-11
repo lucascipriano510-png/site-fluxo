@@ -5562,6 +5562,27 @@ function App() {
 
                 <div className="h-px bg-white/5" />
 
+                {/* Tamanhos */}
+                {availableSizes.length > 1 && (
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-3">Tamanho</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {availableSizes.map(sz => (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => { setSelectedSize(sz); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+                          className={`px-4 py-2 rounded-xl text-[12px] font-black border transition-all touch-manipulation ${selectedSize === sz ? 'bg-white text-zinc-950 border-white' : 'bg-zinc-900 border-white/10 text-zinc-400'}`}
+                        >
+                          {sz}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="h-px bg-white/5" />
+
                 {/* Bloco C — Categorias */}
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-3">Categorias</p>
