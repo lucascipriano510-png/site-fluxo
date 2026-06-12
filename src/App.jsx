@@ -50,13 +50,14 @@ const DEFAULT_PRODUCTS = [
 
 const DEFAULT_BANNERS = [
   {
-    id: '__fallback__',
-    image: 'https://tapgnlrjhrhewqlpahvg.supabase.co/storage/v1/object/public/product-images/uploads/1780603307357-c93uqo1ylij.png',
-    title: '',
+    id: 'fallback-1',
+    title: 'Seleção',
     subtitle: '',
-    buttonText: '',
+    image: 'https://tapgnlrjhrhewqlpahvg.supabase.co/storage/v1/object/public/product-images/uploads/1780603307357-c93uqo1ylij.png',
     active: true,
-    banner_order: 0,
+    banner_order: 1,
+    buttonText: 'VER PEÇAS',
+    collection_name: null,
   },
 ];
 
@@ -138,7 +139,15 @@ class AdminTabErrorBoundary extends React.Component {
 // 2. FUNÇÕES DE TRACKING E UTILITÁRIOS
 // ==========================================
 
+// Flag de sessão: se wsrv.nl falhou nessa sessão, pula o proxy em todas as imagens
+let wsrvFailed = sessionStorage.getItem('wsrv_failed') === '1';
+const markWsrvFailed = () => {
+  wsrvFailed = true;
+  try { sessionStorage.setItem('wsrv_failed', '1'); } catch {}
+};
+
 // Otimização de imagens via CDN (WebP + resize on-the-fly).
+// Se wsrv.nl já falhou nessa sessão, retorna URL direta imediatamente.
 const optimizeImage = (src, width = 600, quality = 90) => {
   if (!src || typeof src !== 'string') return src;
   if (src.startsWith('data:') || src.startsWith('blob:')) return src;
@@ -151,8 +160,9 @@ const optimizeImage = (src, width = 600, quality = 90) => {
       u.searchParams.set('fit', 'crop');
       return u.toString();
     }
-    // Todas as URLs (inclusive Supabase) passam pelo wsrv.nl para
-    // redimensionamento correto + WebP. &we = sem ampliar se já for menor.
+    // Se wsrv.nl já falhou nessa sessão, usa URL direta
+    if (wsrvFailed) return src;
+    // Passa pelo wsrv.nl para redimensionamento + WebP. &we = sem ampliar se menor.
     const clean = src.replace(/^https?:\/\//, '');
     return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we`;
   } catch {
@@ -212,6 +222,14 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
           decoding="async"
           fetchPriority={priority ? 'high' : 'low'}
           onLoad={() => setLoaded(true)}
+          onError={(e) => {
+            if (!e.target.dataset.fallback) {
+              e.target.dataset.fallback = '1';
+              markWsrvFailed();
+              e.target.src = src; // URL original do Supabase sem proxy
+              e.target.srcset = '';
+            }
+          }}
           draggable={false}
           style={{ pointerEvents: 'none' }}
           className={`w-full h-full object-contain transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''} transition-transform`}
@@ -257,6 +275,14 @@ const BannerImage = ({ src, alt, active }) => {
         decoding="async"
         fetchPriority={active ? 'high' : 'low'}
         onLoad={() => setLoaded(true)}
+        onError={(e) => {
+          if (!e.target.dataset.fallback) {
+            e.target.dataset.fallback = '1';
+            markWsrvFailed();
+            e.target.src = src; // URL original sem proxy
+            e.target.srcset = '';
+          }
+        }}
         draggable={false}
       />
     </>
