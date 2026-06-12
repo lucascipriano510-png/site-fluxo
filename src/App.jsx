@@ -2519,23 +2519,35 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
 function App() {
   const prefersReducedMotion = useReducedMotion();
   // ======= PRODUTOS: agora vivem no Supabase =======
-  const [productsRaw, setProductsRaw] = useState(DEFAULT_PRODUCTS);
+  const PRODUCTS_CACHE_KEY = '@fluxo:products-cache-v1';
+  const PRODUCTS_CACHE_TTL = 60_000; // 1 min
+
+  const [productsRaw, setProductsRaw] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(PRODUCTS_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < PRODUCTS_CACHE_TTL && Array.isArray(cached.data) && cached.data.length > 0) return cached.data;
+    } catch {}
+    return DEFAULT_PRODUCTS;
+  });
   const [productsLoaded, setProductsLoaded] = useState(false);
   const productsRef = useRef(DEFAULT_PRODUCTS);
   useEffect(() => { productsRef.current = productsRaw; }, [productsRaw]);
 
-  // Carrega produtos do Supabase + polling de 5s
+  // Carrega produtos do Supabase + polling reduzido para 60s (era 5s)
   useEffect(() => {
     let alive = true;
     const load = async () => {
       try {
         const remote = await fetchProducts();
-        if (alive && Array.isArray(remote) && remote.length > 0) setProductsRaw(remote);
+        if (alive && Array.isArray(remote) && remote.length > 0) {
+          setProductsRaw(remote);
+          try { localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: remote })); } catch {}
+        }
       } catch (e) { console.warn('[products] fetch falhou:', e?.message); }
       finally { if (alive) setProductsLoaded(true); }
     };
     load();
-    const t = setInterval(load, 5000);
+    const t = setInterval(load, 60_000);
     return () => { alive = false; clearInterval(t); };
   }, []);
 
@@ -2556,7 +2568,7 @@ function App() {
       } catch (e) { /* tabela pode não existir ainda */ }
     };
     load();
-    const t = setInterval(load, 10000);
+    const t = setInterval(load, 120_000); // era 10s → 2 min
     return () => { alive = false; clearInterval(t); };
   }, []);
 
@@ -2582,7 +2594,16 @@ function App() {
   };
   const products = productsRaw;
 
-  const [banners, setBannersRaw] = useState(DEFAULT_BANNERS);
+  const BANNERS_CACHE_KEY2 = '@fluxo:banners-cache-v1';
+  const BANNERS_CACHE_TTL = 120_000; // 2 min
+
+  const [banners, setBannersRaw] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(BANNERS_CACHE_KEY2) || 'null');
+      if (cached && Date.now() - cached.ts < BANNERS_CACHE_TTL && Array.isArray(cached.data) && cached.data.length > 0) return cached.data;
+    } catch {}
+    return DEFAULT_BANNERS;
+  });
   const [bannersLoaded, setBannersLoaded] = useState(false);
   useEffect(() => {
     let alive = true;
@@ -2596,12 +2617,13 @@ function App() {
             buttonText: b.button_text || b.buttonText || 'VER PEÇAS'
           }));
           setBannersRaw(normalized);
+          try { localStorage.setItem(BANNERS_CACHE_KEY2, JSON.stringify({ ts: Date.now(), data: normalized })); } catch {}
         }
       } catch (e) { console.warn('[banners] fetch falhou:', e?.message); }
       finally { if (alive) setBannersLoaded(true); }
     };
     load();
-    const t = setInterval(load, 10000);
+    const t = setInterval(load, 120_000); // era 10s → 2 min
     return () => { alive = false; clearInterval(t); };
   }, []);
 
@@ -2624,18 +2646,30 @@ function App() {
       return next;
     });
   };
-  const [config, setConfigState] = useState(SITE_DEFAULT_CONFIG);
-  // Carrega config do Supabase + polling de 10s pra propagar mudanças pra todos
+  const CONFIG_CACHE_KEY = '@fluxo:config-cache-v1';
+  const CONFIG_CACHE_TTL = 300_000; // 5 min
+
+  const [config, setConfigState] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(CONFIG_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CONFIG_CACHE_TTL && cached.data) return { ...SITE_DEFAULT_CONFIG, ...cached.data };
+    } catch {}
+    return SITE_DEFAULT_CONFIG;
+  });
+  // Carrega config do Supabase + polling reduzido para 5 min (era 10s)
   useEffect(() => {
     let alive = true;
     const load = async () => {
       try {
         const remote = await fetchSiteConfig();
-        if (alive && remote) setConfigState(remote);
+        if (alive && remote) {
+          setConfigState(remote);
+          try { localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: remote })); } catch {}
+        }
       } catch (e) { console.warn('[config] fetch falhou:', e?.message); }
     };
     load();
-    const t = setInterval(load, 10000);
+    const t = setInterval(load, 300_000);
     return () => { alive = false; clearInterval(t); };
   }, []);
   // Wrapper: ao alterar config local, envia upsert pro Supabase (requer admin logado)
@@ -2753,7 +2787,8 @@ function App() {
       } catch (e) { console.warn('[orders] fetch falhou:', e?.message); }
     };
     load();
-    const t = setInterval(load, 5000);
+    // Polling de 30s (era 5s) — só o admin precisa de atualização frequente
+    const t = setInterval(load, 30_000);
     return () => { alive = false; clearInterval(t); };
   }, []);
   const [cart, setCart] = useState([]);
