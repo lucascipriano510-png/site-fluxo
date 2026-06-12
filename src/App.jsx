@@ -163,20 +163,9 @@ const optimizeImage = (src, width = 600, quality = 90) => {
       return u.toString();
     }
 
-    // Supabase Storage: /render/image/ com resize+WebP — sem proxy externo
-    // resize=contain preserva proporção completa do produto sem crop
+    // Supabase Storage: URL direta sem proxy
     if (clean.includes('supabase.co/storage')) {
-      try {
-        const url = new URL(src);
-        url.pathname = url.pathname.replace('/object/public/', '/render/image/public/');
-        url.searchParams.set('width', String(width));
-        url.searchParams.set('quality', String(quality));
-        url.searchParams.set('format', 'webp');
-        url.searchParams.set('resize', 'contain');
-        return url.toString();
-      } catch {
-        return src;
-      }
+      return src;
     }
 
     // Se wsrv.nl já falhou nessa sessão, usa URL direta para qualquer origem
@@ -235,7 +224,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
         <img
           src={optimizeImage(src, 1200, 90)}
           srcSet={srcSet}
-          sizes={sizesProp || "(min-width: 1024px) 600px, 50vw"}
+          sizes={sizesProp || "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw"}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
