@@ -147,23 +147,31 @@ const markWsrvFailed = () => {
 };
 
 // Otimização de imagens via CDN (WebP + resize on-the-fly).
-// Se wsrv.nl já falhou nessa sessão, retorna URL direta imediatamente.
 const optimizeImage = (src, width = 600, quality = 90) => {
   if (!src || typeof src !== 'string') return src;
   if (src.startsWith('data:') || src.startsWith('blob:')) return src;
   try {
-    if (src.includes('images.unsplash.com')) {
+    const clean = src.split('?')[0];
+
+    // Unsplash: otimização via parâmetros nativos
+    if (clean.includes('images.unsplash.com')) {
       const u = new URL(src);
       u.searchParams.set('w', String(width));
       u.searchParams.set('q', String(quality));
-      u.searchParams.set('auto', 'format');
+      u.searchParams.set('fm', 'webp');
       u.searchParams.set('fit', 'crop');
       return u.toString();
     }
-    // Se wsrv.nl já falhou nessa sessão, usa URL direta
+
+    // Supabase Storage: retorna diretamente — wsrv.nl corrompe imagens deste bucket
+    if (clean.includes('supabase.co/storage')) {
+      return src;
+    }
+
+    // Se wsrv.nl já falhou nessa sessão, usa URL direta para qualquer origem
     if (wsrvFailed) return src;
-    // Passa pelo wsrv.nl para redimensionamento + WebP. &we = sem ampliar se menor.
-    const clean = src.replace(/^https?:\/\//, '');
+
+    // Outras URLs externas: wsrv.nl para WebP + resize
     return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we`;
   } catch {
     return src;
