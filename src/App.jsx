@@ -235,7 +235,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
         <img
           src={optimizeImage(src, 1200, 90)}
           srcSet={srcSet}
-          sizes={sizesProp || "(min-width: 1920px) 250px, (min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw"}
+          sizes={sizesProp || "(min-width: 1024px) 600px, 50vw"}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
