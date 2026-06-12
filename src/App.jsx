@@ -172,6 +172,7 @@ const optimizeImage = (src, width = 600, quality = 90) => {
         url.searchParams.set('width', String(width));
         url.searchParams.set('quality', String(quality));
         url.searchParams.set('format', 'webp');
+        url.searchParams.set('resize', 'contain');
         return url.toString();
       } catch {
         return src;
