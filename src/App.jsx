@@ -48,7 +48,17 @@ const DEFAULT_PRODUCTS = [
   { id: 5, sku: '9059', name: 'Calça Super Skinny Malibu Rasgada', price: 189.90, category: 'VESTUÁRIO', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800', stock: 10, sales: 5, sizes: [{size: '38', stock: 5}, {size: '40', stock: 5}], featured: true }
 ];
 
-const DEFAULT_BANNERS = [];
+const DEFAULT_BANNERS = [
+  {
+    id: '__fallback__',
+    image: 'https://tapgnlrjhrhewqlpahvg.supabase.co/storage/v1/object/public/product-images/uploads/1780603307357-c93uqo1ylij.png',
+    title: '',
+    subtitle: '',
+    buttonText: '',
+    active: true,
+    banner_order: 0,
+  },
+];
 
 const DEFAULT_CONFIG = {
   brandName: 'FLUXO OUTLET EXCLUSIVE',
@@ -220,14 +230,27 @@ const BannerImage = ({ src, alt, active }) => {
 
   if (!src) return <div className="absolute inset-0 bg-black" />;
 
+  // Banner ativo usa URL direta do Supabase (sem wsrv.nl no caminho crítico do LCP)
+  const imgSrc = active ? src : optimizeImage(src, 1920, 90);
+  const imgSrcSet = active ? undefined : buildSrcSet(src, [640, 900, 1280, 1920, 2560], 90);
+
   return (
     <>
-      {!loaded && <div className="absolute inset-0 bg-black" />}
+      {!loaded && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 50%, #1c1c1e 100%)',
+            backgroundSize: '200% 200%',
+            animation: 'bannerSkeleton 1.8s ease-in-out infinite',
+          }}
+        />
+      )}
       <img
-        src={optimizeImage(src, 1920, 90)}
-        srcSet={buildSrcSet(src, [640, 900, 1280, 1920, 2560], 90)}
+        src={imgSrc}
+        srcSet={imgSrcSet}
         sizes="100vw"
-        className={`w-full h-full object-cover transition-opacity duration-300 banner-img ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`w-full h-full object-cover transition-opacity duration-500 banner-img ${loaded ? 'opacity-100' : 'opacity-0'}`}
         style={{ objectPosition: 'center 55%' }}
         alt={alt}
         loading={active ? 'eager' : 'lazy'}
