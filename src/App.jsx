@@ -163,20 +163,9 @@ const optimizeImage = (src, width = 600, quality = 90) => {
       return u.toString();
     }
 
-    // Supabase Storage: usa endpoint /render/image/ nativo (WebP + resize sem proxy externo)
-    // /object/public/ → /render/image/public/ + parâmetros width/quality/format
+    // Supabase Storage: URL direta sem proxy nem parâmetros
     if (clean.includes('supabase.co/storage')) {
-      try {
-        const url = new URL(src);
-        url.pathname = url.pathname.replace('/object/public/', '/render/image/public/');
-        url.searchParams.set('width', String(width));
-        url.searchParams.set('quality', String(quality));
-        url.searchParams.set('format', 'webp');
-        url.searchParams.set('resize', 'contain');
-        return url.toString();
-      } catch {
-        return src;
-      }
+      return src;
     }
 
     // Se wsrv.nl já falhou nessa sessão, usa URL direta para qualquer origem
