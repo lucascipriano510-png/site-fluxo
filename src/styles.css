@@ -213,6 +213,32 @@
   }
 }
 
+/* Desktop (≥1024px): melhorias gerais de layout */
+@media (min-width: 1024px) {
+  /* Banner — ponto focal ajustado para o crop landscape do desktop */
+  .banner-img {
+    object-position: center 35% !important;
+  }
+
+  /* Seção de destaques — garante que a coluna esquerda não expanda além do necessário */
+  .featured-rail-header {
+    padding-top: 2.5rem;
+  }
+
+  /* Footer — layout 3 colunas no desktop */
+  .footer-links-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Wide (≥1280px) — garante que nada quebre em telas grandes */
+@media (min-width: 1280px) {
+  .products-grid-container {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 16px !important;
+  }
+}
+
 @keyframes skeleton-shine {
   0%   { background-position:  200% 0; }
   100% { background-position: -200% 0; }

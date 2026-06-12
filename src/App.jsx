@@ -227,7 +227,7 @@ const BannerImage = ({ src, alt, active }) => {
         src={optimizeImage(src, 1920, 90)}
         srcSet={buildSrcSet(src, [640, 900, 1280, 1920, 2560], 90)}
         sizes="100vw"
-        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`w-full h-full object-cover transition-opacity duration-300 banner-img ${loaded ? 'opacity-100' : 'opacity-0'}`}
         style={{ objectPosition: 'center 55%' }}
         alt={alt}
         loading={active ? 'eager' : 'lazy'}
@@ -3737,9 +3737,9 @@ function App() {
         </div>
       )}
 
-      {toast && <div className="fixed top-28 left-1/2 -translate-x-1/2 z-[200] animate-slide-down"><div className="px-6 py-3 rounded-full font-black text-[10px] uppercase bg-white text-zinc-950 shadow-2xl">{toast.message}</div></div>}
+      {toast && <div className="fixed top-24 lg:top-20 left-1/2 -translate-x-1/2 z-[200] animate-slide-down"><div className="px-6 py-3 rounded-full font-black text-[10px] uppercase bg-white text-zinc-950 shadow-2xl">{toast.message}</div></div>}
 
-      <header className="sticky top-0 z-40 isolate border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20 lg:h-28" style={{ background: 'var(--bg-header)', backgroundColor: 'var(--bg-header)', backgroundImage: 'none', opacity: 1, backdropFilter: 'none', WebkitBackdropFilter: 'none', filter: 'none', mixBlendMode: 'normal' }}>
+      <header className="sticky top-0 z-40 isolate border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20 lg:h-[68px]" style={{ background: 'var(--bg-header)', backgroundColor: 'var(--bg-header)', backgroundImage: 'none', opacity: 1, backdropFilter: 'none', WebkitBackdropFilter: 'none', filter: 'none', mixBlendMode: 'normal' }}>
         <div className="w-full px-6 lg:px-16 h-full flex items-center gap-4">
 
           {/* LOGO */}
@@ -3789,8 +3789,18 @@ function App() {
           {/* SEARCH — mobile: ícone à esquerda, desktop: some (busca está no main) */}
           <button className="p-2 text-zinc-400 hover:text-white shrink-0 touch-manipulation lg:hidden order-first" onClick={() => setShowQuickMenu(true)} data-testid="btn-header-search"><Menu size={22} /></button>
 
-          {/* SPACER desktop */}
-          <div className="hidden lg:block flex-1" />
+          {/* NAV desktop — categorias horizontais */}
+          <nav className="hidden lg:flex flex-1 items-center justify-center gap-7 px-8 overflow-x-auto no-scrollbar">
+            {(categories || []).filter(c => c !== 'TODOS').slice(0, 7).map(cat => (
+              <button
+                key={cat}
+                onClick={() => { setSelectedCategory(cat); setSelectedSubcategory('TODOS'); setSelectedSize('TODOS'); setSearchQuery(''); setKitsOnly(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+                className={`text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-colors pb-0.5 border-b-2 ${selectedCategory === cat ? 'text-white border-white' : 'text-zinc-500 border-transparent hover:text-zinc-300 hover:border-zinc-600'}`}
+              >
+                {cat}
+              </button>
+            ))}
+          </nav>
 
           {/* AÇÕES — direita */}
           <div className="flex items-center gap-2 shrink-0">
@@ -3851,7 +3861,7 @@ function App() {
       {(activeBanners.length > 0 || !bannersLoaded) && (
         <section
           ref={bannerRef}
-          className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-[3/1] lg:max-h-[440px] overflow-hidden select-none"
+          className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-auto lg:min-h-[500px] lg:max-h-[640px] overflow-hidden select-none"
           style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
@@ -3872,15 +3882,15 @@ function App() {
                   <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-zinc-950/75 to-transparent pointer-events-none" />
                   <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />
                   {/* Texto com fade proporcional ao scroll */}
-                  <div className="absolute inset-x-0 bottom-0 px-7 pb-12 flex flex-col" style={{ opacity: 'var(--banner-text-op, 1)', transform: 'translate3d(0, calc(var(--banner-parallax, 0px) * -0.4), 0)', transition: 'opacity 0.08s linear', willChange: 'opacity, transform' }}>
+                  <div className="absolute inset-x-0 bottom-0 px-7 lg:px-16 pb-12 lg:pb-20 flex flex-col lg:max-w-3xl" style={{ opacity: 'var(--banner-text-op, 1)', transform: 'translate3d(0, calc(var(--banner-parallax, 0px) * -0.4), 0)', transition: 'opacity 0.08s linear', willChange: 'opacity, transform' }}>
                     {banner.collection_name && (
                       <div className="flex items-center gap-2.5 mb-4">
                         <div className="h-px w-8 bg-white/40" />
                         <span className="text-[9px] font-black uppercase tracking-[0.28em] text-white/55">{banner.collection_name}</span>
                       </div>
                     )}
-                    {banner.title && <h2 className="text-[2.6rem] font-black uppercase leading-[0.92] tracking-tight text-white mb-2.5 drop-shadow-2xl">{banner.title}</h2>}
-                    {banner.subtitle && <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-7">{banner.subtitle}</p>}
+                    {banner.title && <h2 className="text-[2.6rem] lg:text-[5rem] font-black uppercase leading-[0.92] tracking-tight text-white mb-2.5 drop-shadow-2xl">{banner.title}</h2>}
+                    {banner.subtitle && <p className="text-[10px] lg:text-[13px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-7">{banner.subtitle}</p>}
                     {banner.buttonText && (
                       <button
                         onClick={() => {
@@ -3893,7 +3903,7 @@ function App() {
                             document.getElementById('search-input')?.focus();
                           }
                         }}
-                        className="self-start flex items-center gap-2 bg-white text-zinc-950 px-7 py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform shadow-[0_8px_30px_rgba(255,255,255,0.18)] touch-manipulation"
+                        className="self-start flex items-center gap-2 bg-white text-zinc-950 px-7 lg:px-10 py-3.5 lg:py-4 rounded-full font-black text-[10px] lg:text-[12px] uppercase tracking-widest active:scale-95 transition-transform shadow-[0_8px_30px_rgba(255,255,255,0.18)] touch-manipulation"
                       >
                         {banner.buttonText} <ArrowRight size={11} />
                       </button>
@@ -3939,13 +3949,13 @@ function App() {
         </section>
       )}
 
-      <main className="w-full px-6 lg:px-16 mt-6 lg:mt-10 space-y-5 lg:space-y-8 min-h-screen" data-testid="catalog-main">
+      <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-screen lg:max-w-[1280px] lg:mx-auto" data-testid="catalog-main">
         <div className="relative group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
           <input id="search-input" placeholder="O que você procura?" data-testid="input-search" className="w-full border py-4 pl-14 pr-6 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
         
-        <div id="catalog-section" className="flex gap-3 overflow-x-auto no-scrollbar pb-1 mask-linear native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
+        <div id="catalog-section" className="flex gap-3 lg:gap-5 overflow-x-auto lg:overflow-x-visible lg:flex-wrap no-scrollbar pb-1 lg:pb-0 mask-linear lg:[mask-image:none] native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
           {/* Botão destacado de KITS — sempre primeiro */}
           {(products || []).some(p => p.is_kit) && (
             <div className="flex flex-col items-center gap-2 shrink-0">
@@ -3983,10 +3993,10 @@ function App() {
                 onClick={() => setSelectedCategory(cat)}
                 data-testid={`category-filter-${cat}`}
                 whileTap={{ scale: 0.92 }}
-                className="flex flex-col items-center gap-2 shrink-0 touch-manipulation"
+                className="flex flex-col items-center gap-2 shrink-0 touch-manipulation lg:min-w-[80px]"
                 style={{ minWidth: '60px' }}
               >
-                <div className={`w-[58px] h-[58px] rounded-full overflow-hidden border-2 transition-all duration-200 bg-black flex items-center justify-center relative ${
+                <div className={`w-[58px] h-[58px] lg:w-[72px] lg:h-[72px] rounded-full overflow-hidden border-2 transition-all duration-200 bg-black flex items-center justify-center relative ${
                   isActive
                     ? 'border-emerald-500 shadow-[0_0_14px_rgba(16,185,129,0.45)]'
                     : 'border-white/10 hover:border-white/30'
@@ -4001,7 +4011,7 @@ function App() {
                   {imgUrl && <div className="absolute inset-0 bg-black/25 pointer-events-none" />}
                   {isActive && <div className="absolute inset-[3px] rounded-full border border-emerald-500/40 pointer-events-none" />}
                 </div>
-                <span className={`text-[9px] font-black uppercase tracking-widest leading-none transition-colors ${
+                <span className={`text-[9px] lg:text-[12px] font-black uppercase tracking-widest leading-none transition-colors ${
                   isActive ? 'text-emerald-400' : 'text-zinc-500'
                 }`}>
                   {cat}
@@ -4061,13 +4071,17 @@ function App() {
           const heroLow = (hero.stock || 0) > 0 && hero.stock <= 3;
           return (
             <section
-              className="relative -mx-6 lg:mx-auto lg:max-w-[1000px] lg:rounded-3xl overflow-hidden animate-in"
+              className="relative -mx-6 lg:mx-0 lg:rounded-3xl overflow-hidden animate-in"
               data-testid="featured-section"
               style={{ background: 'radial-gradient(120% 80% at 50% 0%, rgba(228,228,231,0.06) 0%, rgba(9,9,11,0) 55%), linear-gradient(180deg, rgba(9,9,11,0) 0%, rgba(9,9,11,0) 100%)' }}
             >
               {/* Linha luminosa superior */}
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" aria-hidden="true" />
 
+              {/* Desktop: layout 2 colunas */}
+              <div className="lg:flex lg:items-start">
+              {/* Coluna esquerda: header editorial + hero */}
+              <div className="lg:flex-1 lg:min-w-0 lg:pb-8">
               {/* Cabeçalho editorial */}
               <div className="px-6 pt-10 pb-6">
                 <div className="flex items-end justify-between gap-4">
@@ -4099,7 +4113,7 @@ function App() {
                 className="block w-full text-left touch-manipulation"
                 data-testid={`featured-hero-${hero.id}`}
               >
-                <div className="mx-6 lg:mx-auto lg:max-w-[420px] relative">
+                <div className="mx-6 lg:mx-8 relative">
                   {/* Glow ambiente */}
                   <div className="absolute -inset-3 bg-gradient-to-b from-white/8 via-white/2 to-transparent rounded-[36px] blur-2xl opacity-70 pointer-events-none" aria-hidden="true" />
                   {/* Borda platina */}
@@ -4147,16 +4161,18 @@ function App() {
                 </div>
               </motion.div>
 
+              </div>{/* fim coluna esquerda */}
+
               {/* Rail secundário — demais destaques */}
               {rest.length > 0 && (
-                <>
+                <div className="lg:w-[360px] lg:flex-shrink-0 lg:border-l lg:border-white/10">
                   <div className="flex items-center gap-3 px-6 pt-8 pb-4">
                     <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white/40">Também em destaque</span>
                     <div className="h-px flex-1 bg-gradient-to-r from-white/15 to-transparent" />
                   </div>
                   <div
                     ref={featuredRailRef}
-                    className="flex gap-3 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-9 px-6 carousel-scroll"
+                    className="flex gap-3 lg:grid lg:grid-cols-2 lg:gap-4 overflow-x-auto lg:overflow-x-visible overflow-y-hidden no-scrollbar snap-x snap-mandatory lg:snap-none pb-9 lg:pb-6 px-6 lg:px-4 carousel-scroll"
                     data-testid="featured-rail"
                   >
                     {rest.map((product, idx) => {
@@ -4169,7 +4185,7 @@ function App() {
                           whileInView={{ opacity: 1, y: 0 }}
                           viewport={{ once: true, margin: '80px' }}
                           transition={{ duration: 0.5, delay: idx * 0.07, ease: [0.16, 1, 0.3, 1] }}
-                          className="shrink-0 w-[54%] max-w-[210px] snap-start text-left touch-manipulation"
+                          className="shrink-0 w-[54%] max-w-[210px] lg:w-full lg:max-w-none snap-start lg:snap-none text-left touch-manipulation"
                           data-testid={`featured-card-${product.id}`}
                         >
                           <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/4">
@@ -4205,10 +4221,11 @@ function App() {
                         </motion.div>
                       );
                     })}
-                    <div className="shrink-0 w-2" aria-hidden="true" />
+                    <div className="shrink-0 w-2 lg:hidden" aria-hidden="true" />
                   </div>
-                </>
+                </div>
               )}
+              </div>{/* fim wrapper 2 colunas */}
 
               {/* Linha luminosa inferior */}
               <div className="h-px bg-gradient-to-r from-transparent via-white/15 to-transparent mb-2" aria-hidden="true" />
@@ -4512,7 +4529,7 @@ function App() {
       </main>
 
       <footer className="mt-20 bg-zinc-900/50 border-t border-white/5 pt-14 pb-10 px-6 lg:px-16 w-full">
-        <div className="max-w-2xl mx-auto space-y-12">
+        <div className="max-w-2xl lg:max-w-5xl mx-auto space-y-12">
 
           {/* Logo + tagline */}
           <div className="flex flex-col items-center text-center gap-4">
@@ -4843,7 +4860,7 @@ function App() {
             transition={{ duration: 0.25 }}
           >
             {/* Espaçador do header */}
-            <div className="h-20 lg:h-28" />
+            <div className="h-20 lg:h-[68px]" />
 
             {/* CONTEÚDO — container centralizado e limitado */}
             <div className="max-w-[1320px] mx-auto px-10 py-10 flex gap-12 items-start">
