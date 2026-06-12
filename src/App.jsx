@@ -216,7 +216,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
   const srcSet = buildSrcSet(src);
 
   return (
-    <div ref={wrapperRef} className="absolute inset-0">
+    <div ref={wrapperRef} className="absolute inset-0" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
       {!loaded && (
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%)', backgroundSize: '200% 100%', animation: 'skeleton-shine 1.4s ease-in-out infinite', zIndex: 1 }} />
       )}
@@ -3864,7 +3864,7 @@ function App() {
                   />
                 </div>
                 {/* DESKTOP logo — container fixo, alinhado à esquerda */}
-                <div className="hidden lg:flex w-[160px] h-[58px] overflow-hidden shrink-0 items-center justify-start">
+                <div className="hidden lg:flex w-[160px] h-[58px] overflow-hidden shrink-0 items-center justify-start" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
                   <img
                     src={config.logoUrl}
                     alt={config.brandName}
