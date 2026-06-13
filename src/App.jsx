@@ -4591,10 +4591,12 @@ function App() {
       >
         <div className="flex items-center gap-6 lg:gap-10 px-6 shrink-0">
           {[
-            { icon: <Truck size={13} />, label: 'Frete para todo Brasil' },
+            { icon: <Zap size={13} />, label: 'Entrega no mesmo dia em Uberaba' },
+            { icon: <MapPin size={13} />, label: 'Retire na loja' },
+            { icon: <Truck size={13} />, label: 'Frete grátis em Uberaba' },
             { icon: <CreditCard size={13} />, label: 'Parcele em até 12x' },
-            { icon: <ShieldCheck size={13} />, label: 'Compra Segura' },
             { icon: <Tag size={13} />, label: '5% OFF no Pix' },
+            { icon: <ShieldCheck size={13} />, label: 'Enviamos pra todo Brasil' },
           ].map(({ icon, label }) => (
             <div key={label} className="flex items-center gap-1.5 shrink-0">
               <span style={{ color: '#a1a1aa' }}>{icon}</span>
@@ -5241,15 +5243,6 @@ function App() {
                               </motion.button>
                             )}
                           </div>
-                          {/* Linha 3 — prova social (peças vendidas) */}
-                          {!isOutOfStock && (product.sales || 0) >= 5 && (
-                            <div className="flex items-center gap-1.5 mb-1.5">
-                              <Flame size={10} style={{ color: '#FF7A45' }} />
-                              <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.03em' }}>
-                                {product.sales} vendidos
-                              </span>
-                            </div>
-                          )}
 
                           {/* Linha 4 — estrelas */}
                           <div onClick={e => e.stopPropagation()}>
@@ -5333,6 +5326,10 @@ function App() {
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] px-4">
               Lifestyle de alto padrão e streetwear autêntico. Qualidade inegociável em cada detalhe.
             </p>
+            <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400">
+              <MapPin size={11} className="text-emerald-500" />
+              <span>Loja física em {config.location || 'Uberaba, MG'} · Entrega no mesmo dia</span>
+            </div>
           </div>
 
           {/* Instagram */}
@@ -5947,9 +5944,22 @@ function App() {
             </div>
             {cart.length > 0 && (
               <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 px-6 py-6 max-w-md mx-auto z-50 shadow-2xl">
-                <div className="space-y-2 mb-5">
+                <div className="space-y-2 mb-4">
                    <div className="flex justify-between items-center text-[11px] font-bold uppercase text-zinc-400"><span>Subtotal</span><span>{formatBRL(subtotal)}</span></div>
-                   <div className="flex justify-between items-end pt-3 border-t border-white/10"><p className="text-[12px] font-black text-white uppercase tracking-widest">Total dos Itens</p><h3 className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(subtotal)}</h3></div>
+                   <div className="flex justify-between items-center text-[11px] font-bold uppercase"><span className="text-zinc-400">Desconto Pix (5%)</span><span className="text-emerald-500">- {formatBRL(subtotal * 0.05)}</span></div>
+                   <div className="flex justify-between items-end pt-3 border-t border-white/10">
+                     <div className="flex flex-col">
+                       <p className="text-[12px] font-black text-white uppercase tracking-widest">Total no Pix</p>
+                       <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">ou {formatBRL(subtotal)} em até 12x</span>
+                     </div>
+                     <h3 className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(subtotal * 0.95)}</h3>
+                   </div>
+                </div>
+                {/* Entrega local — diferencial Uberaba */}
+                <div className="flex flex-col gap-2 mb-4 p-3 rounded-2xl" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
+                   <div className="flex items-center gap-2"><Zap size={13} className="text-emerald-500 shrink-0" /><span className="text-[10px] font-bold text-white">Entrega no mesmo dia em Uberaba</span></div>
+                   <div className="flex items-center gap-2"><MapPin size={13} className="text-emerald-500 shrink-0" /><span className="text-[10px] font-bold text-zinc-300">Ou retire na loja — grátis</span></div>
+                   <div className="flex items-center gap-2"><Truck size={13} className="text-zinc-500 shrink-0" /><span className="text-[10px] font-bold text-zinc-500">Outras regiões: frete combinado no WhatsApp</span></div>
                 </div>
                 <button onClick={() => { setShowCart(false); setShowLeadModal(true); }} className="w-full py-5 rounded-2xl font-black text-[11px] uppercase bg-white text-zinc-950 active:scale-95 shadow-2xl flex items-center justify-center gap-2 touch-manipulation">Finalizar Pedido <Lock size={14}/></button>
               </div>
