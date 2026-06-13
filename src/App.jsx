@@ -339,43 +339,173 @@ const AdminHeader = ({ handleLogout, handleBackToStore }) => (
 
 const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
   const shouldReduceMotion = useReducedMotion();
+  const [period, setPeriod] = useState('7d'); // 'today' | '7d' | '30d' | 'month'
 
-  // ── DATA (lógica preservada) ──────────────────────────────────────────
-  const validLeads    = (leads || []).filter(l => l.status !== 'CANCELADO');
-  const concludedLeads = (leads || []).filter(l => l.status === 'CONCLUÍDO');
-  const totalRevenue  = concludedLeads.reduce((a, b) => a + parseFloat(b.value || 0), 0);
-  const avgTicket     = concludedLeads.length > 0 ? totalRevenue / concludedLeads.length : 0;
-  // PROTEÇÃO CONTRA CRASH: (lead.items || []) blinda o sistema contra leads antigos sem items
-  const totalItemsSold = concludedLeads.reduce((acc, l) => acc + (l.items || []).reduce((s, it) => s + (it.quantity || it.qty || 0), 0), 0);
+  // ── HELPERS ───────────────────────────────────────────────────────────
+  const CARD  = { background: '#10131A', border: '1px solid rgba(255,255,255,0.06)' };
+  const LABEL = { color: '#71717A', letterSpacing: '0.1em' };
+  const NUM   = { fontVariantNumeric: 'tabular-nums' };
+  const timeAgo = (raw) => {
+    if (!raw) return '';
+    const m = Math.floor((Date.now() - new Date(raw)) / 60000);
+    if (m < 1) return 'agora'; if (m < 60) return `${m}min`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`; return `${Math.floor(h/24)}d`;
+  };
+  const pct = (cur, prev) => prev > 0 ? Math.round((cur - prev) / prev * 100) : null;
 
-  const chartData = useMemo(() => {
-    const days = [];
-    const today = new Date(); today.setHours(0,0,0,0);
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      const key   = d.toISOString().slice(0,10);
-      const label = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','').toUpperCase().slice(0,3);
-      days.push({ key, label, valor: 0, pedidos: 0 });
+  // ── PERIOD BOUNDS ─────────────────────────────────────────────────────
+  // Calcula [start, end] do período atual e do período anterior equivalente
+  const periodBounds = useMemo(() => {
+    const now   = new Date();
+    const bod   = new Date(now); bod.setHours(0, 0, 0, 0); // beginning of today
+    switch (period) {
+      case 'today': {
+        const prev = new Date(bod); prev.setDate(prev.getDate() - 1);
+        return { start: bod, end: now, prevStart: prev, prevEnd: new Date(bod) };
+      }
+      case '7d': {
+        const start = new Date(bod); start.setDate(start.getDate() - 6);
+        const pS    = new Date(start); pS.setDate(pS.getDate() - 7);
+        return { start, end: now, prevStart: pS, prevEnd: new Date(start) };
+      }
+      case '30d': {
+        const start = new Date(bod); start.setDate(start.getDate() - 29);
+        const pS    = new Date(start); pS.setDate(pS.getDate() - 30);
+        return { start, end: now, prevStart: pS, prevEnd: new Date(start) };
+      }
+      case 'month': {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        const pS    = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const pE    = new Date(start);
+        return { start, end: now, prevStart: pS, prevEnd: pE };
+      }
+      default: return { start: bod, end: now, prevStart: null, prevEnd: null };
     }
-    concludedLeads.forEach(l => {
+  }, [period]);
+
+  // ── FILTERED LEADS ────────────────────────────────────────────────────
+  const inRange = (l, s, e) => {
+    const raw = l._raw?.created_at; if (!raw) return false;
+    const d = new Date(raw); return d >= s && d <= e;
+  };
+  const periodLeads = useMemo(
+    () => (leads || []).filter(l => inRange(l, periodBounds.start, periodBounds.end)),
+    [leads, periodBounds]
+  );
+  const prevLeads = useMemo(
+    () => periodBounds.prevStart
+      ? (leads || []).filter(l => inRange(l, periodBounds.prevStart, periodBounds.prevEnd))
+      : [],
+    [leads, periodBounds]
+  );
+
+  const periodConcluded = periodLeads.filter(l => l.status === 'CONCLUÍDO');
+  const prevConcluded   = prevLeads.filter(l => l.status === 'CONCLUÍDO');
+
+  // ── KPI VALUES ────────────────────────────────────────────────────────
+  const periodRevenue  = periodConcluded.reduce((a, l) => a + parseFloat(l.value || 0), 0);
+  const prevRevenue    = prevConcluded.reduce((a, l) => a + parseFloat(l.value || 0), 0);
+  const periodOrders   = periodLeads.length;
+  const prevOrders     = prevLeads.length;
+  const periodTicket   = periodConcluded.length > 0 ? periodRevenue / periodConcluded.length : 0;
+  const prevTicket     = prevConcluded.length > 0 ? prevRevenue / prevConcluded.length : 0;
+  // PROTEÇÃO CONTRA CRASH: (lead.items || []) blinda o sistema contra leads antigos sem items
+  const periodItems    = periodConcluded.reduce((a, l) => a + (l.items || []).reduce((s, it) => s + (it.quantity || it.qty || 0), 0), 0);
+  const prevItems      = prevConcluded.reduce((a, l) => a + (l.items || []).reduce((s, it) => s + (it.quantity || it.qty || 0), 0), 0);
+  const convRate       = periodLeads.length > 0 ? Math.round(periodConcluded.length / periodLeads.length * 100) : 0;
+  const prevConvRate   = prevLeads.length > 0 ? Math.round(prevConcluded.length / prevLeads.length * 100) : 0;
+
+  // Globals (sem filtro de período — operacionais sempre)
+  const outOfStockProducts = (products || []).filter(p => !p.is_kit && p.stock === 0);
+  const pendingLeads       = (leads || []).filter(l => l.status === 'NOVO').length;
+  // Manter lógica global para compatibilidade com o resto do app
+  const concludedLeads     = (leads || []).filter(l => l.status === 'CONCLUÍDO');
+  const totalRevenue       = concludedLeads.reduce((a, b) => a + parseFloat(b.value || 0), 0);
+  const avgTicket          = concludedLeads.length > 0 ? totalRevenue / concludedLeads.length : 0;
+  const totalItemsSold     = concludedLeads.reduce((acc, l) => acc + (l.items || []).reduce((s, it) => s + (it.quantity || it.qty || 0), 0), 0);
+
+  // ── GRÁFICO ADAPTATIVO ────────────────────────────────────────────────
+  // Hoje → 24 barras por hora | 7d/30d/mês → barras por dia
+  const chartData = useMemo(() => {
+    if (period === 'today') {
+      const hours = Array.from({ length: 24 }, (_, i) => ({ key: i, label: `${String(i).padStart(2,'0')}h`, valor: 0, pedidos: 0 }));
+      periodConcluded.forEach(l => {
+        const raw = l._raw?.created_at; if (!raw) return;
+        const h = new Date(raw).getHours();
+        hours[h].valor += Number(l.value || 0); hours[h].pedidos += 1;
+      });
+      return hours;
+    }
+    // Dias
+    const days = [];
+    const cur = new Date(periodBounds.start);
+    const end = periodBounds.end;
+    while (cur <= end) {
+      const key   = cur.toISOString().slice(0,10);
+      const label = period === '7d'
+        ? cur.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','').toUpperCase().slice(0,3)
+        : String(cur.getDate());
+      days.push({ key, label, valor: 0, pedidos: 0 });
+      cur.setDate(cur.getDate() + 1);
+    }
+    periodConcluded.forEach(l => {
       const raw = l._raw?.created_at; if (!raw) return;
       const k = new Date(raw).toISOString().slice(0,10);
       const d = days.find(x => x.key === k);
       if (d) { d.valor += Number(l.value || 0); d.pedidos += 1; }
     });
     return days;
+  }, [period, periodConcluded, periodBounds]);
+
+  const todayKey   = new Date().toISOString().slice(0,10);
+  const currentHour = new Date().getHours();
+  const chartHighlightKey = period === 'today' ? currentHour : todayKey;
+  const chartInterval = period === 'today' ? 3 : period === '30d' ? 4 : period === 'month' ? 5 : 0;
+
+  // ── TOP PRODUTOS ──────────────────────────────────────────────────────
+  const topProducts = useMemo(() => {
+    const map = {};
+    periodConcluded.forEach(l => {
+      (l.items || []).forEach(it => {
+        const name = it.name || 'Produto';
+        if (!map[name]) map[name] = { name, qty: 0, revenue: 0 };
+        const q = it.quantity || it.qty || 1;
+        map[name].qty += q;
+        map[name].revenue += (it.price || 0) * q;
+      });
+    });
+    return Object.values(map).sort((a, b) => b.qty - a.qty).slice(0, 5);
+  }, [periodConcluded]);
+
+  // ── DISTRIBUIÇÃO POR STATUS ───────────────────────────────────────────
+  const statusDist = useMemo(() => {
+    const total = periodLeads.length || 1;
+    const counts = { 'NOVO': 0, 'EM ATENDIMENTO': 0, 'CONCLUÍDO': 0, 'CANCELADO': 0 };
+    periodLeads.forEach(l => { const s = l.status || 'NOVO'; counts[s] = (counts[s] || 0) + 1; });
+    const statusMeta = {
+      'NOVO':           { color: '#00C2FF', label: 'Novos' },
+      'EM ATENDIMENTO': { color: '#FFB800', label: 'Em Atend.' },
+      'CONCLUÍDO':      { color: '#00E08A', label: 'Concluídos' },
+      'CANCELADO':      { color: '#FF5A5A', label: 'Cancelados' },
+    };
+    return Object.entries(counts)
+      .filter(([, c]) => c > 0)
+      .map(([s, c]) => ({ status: s, count: c, pct: Math.round(c / total * 100), ...statusMeta[s] }));
+  }, [periodLeads]);
+
+  // ── HORÁRIO DE PICO ───────────────────────────────────────────────────
+  const peakHour = useMemo(() => {
+    const hours = Array(24).fill(0);
+    concludedLeads.forEach(l => {
+      const raw = l._raw?.created_at; if (!raw) return;
+      hours[new Date(raw).getHours()] += Number(l.value || 0);
+    });
+    const max = Math.max(...hours);
+    if (max === 0) return null;
+    const h = hours.indexOf(max);
+    return `${String(h).padStart(2,'0')}h–${String(h+1).padStart(2,'0')}h`;
   }, [concludedLeads]);
-
-  const todayKey     = new Date().toISOString().slice(0,10);
-  const yesterdayKey = new Date(Date.now() - 86400000).toISOString().slice(0,10);
-  const todayData     = chartData.find(d => d.key === todayKey)     || { valor: 0, pedidos: 0 };
-  const yesterdayData = chartData.find(d => d.key === yesterdayKey) || { valor: 0, pedidos: 0 };
-  const revenueVsYesterday = yesterdayData.valor > 0
-    ? Math.round((todayData.valor - yesterdayData.valor) / yesterdayData.valor * 100)
-    : null;
-
-  const outOfStockProducts = (products || []).filter(p => !p.is_kit && p.stock === 0);
-  const pendingLeads       = (leads || []).filter(l => l.status === 'NOVO').length;
 
   // ── STATUS OPERACIONAL ────────────────────────────────────────────────
   const opStatus = (() => {
@@ -385,8 +515,8 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
       return { label: `${outOfStockProducts.length} produto(s) sem estoque`, color: '#FF5A5A' };
     if (pendingLeads > 0)
       return { label: `${pendingLeads} pedido(s) aguardando atendimento`, color: '#FFB800' };
-    if (revenueVsYesterday !== null && revenueVsYesterday > 0)
-      return { label: `Vendas ${revenueVsYesterday}% acima de ontem`, color: '#00E08A' };
+    const d = pct(periodRevenue, prevRevenue);
+    if (d !== null && d > 0) return { label: `Vendas ${d}% acima do período anterior`, color: '#00E08A' };
     return { label: 'Operação funcionando normalmente', color: '#00E08A' };
   })();
 
@@ -399,19 +529,21 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
     if (pendingLeads > 0)
       list.push({ icon: <Clock size={12}/>, color: '#FFB800', bg: 'rgba(255,184,0,0.08)', border: 'rgba(255,184,0,0.15)',
         label: `${pendingLeads} pedido(s) novo(s)`, desc: 'Aguardando atendimento', action: 'Atender', tab: 'leads' });
-    if (revenueVsYesterday !== null && revenueVsYesterday > 10)
+    const revDelta = pct(periodRevenue, prevRevenue);
+    if (revDelta !== null && revDelta > 10)
       list.push({ icon: <TrendingUp size={12}/>, color: '#00E08A', bg: 'rgba(0,224,138,0.08)', border: 'rgba(0,224,138,0.15)',
-        label: `+${revenueVsYesterday}% vs ontem`, desc: 'Receita acima da média', action: null, tab: null });
+        label: `+${revDelta}% vs período anterior`, desc: 'Receita acima da média', action: null, tab: null });
+    if (peakHour)
+      list.push({ icon: <Flame size={12}/>, color: '#FFB800', bg: 'rgba(255,184,0,0.08)', border: 'rgba(255,184,0,0.15)',
+        label: `Pico de vendas: ${peakHour}`, desc: 'Melhor horário histórico', action: null, tab: null });
     if (list.length === 0)
       list.push({ icon: <CheckCircle2 size={12}/>, color: '#00C2FF', bg: 'rgba(0,194,255,0.08)', border: 'rgba(0,194,255,0.15)',
         label: 'Sem alertas ativos', desc: 'Tudo sob controle', action: null, tab: null });
     return list;
-  }, [outOfStockProducts, pendingLeads, revenueVsYesterday]);
+  }, [outOfStockProducts, pendingLeads, periodRevenue, prevRevenue, peakHour]);
 
   // ── MOTION VARIANTS ───────────────────────────────────────────────────
-  const fadeUp = shouldReduceMotion
-    ? {}
-    : { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } } };
+  const fadeUp = shouldReduceMotion ? {} : { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } } };
   const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.055 } } };
 
   // ── SKELETON ──────────────────────────────────────────────────────────
@@ -419,27 +551,30 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
   if (loading) return (
     <div className="p-4 space-y-3 pb-32">
       <div className={`h-10 rounded-2xl ${sk}`} />
+      <div className={`h-10 rounded-2xl ${sk}`} />
       <div className="grid grid-cols-2 gap-2">
         <div className={`col-span-2 h-20 rounded-2xl ${sk}`} />
         {[0,1,2,3].map(i => <div key={i} className={`h-20 rounded-2xl ${sk}`} />)}
       </div>
       <div className={`h-40 rounded-2xl ${sk}`} />
-      <div className={`h-28 rounded-2xl ${sk}`} />
-      <div className={`h-52 rounded-2xl ${sk}`} />
+      <div className={`h-32 rounded-2xl ${sk}`} />
+      <div className={`h-48 rounded-2xl ${sk}`} />
     </div>
   );
 
-  // ── HELPERS ───────────────────────────────────────────────────────────
-  const CARD = { background: '#10131A', border: '1px solid rgba(255,255,255,0.06)' };
-  const LABEL = { color: '#71717A', letterSpacing: '0.1em' };
-  const timeAgo = (raw) => {
-    if (!raw) return '';
-    const m = Math.floor((Date.now() - new Date(raw).getTime()) / 60000);
-    if (m < 1) return 'agora';
-    if (m < 60) return `${m}min`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h`;
-    return `${Math.floor(h/24)}d`;
+  // Labels
+  const periodLabel = { today: 'Hoje', '7d': '7 dias', '30d': '30 dias', month: 'Este mês' }[period];
+  const chartTitle  = period === 'today' ? 'Vendas · Hoje (por hora)' : `Vendas · ${periodLabel}`;
+
+  // Delta badge helper
+  const DeltaBadge = ({ cur, prev }) => {
+    const d = pct(cur, prev);
+    if (d === null) return null;
+    return (
+      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md" style={{ color: d >= 0 ? '#00E08A' : '#FF5A5A', background: d >= 0 ? 'rgba(0,224,138,0.1)' : 'rgba(255,90,90,0.1)' }}>
+        {d >= 0 ? '+' : ''}{d}%
+      </span>
+    );
   };
 
   return (
@@ -452,78 +587,108 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
             <span className="animate-ping absolute inset-0 rounded-full opacity-60" style={{ background: opStatus.color }} />
             <span className="relative rounded-full h-2 w-2" style={{ background: opStatus.color }} />
           </span>
-          <p className="text-[11px] font-medium" style={{ color: opStatus.color }}>{opStatus.label}</p>
+          <p className="text-[11px] font-medium flex-1" style={{ color: opStatus.color }}>{opStatus.label}</p>
+          <span className="text-[9px] font-medium" style={{ color: '#71717A' }}>{new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
       </motion.div>
 
-      {/* ── 2. KPIs ── */}
+      {/* ── 2. FILTRO DE PERÍODO ── */}
+      <motion.div variants={fadeUp}>
+        <div className="flex gap-1.5 p-1 rounded-2xl" style={{ background: '#10131A', border: '1px solid rgba(255,255,255,0.06)' }}>
+          {[['today','Hoje'],['7d','7D'],['30d','30D'],['month','Mês']].map(([val, lbl]) => (
+            <motion.button
+              key={val}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setPeriod(val)}
+              className="flex-1 py-2 rounded-xl text-[11px] font-semibold transition-colors"
+              style={{
+                background: period === val ? '#00E08A' : 'transparent',
+                color: period === val ? '#050505' : '#71717A',
+              }}
+            >
+              {lbl}
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* ── 3. KPIs ── */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 gap-2">
 
-        {/* Faturamento Hoje — full width */}
+        {/* Faturamento — full width */}
         <div className="col-span-2 rounded-2xl p-4" style={CARD}>
-          <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Faturamento Hoje</p>
-          <div className="flex items-end justify-between gap-2">
-            <span className="font-bold text-white leading-none" style={{ fontSize: '2rem', fontVariantNumeric: 'tabular-nums' }}>
-              {formatBRL(todayData.valor)}
-            </span>
-            {revenueVsYesterday !== null && (
-              <span className="text-[10px] font-semibold px-2 py-1 rounded-lg mb-0.5 shrink-0" style={{
-                color: revenueVsYesterday >= 0 ? '#00E08A' : '#FF5A5A',
-                background: revenueVsYesterday >= 0 ? 'rgba(0,224,138,0.1)' : 'rgba(255,90,90,0.1)'
-              }}>
-                {revenueVsYesterday >= 0 ? '+' : ''}{revenueVsYesterday}% ontem
-              </span>
-            )}
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-medium uppercase" style={LABEL}>Faturamento · {periodLabel}</p>
+            <DeltaBadge cur={periodRevenue} prev={prevRevenue} />
           </div>
+          <span className="font-bold text-white leading-none" style={{ fontSize: '2rem', ...NUM }}>{formatBRL(periodRevenue)}</span>
         </div>
 
-        {/* Pedidos Hoje */}
+        {/* Pedidos */}
         <div className="rounded-2xl p-4" style={CARD}>
-          <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Pedidos Hoje</p>
-          <span className="font-bold text-white" style={{ fontSize: '1.75rem', fontVariantNumeric: 'tabular-nums' }}>{todayData.pedidos}</span>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-medium uppercase" style={LABEL}>Pedidos</p>
+            <DeltaBadge cur={periodOrders} prev={prevOrders} />
+          </div>
+          <span className="font-bold text-white" style={{ fontSize: '1.75rem', ...NUM }}>{periodOrders}</span>
         </div>
 
         {/* Ticket Médio */}
         <div className="rounded-2xl p-4" style={CARD}>
-          <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Ticket Médio</p>
-          <span className="font-bold" style={{ fontSize: '1.75rem', color: '#00E08A', fontVariantNumeric: 'tabular-nums' }}>{formatBRL(avgTicket)}</span>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-medium uppercase" style={LABEL}>Ticket Médio</p>
+            <DeltaBadge cur={periodTicket} prev={prevTicket} />
+          </div>
+          <span className="font-bold" style={{ fontSize: '1.75rem', color: '#00E08A', ...NUM }}>{formatBRL(periodTicket)}</span>
         </div>
 
         {/* Peças Vendidas */}
         <div className="rounded-2xl p-4" style={CARD}>
-          <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Peças Vendidas</p>
-          <span className="font-bold text-white" style={{ fontSize: '1.75rem', fontVariantNumeric: 'tabular-nums' }}>{totalItemsSold}</span>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-medium uppercase" style={LABEL}>Peças Vendidas</p>
+            <DeltaBadge cur={periodItems} prev={prevItems} />
+          </div>
+          <span className="font-bold text-white" style={{ fontSize: '1.75rem', ...NUM }}>{periodItems}</span>
         </div>
 
-        {/* Sem Estoque */}
+        {/* Taxa de Conversão */}
+        <div className="rounded-2xl p-4" style={CARD}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-medium uppercase" style={LABEL}>Conversão</p>
+            <DeltaBadge cur={convRate} prev={prevConvRate} />
+          </div>
+          <span className="font-bold" style={{ fontSize: '1.75rem', color: convRate >= 50 ? '#00E08A' : convRate >= 25 ? '#FFB800' : '#FF5A5A', ...NUM }}>{convRate}%</span>
+        </div>
+
+        {/* Sem Estoque — global, sempre */}
         <div className="rounded-2xl p-4" style={{ ...CARD, borderColor: outOfStockProducts.length > 0 ? 'rgba(255,90,90,0.25)' : 'rgba(255,255,255,0.06)' }}>
           <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Sem Estoque</p>
-          <span className="font-bold" style={{ fontSize: '1.75rem', color: outOfStockProducts.length > 0 ? '#FF5A5A' : '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}>
+          <span className="font-bold" style={{ fontSize: '1.75rem', color: outOfStockProducts.length > 0 ? '#FF5A5A' : '#FFFFFF', ...NUM }}>
             {outOfStockProducts.length}
           </span>
         </div>
 
       </motion.div>
 
-      {/* ── 3. GRÁFICO 7 DIAS ── */}
+      {/* ── 4. GRÁFICO ADAPTATIVO ── */}
       <motion.div variants={fadeUp} className="rounded-2xl p-4" style={CARD}>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] font-medium uppercase" style={LABEL}>Vendas · 7 dias</p>
-          <span className="text-[11px] font-semibold" style={{ color: '#00E08A' }}>{formatBRL(totalRevenue)}</span>
+          <p className="text-[10px] font-medium uppercase" style={LABEL}>{chartTitle}</p>
+          <span className="text-[11px] font-semibold" style={{ color: '#00E08A' }}>{formatBRL(periodRevenue)}</span>
         </div>
-        <div className="h-[72px]">
+        <div className="h-[80px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 2, right: 4, bottom: 0, left: 4 }}>
-              <XAxis dataKey="label" tick={{ fontSize: 8, fill: 'rgba(255,255,255,0.28)', fontWeight: 500 }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" interval={chartInterval} tick={{ fontSize: 8, fill: 'rgba(255,255,255,0.28)', fontWeight: 500 }} axisLine={false} tickLine={false} />
               <ReTooltip
                 cursor={{ fill: 'rgba(0,224,138,0.04)' }}
                 contentStyle={{ background: '#0B0D12', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, fontSize: 11, fontWeight: 600 }}
                 labelStyle={{ color: '#71717A' }}
-                formatter={(v) => [`R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Vendas']}
+                formatter={(v, n, { payload }) => [`R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} · ${payload.pedidos} pedido(s)`, '']}
               />
-              <Bar dataKey="valor" radius={[4, 4, 0, 0]} isAnimationActive animationBegin={0} animationDuration={700}>
+              <Bar dataKey="valor" radius={[4, 4, 0, 0]} isAnimationActive animationBegin={0} animationDuration={700} maxBarSize={28}>
                 {chartData.map((e, i) => (
-                  <Cell key={i} fill={e.key === todayKey ? '#00E08A' : e.valor > 0 ? 'rgba(0,224,138,0.3)' : 'rgba(255,255,255,0.04)'} />
+                  <Cell key={i} fill={e.key === chartHighlightKey ? '#00E08A' : e.valor > 0 ? 'rgba(0,224,138,0.3)' : 'rgba(255,255,255,0.04)'} />
                 ))}
               </Bar>
             </BarChart>
@@ -531,31 +696,81 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
         </div>
       </motion.div>
 
-      {/* ── 4. INSIGHTS ── */}
+      {/* ── 5. DISTRIBUIÇÃO POR STATUS ── */}
+      {periodLeads.length > 0 && (
+        <motion.div variants={fadeUp} className="rounded-2xl p-4" style={CARD}>
+          <p className="text-[10px] font-medium uppercase mb-3" style={LABEL}>Funil de Pedidos · {periodLabel}</p>
+          <div className="space-y-2.5">
+            {statusDist.map(({ status, count, pct: p, color, label }) => (
+              <div key={status}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-medium" style={{ color }}>{label}</span>
+                  <span className="text-[10px] font-semibold" style={{ color: '#A1A1AA' }}>{count} · {p}%</span>
+                </div>
+                <div className="h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${p}%` }}
+                    transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+                    className="h-1 rounded-full"
+                    style={{ background: color }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── 6. TOP PRODUTOS ── */}
+      {topProducts.length > 0 && (
+        <motion.div variants={fadeUp} className="rounded-2xl p-4" style={CARD}>
+          <p className="text-[10px] font-medium uppercase mb-3" style={LABEL}>Top Produtos · {periodLabel}</p>
+          <div className="space-y-3">
+            {topProducts.map((p, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-[10px] font-bold w-4 text-center shrink-0" style={{ color: i === 0 ? '#00E08A' : '#71717A' }}>#{i+1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-white truncate">{p.name}</p>
+                  <div className="h-0.5 mt-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.round(p.qty / topProducts[0].qty * 100)}%` }}
+                      transition={{ duration: 0.5, ease: 'easeOut', delay: 0.05 * i }}
+                      className="h-0.5 rounded-full"
+                      style={{ background: i === 0 ? '#00E08A' : 'rgba(0,224,138,0.4)' }}
+                    />
+                  </div>
+                </div>
+                <span className="text-[10px] font-semibold shrink-0" style={{ color: '#A1A1AA' }}>{p.qty} pçs</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── 7. INSIGHTS ── */}
       <motion.div variants={fadeUp} className="space-y-2">
         <p className="text-[10px] font-medium uppercase px-0.5" style={LABEL}>Insights</p>
         {insights.map((ins, i) => (
-          <motion.div key={i} variants={fadeUp} className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: ins.bg, border: `1px solid ${ins.border}` }}>
+          <div key={i} className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: ins.bg, border: `1px solid ${ins.border}` }}>
             <span style={{ color: ins.color }}>{ins.icon}</span>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-semibold" style={{ color: ins.color }}>{ins.label}</p>
               <p className="text-[10px]" style={{ color: '#71717A' }}>{ins.desc}</p>
             </div>
             {ins.action && setAdminTab && (
-              <motion.button
-                whileTap={{ scale: 0.94 }}
-                onClick={() => setAdminTab(ins.tab)}
+              <motion.button whileTap={{ scale: 0.94 }} onClick={() => setAdminTab(ins.tab)}
                 className="text-[10px] font-semibold px-3 py-1.5 rounded-xl shrink-0"
-                style={{ color: ins.color, background: `${ins.color}18`, border: `1px solid ${ins.color}30` }}
-              >
+                style={{ color: ins.color, background: `${ins.color}18`, border: `1px solid ${ins.color}30` }}>
                 {ins.action}
               </motion.button>
             )}
-          </motion.div>
+          </div>
         ))}
       </motion.div>
 
-      {/* ── 5. AÇÕES RÁPIDAS ── */}
+      {/* ── 8. AÇÕES RÁPIDAS ── */}
       <motion.div variants={fadeUp}>
         <p className="text-[10px] font-medium uppercase px-0.5 mb-2" style={LABEL}>Ações Rápidas</p>
         <div className="grid grid-cols-2 gap-2">
@@ -565,61 +780,44 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
             { label: 'Promoções',   icon: <Megaphone size={14}/>, tab: 'banners' },
             { label: 'Atendimento', icon: <MessageCircle size={14}/>, tab: 'crm' },
           ].map(a => (
-            <motion.button
-              key={a.tab}
-              whileTap={{ scale: 0.96 }}
-              onClick={() => setAdminTab?.(a.tab)}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-2xl text-left relative touch-manipulation"
-              style={CARD}
-            >
+            <motion.button key={a.tab} whileTap={{ scale: 0.96 }} onClick={() => setAdminTab?.(a.tab)}
+              className="flex items-center gap-2.5 px-4 py-3 rounded-2xl text-left relative touch-manipulation" style={CARD}>
               <span style={{ color: '#00E08A' }}>{a.icon}</span>
               <span className="text-[11px] font-medium" style={{ color: '#A1A1AA' }}>{a.label}</span>
-              {a.badge && (
-                <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#FF5A5A', color: '#fff' }}>{a.badge}</span>
-              )}
+              {a.badge && <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#FF5A5A', color: '#fff' }}>{a.badge}</span>}
             </motion.button>
           ))}
         </div>
       </motion.div>
 
-      {/* ── 6. PEDIDOS RECENTES ── */}
+      {/* ── 9. PEDIDOS RECENTES ── */}
       <motion.div variants={fadeUp}>
         <div className="flex items-center justify-between px-0.5 mb-2">
           <p className="text-[10px] font-medium uppercase" style={LABEL}>Pedidos Recentes</p>
-          {setAdminTab && (
-            <button onClick={() => setAdminTab('leads')} className="text-[10px] font-semibold" style={{ color: '#00E08A' }}>Ver todos</button>
-          )}
+          {setAdminTab && <button onClick={() => setAdminTab('leads')} className="text-[10px] font-semibold" style={{ color: '#00E08A' }}>Ver todos</button>}
         </div>
         <div className="rounded-2xl overflow-hidden" style={CARD}>
           {(leads || []).slice(0, 5).length === 0 ? (
-            <div className="p-6 text-center">
-              <p className="text-[11px]" style={{ color: '#71717A' }}>Nenhum pedido ainda.</p>
-            </div>
+            <div className="p-6 text-center"><p className="text-[11px]" style={{ color: '#71717A' }}>Nenhum pedido ainda.</p></div>
           ) : (
             (leads || []).slice(0, 5).map((l, i, arr) => {
               const initial = (l.name || '?').trim().charAt(0).toUpperCase();
               const st = l.status || 'NOVO';
-              const stStyle =
-                st === 'NOVO'        ? { color: '#00C2FF', bg: 'rgba(0,194,255,0.12)' }
-                : st === 'CONCLUÍDO' ? { color: '#00E08A', bg: 'rgba(0,224,138,0.12)' }
-                : st === 'CANCELADO' ? { color: '#FF5A5A', bg: 'rgba(255,90,90,0.12)' }
-                :                     { color: '#FFB800', bg: 'rgba(255,184,0,0.12)' };
+              const stStyle = st === 'NOVO' ? { color: '#00C2FF', bg: 'rgba(0,194,255,0.12)' }
+                : st === 'CONCLUÍDO'        ? { color: '#00E08A', bg: 'rgba(0,224,138,0.12)' }
+                : st === 'CANCELADO'        ? { color: '#FF5A5A', bg: 'rgba(255,90,90,0.12)' }
+                :                            { color: '#FFB800', bg: 'rgba(255,184,0,0.12)' };
               return (
-                <motion.div
-                  key={i}
-                  whileTap={{ backgroundColor: 'rgba(255,255,255,0.015)' }}
+                <motion.div key={i} whileTap={{ backgroundColor: 'rgba(255,255,255,0.015)' }}
                   className="flex items-center gap-3 px-4 py-3 cursor-pointer"
-                  style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
-                >
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold" style={{ background: 'rgba(0,224,138,0.08)', color: '#00E08A' }}>
-                    {initial}
-                  </div>
+                  style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold" style={{ background: 'rgba(0,224,138,0.08)', color: '#00E08A' }}>{initial}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-semibold text-white truncate">{(l.name || 'Desconhecido').split(' ')[0]}</p>
                     <p className="text-[10px]" style={{ color: '#71717A' }}>#{l.orderNumber || '0000'}{l._raw?.created_at ? ` · ${timeAgo(l._raw.created_at)}` : ''}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <span className="text-[12px] font-semibold text-white" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatBRL(l.value || 0)}</span>
+                    <span className="text-[12px] font-semibold text-white" style={NUM}>{formatBRL(l.value || 0)}</span>
                     <span className="text-[9px] font-semibold uppercase rounded-lg px-2 py-0.5" style={{ color: stStyle.color, background: stStyle.bg }}>{st}</span>
                   </div>
                 </motion.div>
