@@ -1897,6 +1897,41 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
 
   const statusColors = { 'NOVO': 'text-blue-500', 'EM ATENDIMENTO': 'text-amber-500', 'CONCLUÍDO': 'text-emerald-500', 'CANCELADO': 'text-red-500' };
 
+  // Captura inteligente de data/hora do pedido
+  const smartDate = (raw) => {
+    if (!raw) return null;
+    const d   = new Date(raw);
+    const now  = new Date();
+    const diffMs  = now - d;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffH   = Math.floor(diffMin / 60);
+    const time    = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const today   = new Date(now); today.setHours(0,0,0,0);
+    const yest    = new Date(today); yest.setDate(yest.getDate() - 1);
+
+    if (diffMin < 1)   return { label: 'Agora mesmo',                      fresh: true  };
+    if (diffMin < 60)  return { label: `Há ${diffMin}min · ${time}`,       fresh: true  };
+    if (diffH   < 3)   return { label: `Há ${diffH}h · ${time}`,           fresh: false };
+    if (d >= today)    return { label: `Hoje · ${time}`,                    fresh: false };
+    if (d >= yest)     return { label: `Ontem · ${time}`,                   fresh: false };
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffDays < 7) {
+      const wd = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','');
+      return { label: `${wd.charAt(0).toUpperCase()}${wd.slice(1)} · ${time}`, fresh: false };
+    }
+    const ds = d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+    return { label: `${ds} · ${time}`, fresh: false };
+  };
+
+  // Data completa para exibição no painel expandido
+  const fullDate = (raw) => {
+    if (!raw) return '—';
+    return new Date(raw).toLocaleString('pt-BR', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+  };
+
   const exportCSV = () => {
     if (!leads || leads.length === 0) { showToast('Nenhum pedido para exportar.', 'error'); return; }
     const esc = (v) => {
@@ -1974,10 +2009,29 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
       ) : visibleLeads.map(lead => (
         <div key={lead.id} className={`bg-zinc-900 rounded-[32px] border overflow-hidden ${expandedLead === lead.id ? 'border-white/20' : 'border-white/5'}`}>
           <div className="p-6 cursor-pointer" onClick={() => setExpandedLead(expandedLead === lead.id ? null : lead.id)}>
-            <div className="flex justify-between items-start mb-2">
+            <div className="flex justify-between items-start mb-1.5">
               <h4 className="font-black text-white text-sm uppercase">{lead.name} <span className="text-[10px] text-zinc-600">#{lead.orderNumber}</span></h4>
               <span className={`text-[8px] font-black uppercase ${statusColors[lead.status || 'NOVO']}`}>{lead.status || 'NOVO'}</span>
             </div>
+            {/* Data/hora inteligente */}
+            {(() => {
+              const sd = smartDate(lead._raw?.created_at);
+              if (!sd) return null;
+              return (
+                <div className="flex items-center gap-1.5 mb-2">
+                  {sd.fresh && (
+                    <span className="relative flex h-1.5 w-1.5 shrink-0">
+                      <span className="animate-ping absolute inset-0 rounded-full bg-blue-500 opacity-75" />
+                      <span className="relative rounded-full h-1.5 w-1.5 bg-blue-500" />
+                    </span>
+                  )}
+                  <Clock size={9} className={sd.fresh ? 'text-blue-400' : 'text-zinc-600'} />
+                  <span className={`text-[10px] font-semibold ${sd.fresh ? 'text-blue-400' : 'text-zinc-500'}`}>
+                    {sd.label}
+                  </span>
+                </div>
+              );
+            })()}
             <div className="flex justify-between items-center text-[11px] font-bold text-zinc-400">
               {editingPhoneId === lead.id ? (
                 <div className="flex items-center gap-1.5 flex-1 mr-2" onClick={(e) => e.stopPropagation()}>
@@ -2041,6 +2095,14 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
           </div>
           {expandedLead === lead.id && (
             <div className="bg-zinc-950/50 p-6 border-t border-white/5 animate-slide-down space-y-4">
+              {/* Data e hora completas do pedido */}
+              <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <Clock size={12} className="text-zinc-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-0.5">Pedido realizado em</p>
+                  <p className="text-[11px] font-semibold text-zinc-300 capitalize">{fullDate(lead._raw?.created_at)}</p>
+                </div>
+              </div>
               {(lead.items || []).map((item, idx) => (
                 <div key={idx} className="flex gap-4 bg-zinc-900 p-4 rounded-2xl items-center border border-white/5 shadow-inner">
                   <div className="w-16 h-20 bg-zinc-950 rounded-xl overflow-hidden shrink-0 border border-white/10 shadow-2xl">
