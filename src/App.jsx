@@ -337,12 +337,12 @@ const AdminHeader = ({ handleLogout, handleBackToStore }) => (
   </div>
 );
 
-const AdminDashboard = ({ leads, products }) => {
+const AdminDashboard = ({ leads, products, loading }) => {
   const validLeads = (leads || []).filter(l => l.status !== 'CANCELADO');
   const concludedLeads = (leads || []).filter(l => l.status === 'CONCLUÍDO');
   const totalRevenue = concludedLeads.reduce((a, b) => a + parseFloat(b.value || 0), 0);
   const avgTicket = concludedLeads.length > 0 ? (totalRevenue / concludedLeads.length) : 0;
-  
+
   // PROTEÇÃO CONTRA CRASH: (lead.items || []) blinda o sistema contra leads antigos sem items
   const totalItemsSold = concludedLeads.reduce((acc, lead) => acc + (lead.items || []).reduce((sum, item) => sum + (item.quantity || item.qty || 0), 0), 0);
 
@@ -367,70 +367,135 @@ const AdminDashboard = ({ leads, products }) => {
     });
     return days;
   }, [concludedLeads]);
-  
+
+  const todayKey = new Date().toISOString().slice(0,10);
   const outOfStockProducts = (products || []).filter(p => !p.is_kit && p.stock === 0);
 
-  const statusColors = { 'NOVO': 'text-blue-500 bg-blue-500/10', 'EM ATENDIMENTO': 'text-amber-500 bg-amber-500/10', 'CONCLUÍDO': 'text-emerald-500 bg-emerald-500/10', 'CANCELADO': 'text-red-500 bg-red-500/10' };
+  const shimmer = 'rounded-[24px] bg-[length:200%_100%] bg-gradient-to-r from-[#2a2a2e] via-[#333337] to-[#2a2a2e] animate-[skeleton-shine_1.5s_ease-in-out_infinite]';
+
+  if (loading) {
+    return (
+      <div className="p-4 space-y-3 pb-24">
+        <div className={`h-52 rounded-[32px] bg-[length:200%_100%] bg-gradient-to-r from-[#2a2a2e] via-[#333337] to-[#2a2a2e] animate-[skeleton-shine_1.5s_ease-in-out_infinite]`} />
+        <div className="grid grid-cols-2 gap-3">
+          <div className={`h-24 ${shimmer}`} />
+          <div className={`h-24 ${shimmer}`} />
+          <div className={`col-span-2 h-20 ${shimmer}`} />
+        </div>
+        <div className={`h-60 rounded-[32px] bg-[length:200%_100%] bg-gradient-to-r from-[#2a2a2e] via-[#333337] to-[#2a2a2e] animate-[skeleton-shine_1.5s_ease-in-out_infinite]`} />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6 animate-in pb-24">
-      <div className="bg-gradient-to-br from-emerald-900 to-zinc-950 p-6 rounded-[32px] border border-emerald-500/20 shadow-2xl relative overflow-hidden">
-        <div className="absolute -right-4 -top-4 opacity-10"><DollarSign size={180}/></div>
-        <p className="text-[10px] font-black text-emerald-500/80 uppercase tracking-widest mb-1 relative z-10 flex items-center gap-2"><TrendingUp size={12}/> Vendas Totais / Receita</p>
-        <h3 className="text-4xl font-black text-white italic relative z-10 tracking-tighter shadow-black drop-shadow-md">R$ {totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</h3>
-        <div className="h-24 mt-6 relative z-10 -mx-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{top: 5, right: 6, bottom: 0, left: 6}}>
-              <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#71717a', fontWeight: 900 }} axisLine={false} tickLine={false} />
-              <ReTooltip
-                cursor={{ fill: 'rgba(16,185,129,0.08)' }}
-                contentStyle={{ background: '#09090b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, fontSize: 11, fontWeight: 900 }}
-                labelStyle={{ color: '#a1a1aa' }}
-                formatter={(v, n) => n === 'valor' ? [`R$ ${Number(v).toFixed(2)}`, 'Vendas'] : [v, 'Pedidos']}
-              />
-              <Bar dataKey="valor" radius={[6,6,0,0]}>
-                {chartData.map((e, i) => (<Cell key={i} fill={e.valor > 0 ? '#10b981' : '#27272a'} />))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+    <div className="p-4 space-y-3 animate-in pb-24">
+
+      {/* ── Card Vendas Totais / Receita ── */}
+      <div className="relative overflow-hidden rounded-[32px] border shadow-2xl" style={{ background: 'linear-gradient(135deg, #0d2b1f 0%, #0a1f16 100%)', borderColor: 'rgba(0,200,150,0.12)' }}>
+        {/* Noise texture */}
+        <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.035, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`, backgroundSize: '200px' }} />
+        {/* Watermark $ */}
+        <div className="absolute -right-3 -top-5 select-none pointer-events-none" style={{ opacity: 0.06, fontSize: 176, fontWeight: 900, color: '#fff', lineHeight: 1, fontStyle: 'italic', fontFamily: 'sans-serif' }}>$</div>
+        <div className="p-6 relative z-10">
+          <p className="text-[10px] font-bold uppercase flex items-center gap-2 mb-1" style={{ color: 'rgba(0,200,150,0.7)', letterSpacing: '0.18em' }}>
+            <TrendingUp size={11}/> Vendas Totais / Receita
+          </p>
+          <h3 className="font-black text-white italic leading-none drop-shadow-md" style={{ fontSize: '2.3rem', letterSpacing: '-0.03em' }}>
+            R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </h3>
+          <div className="h-24 mt-5 -mx-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 4, right: 6, bottom: 0, left: 6 }}>
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.38)', fontWeight: 700, letterSpacing: '0.05em' }} axisLine={false} tickLine={false} />
+                <ReTooltip
+                  cursor={{ fill: 'rgba(0,200,150,0.06)' }}
+                  contentStyle={{ background: '#0a0a0c', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, fontSize: 11, fontWeight: 900 }}
+                  labelStyle={{ color: '#6b7280' }}
+                  formatter={(v) => [`R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Vendas']}
+                />
+                <Bar dataKey="valor" radius={[6, 6, 0, 0]} isAnimationActive animationBegin={0} animationDuration={800}>
+                  {chartData.map((e, i) => (
+                    <Cell
+                      key={i}
+                      fill={e.key === todayKey ? '#00c896' : e.valor > 0 ? 'rgba(0,200,150,0.45)' : '#27272a'}
+                      style={e.key === todayKey ? { filter: 'drop-shadow(0 0 5px rgba(0,200,150,0.55))' } : {}}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-zinc-900 p-5 rounded-[24px] border border-white/5 shadow-xl flex flex-col justify-between">
-          <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><ShoppingBag size={12}/> Pedidos</p>
-          <h3 className="text-2xl font-black text-white">{validLeads.length}</h3>
+      {/* ── Cards Pedidos + Peças + Ticket Médio ── */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-zinc-900 rounded-[24px] shadow-xl flex flex-col justify-between" style={{ padding: '18px 20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <p className="text-[10px] font-bold uppercase flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em' }}>
+            <ShoppingBag size={14} style={{ color: 'rgba(0,200,150,0.6)' }}/> Pedidos
+          </p>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 8, paddingTop: 8 }}>
+            <h3 className="font-bold text-white" style={{ fontSize: '2rem' }}>{validLeads.length}</h3>
+          </div>
         </div>
-        <div className="bg-zinc-900 p-5 rounded-[24px] border border-white/5 shadow-xl flex flex-col justify-between">
-          <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Package size={12}/> Peças Vendidas</p>
-          <h3 className="text-2xl font-black text-white">{totalItemsSold}</h3>
+        <div className="bg-zinc-900 rounded-[24px] shadow-xl flex flex-col justify-between" style={{ padding: '18px 20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <p className="text-[10px] font-bold uppercase flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em' }}>
+            <Package size={14} style={{ color: 'rgba(0,200,150,0.6)' }}/> Peças Vendidas
+          </p>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 8, paddingTop: 8 }}>
+            <h3 className="font-bold text-white" style={{ fontSize: '2rem' }}>{totalItemsSold}</h3>
+          </div>
         </div>
-        <div className="col-span-2 bg-zinc-900 p-5 rounded-[24px] border border-white/5 shadow-xl flex flex-col justify-between">
-          <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><BarChart3 size={12}/> Ticket Médio (TM)</p>
-          <h3 className="text-2xl font-black text-emerald-500 tracking-tighter">{formatBRL(avgTicket)}</h3>
+        <div className="col-span-2 bg-zinc-900 rounded-[24px] shadow-xl flex flex-col justify-between" style={{ padding: '18px 20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <p className="text-[10px] font-bold uppercase flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em' }}>
+            <BarChart3 size={14} style={{ color: 'rgba(0,200,150,0.6)' }}/> Ticket Médio (TM)
+          </p>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 8, paddingTop: 8 }} className="flex items-center gap-2">
+            <h3 className="font-bold" style={{ fontSize: '1.8rem', color: '#00c896' }}>{formatBRL(avgTicket)}</h3>
+            <TrendingUp size={15} style={{ color: '#00c896', opacity: 0.65 }} />
+          </div>
         </div>
       </div>
 
-      <div className="bg-zinc-900/50 p-6 rounded-[32px] border border-white/5 space-y-4">
-         <h4 className="font-black text-[11px] uppercase tracking-widest text-white flex items-center gap-2"><Clock size={14} className="text-zinc-400"/> Pedidos Recentes</h4>
-         {(leads || []).slice(0, 4).length === 0 ? (
-             <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Nenhuma atividade ainda.</p>
-         ) : (
-             <div className="space-y-3">
-                 {(leads || []).slice(0, 4).map((l, i) => (
-                     <div key={i} className="flex justify-between items-center border-b border-white/5 pb-3 last:border-0 last:pb-0">
-                         <div className="flex flex-col">
-                             <span className="text-[11px] font-black uppercase text-white truncate w-32">{(l.name || 'Desconhecido').split(' ')[0]}</span>
-                             <span className="text-[9px] font-bold text-zinc-500">#{l.orderNumber || '0000'}</span>
-                         </div>
-                         <div className="flex flex-col items-end gap-1">
-                             <span className="text-[11px] font-black text-emerald-500">{formatBRL(l.value || 0)}</span>
-                             <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-full ${statusColors[l.status || 'NOVO']}`}>{l.status || 'NOVO'}</span>
-                         </div>
-                     </div>
-                 ))}
-             </div>
-         )}
+      {/* ── Lista Pedidos Recentes ── */}
+      <div className="rounded-[32px] border p-5" style={{ background: 'rgba(24,24,27,0.5)', borderColor: 'rgba(255,255,255,0.05)' }}>
+        <h4 className="text-[11px] font-bold uppercase flex items-center gap-2 mb-4" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.12em' }}>
+          <Clock size={13}/> Pedidos Recentes
+        </h4>
+        {(leads || []).slice(0, 4).length === 0 ? (
+          <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Nenhuma atividade ainda.</p>
+        ) : (
+          <div>
+            {(leads || []).slice(0, 4).map((l, i) => {
+              const initial = (l.name || 'D').trim().charAt(0).toUpperCase();
+              const st = l.status || 'NOVO';
+              const badgeStyle =
+                st === 'NOVO'        ? { color: '#60a5fa', background: 'rgba(59,130,246,0.2)' }
+                : st === 'CONCLUÍDO' ? { color: '#00c896', background: 'rgba(0,200,150,0.15)' }
+                : st === 'CANCELADO' ? { color: '#f87171', background: 'rgba(239,68,68,0.15)' }
+                :                     { color: '#fbbf24', background: 'rgba(245,158,11,0.2)' };
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 py-3 active:scale-[0.98] transition-transform cursor-pointer"
+                  style={{ borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                >
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-black text-[13px]" style={{ background: '#0d2b1f', color: '#00c896' }}>
+                    {initial}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-black text-white uppercase truncate">{(l.name || 'Desconhecido').split(' ')[0]}</p>
+                    <p className="text-[9px] font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>#{l.orderNumber || '0000'}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[11px] font-black" style={{ color: '#00c896' }}>{formatBRL(l.value || 0)}</span>
+                    <span className="text-[9px] font-black uppercase rounded-full" style={{ ...badgeStyle, padding: '3px 8px' }}>{st}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
     </div>
@@ -2742,6 +2807,7 @@ function App() {
 
   // ======= PEDIDOS (LEADS): agora vivem no Supabase =======
   const [leads, setLeadsState] = useState([]);
+  const [leadsLoaded, setLeadsLoaded] = useState(false);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const seenOrderIdsRef = useRef(null); // Set dos IDs já vistos
   const isAdminRef = useRef(false);
@@ -2814,6 +2880,7 @@ function App() {
         if (!alive) return;
         const mapped = rows.map(mapOrderRow);
         setLeadsState(mapped);
+        setLeadsLoaded(true);
 
         // Detecta pedidos novos (depois da 1a carga)
         const currentIds = new Set(mapped.map(o => o.id));
@@ -3775,7 +3842,7 @@ function App() {
           {/* CONTEÚDO PRINCIPAL */}
           <main className="flex-1 max-w-[640px] mx-auto lg:max-w-none lg:mx-0 pb-24 lg:pb-8">
             <AdminTabErrorBoundary resetKey={adminTab}>
-              {adminTab === 'dashboard' && <AdminDashboard leads={leads} products={products} />}
+              {adminTab === 'dashboard' && <AdminDashboard leads={leads} products={products} loading={!leadsLoaded} />}
               {adminTab === 'inventory' && <AdminInventory products={products} setProducts={setProducts} showToast={showToast} availableCollections={availableCollections} productImageFile={productImageFile} setProductImageFile={setProductImageFile} uploadImage={uploadImage} />}
               {adminTab === 'leads' && <AdminLeads leads={leads} setLeads={setLeads} products={products} setProducts={setProducts} showToast={showToast} config={config} />}
               {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} />}
@@ -3792,7 +3859,7 @@ function App() {
             <button
               key={item.key}
               onClick={() => { setAdminTab(item.key); if (item.key === 'leads') setNewOrdersCount(0); }}
-              className={`flex flex-col items-center gap-1 transition-colors relative ${adminTab === item.key ? 'text-emerald-500' : 'text-zinc-500'}`}
+              className={`flex flex-col items-center gap-1 transition-colors duration-200 relative ${adminTab === item.key ? 'text-emerald-500' : 'text-zinc-500'}`}
             >
               {item.icon}
               {item.badge && (
@@ -3800,7 +3867,7 @@ function App() {
                   {item.badge}
                 </span>
               )}
-              <span className="text-[8px] font-black uppercase">{item.label}</span>
+              <span className={`text-[8px] uppercase transition-all duration-200 ${adminTab === item.key ? 'font-black' : 'font-bold'}`}>{item.label}</span>
             </button>
           ))}
         </nav>
