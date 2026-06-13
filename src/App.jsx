@@ -339,7 +339,10 @@ const AdminHeader = ({ handleLogout, handleBackToStore }) => (
 
 const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
   const shouldReduceMotion = useReducedMotion();
-  const [period, setPeriod] = useState('7d'); // 'today' | '7d' | '30d' | 'month'
+  const [period, setPeriod] = useState('7d'); // 'today' | '7d' | '30d' | 'month' | 'custom'
+  const [customDate, setCustomDate] = useState(null); // Date — dia específico escolhido
+  const [showCal, setShowCal] = useState(false);
+  const [calMonth, setCalMonth] = useState(() => new Date());
 
   // ── HELPERS ───────────────────────────────────────────────────────────
   const CARD  = { background: '#10131A', border: '1px solid rgba(255,255,255,0.06)' };
@@ -379,6 +382,13 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
         const pS    = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const pE    = new Date(start);
         return { start, end: now, prevStart: pS, prevEnd: pE };
+      }
+      case 'custom': {
+        if (!customDate) return { start: bod, end: now, prevStart: null, prevEnd: null };
+        const start = new Date(customDate); start.setHours(0, 0, 0, 0);
+        const end   = new Date(customDate); end.setHours(23, 59, 59, 999);
+        const pS    = new Date(start); pS.setDate(pS.getDate() - 1);
+        return { start, end, prevStart: pS, prevEnd: new Date(start) };
       }
       default: return { start: bod, end: now, prevStart: null, prevEnd: null };
     }
@@ -428,7 +438,7 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
   // ── GRÁFICO ADAPTATIVO ────────────────────────────────────────────────
   // Hoje → 24 barras por hora | 7d/30d/mês → barras por dia
   const chartData = useMemo(() => {
-    if (period === 'today') {
+    if (period === 'today' || period === 'custom') {
       const hours = Array.from({ length: 24 }, (_, i) => ({ key: i, label: `${String(i).padStart(2,'0')}h`, valor: 0, pedidos: 0 }));
       periodConcluded.forEach(l => {
         const raw = l._raw?.created_at; if (!raw) return;
@@ -460,8 +470,20 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
 
   const todayKey   = new Date().toISOString().slice(0,10);
   const currentHour = new Date().getHours();
-  const chartHighlightKey = period === 'today' ? currentHour : todayKey;
-  const chartInterval = period === 'today' ? 3 : period === '30d' ? 4 : period === 'month' ? 5 : 0;
+  const isHourlyPeriod = period === 'today' || period === 'custom';
+  const chartHighlightKey = isHourlyPeriod ? currentHour : todayKey;
+  const chartInterval = isHourlyPeriod ? 3 : period === '30d' ? 4 : period === 'month' ? 5 : 0;
+
+  // Monta grid do calendário: null = célula vazia, Date = dia
+  const buildCalendarDays = (month) => {
+    const y = month.getFullYear(), m = month.getMonth();
+    const firstDow = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < firstDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(y, m, d));
+    return cells;
+  };
 
   // ── TOP PRODUTOS ──────────────────────────────────────────────────────
   const topProducts = useMemo(() => {
@@ -563,8 +585,11 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
   );
 
   // Labels
-  const periodLabel = { today: 'Hoje', '7d': '7 dias', '30d': '30 dias', month: 'Este mês' }[period];
-  const chartTitle  = period === 'today' ? 'Vendas · Hoje (por hora)' : `Vendas · ${periodLabel}`;
+  const customLabel = customDate
+    ? customDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    : 'Dia';
+  const periodLabel = { today: 'Hoje', '7d': '7 dias', '30d': '30 dias', month: 'Este mês', custom: customLabel }[period] ?? '7 dias';
+  const chartTitle  = isHourlyPeriod ? `Vendas · ${periodLabel} (por hora)` : `Vendas · ${periodLabel}`;
 
   // Delta badge helper
   const DeltaBadge = ({ cur, prev }) => {
@@ -601,14 +626,24 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
               whileTap={{ scale: 0.95 }}
               onClick={() => setPeriod(val)}
               className="flex-1 py-2 rounded-xl text-[11px] font-semibold transition-colors"
-              style={{
-                background: period === val ? '#00E08A' : 'transparent',
-                color: period === val ? '#050505' : '#71717A',
-              }}
+              style={{ background: period === val ? '#00E08A' : 'transparent', color: period === val ? '#050505' : '#71717A' }}
             >
               {lbl}
             </motion.button>
           ))}
+          {/* Botão calendário */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowCal(true)}
+            className="flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-colors"
+            style={{
+              background: period === 'custom' ? '#00E08A' : 'transparent',
+              color: period === 'custom' ? '#050505' : '#71717A',
+              minWidth: 44,
+            }}
+          >
+            {period === 'custom' ? customLabel : <Clock size={13}/>}
+          </motion.button>
         </div>
       </motion.div>
 
@@ -826,6 +861,108 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
           )}
         </div>
       </motion.div>
+
+      {/* ── CALENDÁRIO BOTTOM SHEET ── */}
+      <AnimatePresence>
+        {showCal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="cal-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setShowCal(false)}
+              className="fixed inset-0 z-40"
+              style={{ background: 'rgba(0,0,0,0.65)' }}
+            />
+            {/* Sheet */}
+            <motion.div
+              key="cal-sheet"
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+              className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl"
+              style={{ background: '#10131A', border: '1px solid rgba(255,255,255,0.08)', paddingBottom: 'env(safe-area-inset-bottom, 24px)' }}
+            >
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
+              </div>
+
+              <div className="px-4 pb-4">
+                {/* Mês nav */}
+                <div className="flex items-center justify-between py-3">
+                  <motion.button whileTap={{ scale: 0.9 }}
+                    onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl"
+                    style={{ background: 'rgba(255,255,255,0.06)' }}>
+                    <ChevronLeft size={16} style={{ color: '#A1A1AA' }}/>
+                  </motion.button>
+                  <span className="text-[13px] font-semibold capitalize" style={{ color: '#FFFFFF' }}>
+                    {calMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <motion.button whileTap={{ scale: 0.9 }}
+                    onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl"
+                    style={{ background: 'rgba(255,255,255,0.06)' }}>
+                    <ChevronRight size={16} style={{ color: '#A1A1AA' }}/>
+                  </motion.button>
+                </div>
+
+                {/* Dias da semana */}
+                <div className="grid grid-cols-7 mb-1">
+                  {['D','S','T','Q','Q','S','S'].map((d, i) => (
+                    <div key={i} className="text-center text-[10px] font-semibold py-1" style={{ color: '#71717A' }}>{d}</div>
+                  ))}
+                </div>
+
+                {/* Grade de dias */}
+                <div className="grid grid-cols-7 gap-y-0.5">
+                  {buildCalendarDays(calMonth).map((d, i) => {
+                    if (!d) return <div key={i} />;
+                    const todayD    = new Date(); todayD.setHours(0,0,0,0);
+                    const isToday   = d.getTime() === todayD.getTime();
+                    const isSel     = customDate && d.toDateString() === customDate.toDateString();
+                    const isFuture  = d > new Date();
+                    return (
+                      <motion.button
+                        key={i}
+                        whileTap={isFuture ? {} : { scale: 0.88 }}
+                        disabled={isFuture}
+                        onClick={() => { setCustomDate(d); setPeriod('custom'); setShowCal(false); }}
+                        className="aspect-square flex items-center justify-center rounded-xl text-[12px] font-medium mx-0.5 my-0.5"
+                        style={{
+                          background: isSel ? '#00E08A' : isToday ? 'rgba(0,224,138,0.15)' : 'transparent',
+                          color: isSel ? '#050505' : isToday ? '#00E08A' : isFuture ? 'rgba(255,255,255,0.18)' : '#FFFFFF',
+                          fontWeight: isToday || isSel ? 700 : 400,
+                        }}
+                      >
+                        {d.getDate()}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span className="text-[11px]" style={{ color: '#71717A' }}>
+                    {customDate
+                      ? customDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+                      : 'Selecione um dia'}
+                  </span>
+                  {customDate && (
+                    <motion.button whileTap={{ scale: 0.95 }}
+                      onClick={() => { setCustomDate(null); setPeriod('7d'); setShowCal(false); }}
+                      className="text-[10px] font-semibold px-3 py-1.5 rounded-xl"
+                      style={{ color: '#FF5A5A', background: 'rgba(255,90,90,0.1)' }}>
+                      Limpar
+                    </motion.button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
     </motion.div>
   );
