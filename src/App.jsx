@@ -25,6 +25,7 @@ import AdminRastreio from './components/AdminRastreio';
 import AdminCRM from './components/AdminCRM';
 import { criarAtendimentoFromPedido } from './lib/crm';
 import { fetchRatingsBatch, fetchProductReviews, fetchExistingReview, submitReview } from './lib/reviews';
+import KpiCard from './components/KpiCard';
 
 // ==========================================
 // 1. CONFIGURAÇÃO E DADOS INICIAIS
@@ -314,28 +315,59 @@ const createMetaEventId = () => {
 // 3. COMPONENTES ADMIN DESACOPLADOS
 // ==========================================
 
-const AdminHeader = ({ handleLogout, handleBackToStore }) => (
-  <div className="bg-zinc-950 text-white px-6 py-6 flex justify-between items-center sticky top-0 z-50 border-b border-white/5">
-    <div className="flex items-center gap-3">
-      <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.3)] relative overflow-hidden">
-        <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-        <LayoutDashboard size={20} className="text-zinc-950 relative z-10"/>
+const AdminHeader = ({ handleLogout, handleBackToStore, newOrdersCount = 0, onBell }) => {
+  // Relógio ao vivo — sensação de centro de operações
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const date = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+
+  return (
+    <div className="px-4 py-3 flex justify-between items-center sticky top-0 z-50 border-b" style={{ background: '#050505', borderColor: 'rgba(255,255,255,0.06)' }}>
+      {/* Logo + título + status online */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#00E08A' }}>
+          <LayoutDashboard size={18} style={{ color: '#050505' }} />
+        </div>
+        <div className="min-w-0">
+          <h2 className="font-bold text-[13px] leading-none uppercase tracking-tight text-white truncate">Master Control</h2>
+          <p className="text-[9px] font-medium tracking-wider uppercase flex items-center gap-1 mt-1" style={{ color: '#00E08A' }}>
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inset-0 rounded-full opacity-60" style={{ background: '#00E08A' }} />
+              <span className="relative rounded-full h-1.5 w-1.5" style={{ background: '#00E08A' }} />
+            </span>
+            Online
+          </p>
+        </div>
       </div>
-      <div>
-        <h2 className="font-black italic text-lg leading-none uppercase tracking-tighter">Master Control</h2>
-        <p className="text-[9px] font-bold text-zinc-500 tracking-[0.2em] uppercase flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Operacional</p>
+
+      {/* Data/hora + notificações + ações */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-col items-end mr-0.5">
+          <span className="text-[12px] font-bold text-white leading-none" style={{ fontVariantNumeric: 'tabular-nums' }}>{time}</span>
+          <span className="text-[9px] mt-0.5" style={{ color: '#71717A' }}>{date}</span>
+        </div>
+        <button onClick={onBell} className="relative w-9 h-9 flex items-center justify-center rounded-xl transition-colors hover:bg-white/10" style={{ background: 'rgba(255,255,255,0.06)' }} aria-label="Pedidos novos">
+          <Bell size={16} style={{ color: '#A1A1AA' }} />
+          {newOrdersCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold animate-pulse" style={{ background: '#FF5A5A', color: '#fff' }}>
+              {newOrdersCount > 99 ? '99+' : newOrdersCount}
+            </span>
+          )}
+        </button>
+        <button onClick={handleBackToStore} title="Voltar para a loja sem deslogar" className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors hover:bg-white/10" style={{ background: 'rgba(255,255,255,0.06)' }} aria-label="Voltar para a loja" data-testid="admin-back-to-store">
+          <ArrowLeft size={16} style={{ color: '#A1A1AA' }} />
+        </button>
+        <button onClick={handleLogout} className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors hover:bg-zinc-200" style={{ background: '#FFFFFF' }} aria-label="Sair">
+          <LogOut size={15} style={{ color: '#050505' }} />
+        </button>
       </div>
     </div>
-    <div className="flex items-center gap-2">
-      <button onClick={handleBackToStore} title="Voltar para a loja sem deslogar" className="px-3 py-2 bg-white/5 border border-white/10 text-white rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-colors flex items-center gap-2" data-testid="admin-back-to-store">
-        <ArrowLeft size={12} /> Loja
-      </button>
-      <button onClick={handleLogout} className="px-4 py-2 bg-white text-zinc-950 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-        Sair <LogOut size={12} />
-      </button>
-    </div>
-  </div>
-);
+  );
+};
 
 const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
   const shouldReduceMotion = useReducedMotion();
@@ -438,12 +470,17 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
   // ── GRÁFICO ADAPTATIVO ────────────────────────────────────────────────
   // Hoje → 24 barras por hora | 7d/30d/mês → barras por dia
   const chartData = useMemo(() => {
+    // bucket: valor/pedidos = concluídos (barra do gráfico); orders/concluded/items = base dos sparklines
+    const mk = (key, label) => ({ key, label, valor: 0, pedidos: 0, orders: 0, concluded: 0, items: 0 });
+    const itemsOf = (l) => (l.items || []).reduce((s, it) => s + (it.quantity || it.qty || 0), 0);
+
     if (period === 'today' || period === 'custom') {
-      const hours = Array.from({ length: 24 }, (_, i) => ({ key: i, label: `${String(i).padStart(2,'0')}h`, valor: 0, pedidos: 0 }));
+      const hours = Array.from({ length: 24 }, (_, i) => mk(i, `${String(i).padStart(2,'0')}h`));
+      periodLeads.forEach(l => { const raw = l._raw?.created_at; if (!raw) return; hours[new Date(raw).getHours()].orders += 1; });
       periodConcluded.forEach(l => {
         const raw = l._raw?.created_at; if (!raw) return;
-        const h = new Date(raw).getHours();
-        hours[h].valor += Number(l.value || 0); hours[h].pedidos += 1;
+        const b = hours[new Date(raw).getHours()];
+        b.valor += Number(l.value || 0); b.pedidos += 1; b.concluded += 1; b.items += itemsOf(l);
       });
       return hours;
     }
@@ -456,17 +493,26 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
       const label = period === '7d'
         ? cur.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','').toUpperCase().slice(0,3)
         : String(cur.getDate());
-      days.push({ key, label, valor: 0, pedidos: 0 });
+      days.push(mk(key, label));
       cur.setDate(cur.getDate() + 1);
     }
+    const findDay = (k) => days.find(x => x.key === k);
+    periodLeads.forEach(l => { const raw = l._raw?.created_at; if (!raw) return; const d = findDay(new Date(raw).toISOString().slice(0,10)); if (d) d.orders += 1; });
     periodConcluded.forEach(l => {
       const raw = l._raw?.created_at; if (!raw) return;
-      const k = new Date(raw).toISOString().slice(0,10);
-      const d = days.find(x => x.key === k);
-      if (d) { d.valor += Number(l.value || 0); d.pedidos += 1; }
+      const d = findDay(new Date(raw).toISOString().slice(0,10));
+      if (d) { d.valor += Number(l.value || 0); d.pedidos += 1; d.concluded += 1; d.items += itemsOf(l); }
     });
     return days;
-  }, [period, periodConcluded, periodBounds]);
+  }, [period, periodLeads, periodConcluded, periodBounds]);
+
+  // ── SÉRIES DOS SPARKLINES (derivadas dos buckets) ─────────────────────
+  const spark = useMemo(() => ({
+    orders: chartData.map(b => b.orders),
+    ticket: chartData.map(b => (b.concluded ? b.valor / b.concluded : 0)),
+    items:  chartData.map(b => b.items),
+    conv:   chartData.map(b => (b.orders ? Math.round(b.concluded / b.orders * 100) : 0)),
+  }), [chartData]);
 
   const todayKey   = new Date().toISOString().slice(0,10);
   const currentHour = new Date().getHours();
@@ -591,17 +637,6 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
   const periodLabel = { today: 'Hoje', '7d': '7 dias', '30d': '30 dias', month: 'Este mês', custom: customLabel }[period] ?? '7 dias';
   const chartTitle  = isHourlyPeriod ? `Vendas · ${periodLabel} (por hora)` : `Vendas · ${periodLabel}`;
 
-  // Delta badge helper
-  const DeltaBadge = ({ cur, prev }) => {
-    const d = pct(cur, prev);
-    if (d === null) return null;
-    return (
-      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md" style={{ color: d >= 0 ? '#00E08A' : '#FF5A5A', background: d >= 0 ? 'rgba(0,224,138,0.1)' : 'rgba(255,90,90,0.1)' }}>
-        {d >= 0 ? '+' : ''}{d}%
-      </span>
-    );
-  };
-
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="p-4 space-y-3 pb-32">
 
@@ -650,58 +685,62 @@ const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
       {/* ── 3. KPIs ── */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 gap-2">
 
-        {/* Faturamento — full width */}
-        <div className="col-span-2 rounded-2xl p-4" style={CARD}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-medium uppercase" style={LABEL}>Faturamento · {periodLabel}</p>
-            <DeltaBadge cur={periodRevenue} prev={prevRevenue} />
-          </div>
-          <span className="font-bold text-white leading-none" style={{ fontSize: '2rem', ...NUM }}>{formatBRL(periodRevenue)}</span>
-        </div>
+        {/* Faturamento — full width (sparkline omitido: gráfico adaptativo logo abaixo) */}
+        <KpiCard
+          fullWidth
+          label={`Faturamento · ${periodLabel}`}
+          value={formatBRL(periodRevenue)}
+          valueSize="2rem"
+          cur={periodRevenue}
+          prev={prevRevenue}
+        />
 
         {/* Pedidos */}
-        <div className="rounded-2xl p-4" style={CARD}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-medium uppercase" style={LABEL}>Pedidos</p>
-            <DeltaBadge cur={periodOrders} prev={prevOrders} />
-          </div>
-          <span className="font-bold text-white" style={{ fontSize: '1.75rem', ...NUM }}>{periodOrders}</span>
-        </div>
+        <KpiCard
+          label="Pedidos"
+          value={periodOrders}
+          cur={periodOrders}
+          prev={prevOrders}
+          series={spark.orders}
+        />
 
         {/* Ticket Médio */}
-        <div className="rounded-2xl p-4" style={CARD}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-medium uppercase" style={LABEL}>Ticket Médio</p>
-            <DeltaBadge cur={periodTicket} prev={prevTicket} />
-          </div>
-          <span className="font-bold" style={{ fontSize: '1.75rem', color: '#00E08A', ...NUM }}>{formatBRL(periodTicket)}</span>
-        </div>
+        <KpiCard
+          label="Ticket Médio"
+          value={formatBRL(periodTicket)}
+          valueColor="#00E08A"
+          cur={periodTicket}
+          prev={prevTicket}
+          series={spark.ticket}
+        />
 
         {/* Peças Vendidas */}
-        <div className="rounded-2xl p-4" style={CARD}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-medium uppercase" style={LABEL}>Peças Vendidas</p>
-            <DeltaBadge cur={periodItems} prev={prevItems} />
-          </div>
-          <span className="font-bold text-white" style={{ fontSize: '1.75rem', ...NUM }}>{periodItems}</span>
-        </div>
+        <KpiCard
+          label="Peças Vendidas"
+          value={periodItems}
+          cur={periodItems}
+          prev={prevItems}
+          series={spark.items}
+        />
 
         {/* Taxa de Conversão */}
-        <div className="rounded-2xl p-4" style={CARD}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-medium uppercase" style={LABEL}>Conversão</p>
-            <DeltaBadge cur={convRate} prev={prevConvRate} />
-          </div>
-          <span className="font-bold" style={{ fontSize: '1.75rem', color: convRate >= 50 ? '#00E08A' : convRate >= 25 ? '#FFB800' : '#FF5A5A', ...NUM }}>{convRate}%</span>
-        </div>
+        <KpiCard
+          label="Conversão"
+          value={`${convRate}%`}
+          valueColor={convRate >= 50 ? '#00E08A' : convRate >= 25 ? '#FFB800' : '#FF5A5A'}
+          accent={convRate >= 50 ? '#00E08A' : convRate >= 25 ? '#FFB800' : '#FF5A5A'}
+          cur={convRate}
+          prev={prevConvRate}
+          series={spark.conv}
+        />
 
-        {/* Sem Estoque — global, sempre */}
-        <div className="rounded-2xl p-4" style={{ ...CARD, borderColor: outOfStockProducts.length > 0 ? 'rgba(255,90,90,0.25)' : 'rgba(255,255,255,0.06)' }}>
-          <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Sem Estoque</p>
-          <span className="font-bold" style={{ fontSize: '1.75rem', color: outOfStockProducts.length > 0 ? '#FF5A5A' : '#FFFFFF', ...NUM }}>
-            {outOfStockProducts.length}
-          </span>
-        </div>
+        {/* Sem Estoque — global, snapshot (sem série temporal) */}
+        <KpiCard
+          label="Sem Estoque"
+          value={outOfStockProducts.length}
+          valueColor={outOfStockProducts.length > 0 ? '#FF5A5A' : '#FFFFFF'}
+          borderColor={outOfStockProducts.length > 0 ? 'rgba(255,90,90,0.25)' : undefined}
+        />
 
       </motion.div>
 
@@ -4343,7 +4382,7 @@ function App() {
   if (isAdmin) {
     return (
       <div className="app-shell min-h-screen bg-zinc-950 font-sans text-zinc-100 selection:bg-emerald-500 selection:text-zinc-950">
-        <AdminHeader handleLogout={handleLogout} handleBackToStore={handleBackToStore} />
+        <AdminHeader handleLogout={handleLogout} handleBackToStore={handleBackToStore} newOrdersCount={newOrdersCount} onBell={() => { setAdminTab('leads'); setNewOrdersCount(0); }} />
 
         <div className="lg:flex">
           {/* SIDEBAR — visível só no desktop */}
