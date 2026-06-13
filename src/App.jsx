@@ -4466,7 +4466,7 @@ function App() {
       {toast && <div className="fixed top-24 lg:top-20 left-1/2 -translate-x-1/2 z-[200] animate-slide-down"><div className="px-6 py-3 rounded-full font-black text-[10px] uppercase bg-white text-zinc-950 shadow-2xl">{toast.message}</div></div>}
 
       <header className="sticky top-0 z-40 isolate border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20 lg:h-[68px]" style={{ background: 'var(--bg-header)', backgroundColor: 'var(--bg-header)', backgroundImage: 'none', opacity: 1, backdropFilter: 'none', WebkitBackdropFilter: 'none', filter: 'none', mixBlendMode: 'normal' }}>
-        <div className="w-full px-6 lg:px-16 h-full flex items-center gap-4">
+        <div className="w-full max-w-[1280px] mx-auto px-6 lg:px-10 h-full flex items-center gap-4">
 
           {/* LOGO */}
           <button
@@ -4609,7 +4609,7 @@ function App() {
       {(activeBanners.length > 0 || !bannersLoaded) && (
         <section
           ref={bannerRef}
-          className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-auto lg:min-h-[500px] lg:max-h-[640px] overflow-hidden select-none"
+          className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-auto lg:min-h-[440px] lg:max-h-[520px] overflow-hidden select-none"
           style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
@@ -4749,7 +4749,7 @@ function App() {
           <input id="search-input" placeholder="O que você procura?" data-testid="input-search" className="w-full border py-4 pl-14 pr-6 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
         
-        <div id="catalog-section" className="flex gap-3 lg:gap-5 overflow-x-auto lg:overflow-x-visible lg:flex-wrap no-scrollbar pb-1 lg:pb-0 mask-linear lg:[mask-image:none] native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
+        <div id="catalog-section" className="flex gap-3 lg:gap-5 overflow-x-auto lg:overflow-x-visible lg:flex-wrap lg:justify-center no-scrollbar pb-1 lg:pb-0 mask-linear lg:[mask-image:none] native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
           {/* Botão destacado de KITS — sempre primeiro */}
           {(products || []).some(p => p.is_kit) && (
             <div className="flex flex-col items-center gap-2 shrink-0">
@@ -4875,7 +4875,7 @@ function App() {
               {/* Desktop: layout 2 colunas */}
               <div className="lg:flex lg:items-start">
               {/* Coluna esquerda: header editorial + hero */}
-              <div className="lg:flex-1 lg:min-w-0 lg:pb-8">
+              <div className="lg:w-[520px] lg:flex-shrink-0 lg:min-w-0 lg:pb-8">
               {/* Cabeçalho editorial */}
               <div className="px-6 pt-10 pb-6">
                 <div className="flex items-end justify-between gap-4">
@@ -4959,7 +4959,7 @@ function App() {
 
               {/* Rail secundário — demais destaques */}
               {rest.length > 0 && (
-                <div className="lg:w-[360px] lg:flex-shrink-0 lg:border-l lg:border-white/10">
+                <div className="lg:flex-1 lg:min-w-0 lg:border-l lg:border-white/10">
                   <div className="flex items-center gap-3 px-6 pt-8 pb-4">
                     <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white/40">Também em destaque</span>
                     <div className="h-px flex-1 bg-gradient-to-r from-white/15 to-transparent" />
