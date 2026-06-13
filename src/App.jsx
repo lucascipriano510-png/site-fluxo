@@ -5199,7 +5199,7 @@ function App() {
                                   </p>
                                   {!isOutOfStock && (
                                     <span style={{ color: '#00E08A', fontSize: '9.5px', fontWeight: 700, letterSpacing: '0.02em', marginTop: '3px' }}>
-                                      {formatBRL((mainPrice || 0) * 0.95)} no Pix
+                                      5% OFF no Pix · {formatBRL((mainPrice || 0) * 0.95)}
                                     </span>
                                   )}
                                 </div>
