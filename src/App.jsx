@@ -5197,6 +5197,11 @@ function App() {
                                   <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : hasPromo ? '#00E08A' : '#F3F4F6', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: hasPromo ? '2px' : 0 }}>
                                     {formatBRL(mainPrice || 0)}
                                   </p>
+                                  {!isOutOfStock && (
+                                    <span style={{ color: '#00E08A', fontSize: '9.5px', fontWeight: 700, letterSpacing: '0.02em', marginTop: '3px' }}>
+                                      {formatBRL((mainPrice || 0) * 0.95)} no Pix
+                                    </span>
+                                  )}
                                 </div>
                               );
                             })()}
