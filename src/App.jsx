@@ -5376,7 +5376,7 @@ function App() {
             <div className="border-t border-white/5 pt-4">
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em] text-center mb-3">Formas de Pagamento</p>
               <div className="flex items-center justify-center gap-3 flex-wrap">
-                {['Pix', 'Cartão', 'Boleto', 'Transferência'].map(m => (
+                {['Pix', 'Cartão', 'Dinheiro'].map(m => (
                   <span key={m} className="text-[8px] font-black uppercase text-zinc-600 bg-zinc-900 border border-white/5 px-3 py-1.5 rounded-lg">{m}</span>
                 ))}
               </div>
