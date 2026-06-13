@@ -4594,7 +4594,7 @@ function App() {
             { icon: <Zap size={13} />, label: 'Entrega no mesmo dia em Uberaba' },
             { icon: <MapPin size={13} />, label: 'Retire na loja' },
             { icon: <Truck size={13} />, label: 'Frete grátis em Uberaba' },
-            { icon: <CreditCard size={13} />, label: 'Parcele em até 12x' },
+            { icon: <CreditCard size={13} />, label: 'Até 4x sem juros' },
             { icon: <Tag size={13} />, label: '5% OFF no Pix' },
             { icon: <ShieldCheck size={13} />, label: 'Enviamos pra todo Brasil' },
           ].map(({ icon, label }) => (
@@ -5955,7 +5955,7 @@ function App() {
                    <div className="flex justify-between items-end pt-3 border-t border-white/10">
                      <div className="flex flex-col">
                        <p className="text-[12px] font-black text-white uppercase tracking-widest">Total no Pix</p>
-                       <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">ou {formatBRL(subtotal)} em até 12x</span>
+                       <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">ou {formatBRL(subtotal)} em até 4x sem juros</span>
                      </div>
                      <h3 className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(subtotal * 0.95)}</h3>
                    </div>
