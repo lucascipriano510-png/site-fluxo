@@ -337,30 +337,28 @@ const AdminHeader = ({ handleLogout, handleBackToStore }) => (
   </div>
 );
 
-const AdminDashboard = ({ leads, products, loading }) => {
-  const validLeads = (leads || []).filter(l => l.status !== 'CANCELADO');
+const AdminDashboard = ({ leads, products, loading, setAdminTab }) => {
+  const shouldReduceMotion = useReducedMotion();
+
+  // ── DATA (lógica preservada) ──────────────────────────────────────────
+  const validLeads    = (leads || []).filter(l => l.status !== 'CANCELADO');
   const concludedLeads = (leads || []).filter(l => l.status === 'CONCLUÍDO');
-  const totalRevenue = concludedLeads.reduce((a, b) => a + parseFloat(b.value || 0), 0);
-  const avgTicket = concludedLeads.length > 0 ? (totalRevenue / concludedLeads.length) : 0;
-
+  const totalRevenue  = concludedLeads.reduce((a, b) => a + parseFloat(b.value || 0), 0);
+  const avgTicket     = concludedLeads.length > 0 ? totalRevenue / concludedLeads.length : 0;
   // PROTEÇÃO CONTRA CRASH: (lead.items || []) blinda o sistema contra leads antigos sem items
-  const totalItemsSold = concludedLeads.reduce((acc, lead) => acc + (lead.items || []).reduce((sum, item) => sum + (item.quantity || item.qty || 0), 0), 0);
+  const totalItemsSold = concludedLeads.reduce((acc, l) => acc + (l.items || []).reduce((s, it) => s + (it.quantity || it.qty || 0), 0), 0);
 
-  // Dados últimos 7 dias (vendas concluídas por dia)
   const chartData = useMemo(() => {
     const days = [];
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    const today = new Date(); today.setHours(0,0,0,0);
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0,10);
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const key   = d.toISOString().slice(0,10);
       const label = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','').toUpperCase().slice(0,3);
       days.push({ key, label, valor: 0, pedidos: 0 });
     }
     concludedLeads.forEach(l => {
-      const raw = l._raw?.created_at;
-      if (!raw) return;
+      const raw = l._raw?.created_at; if (!raw) return;
       const k = new Date(raw).toISOString().slice(0,10);
       const d = days.find(x => x.key === k);
       if (d) { d.valor += Number(l.value || 0); d.pedidos += 1; }
@@ -368,137 +366,270 @@ const AdminDashboard = ({ leads, products, loading }) => {
     return days;
   }, [concludedLeads]);
 
-  const todayKey = new Date().toISOString().slice(0,10);
+  const todayKey     = new Date().toISOString().slice(0,10);
+  const yesterdayKey = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+  const todayData     = chartData.find(d => d.key === todayKey)     || { valor: 0, pedidos: 0 };
+  const yesterdayData = chartData.find(d => d.key === yesterdayKey) || { valor: 0, pedidos: 0 };
+  const revenueVsYesterday = yesterdayData.valor > 0
+    ? Math.round((todayData.valor - yesterdayData.valor) / yesterdayData.valor * 100)
+    : null;
+
   const outOfStockProducts = (products || []).filter(p => !p.is_kit && p.stock === 0);
+  const pendingLeads       = (leads || []).filter(l => l.status === 'NOVO').length;
 
-  const shimmer = 'rounded-[24px] bg-[length:200%_100%] bg-gradient-to-r from-[#2a2a2e] via-[#333337] to-[#2a2a2e] animate-[skeleton-shine_1.5s_ease-in-out_infinite]';
+  // ── STATUS OPERACIONAL ────────────────────────────────────────────────
+  const opStatus = (() => {
+    if (outOfStockProducts.length > 0 && pendingLeads > 0)
+      return { label: `${pendingLeads} pendente(s) · ${outOfStockProducts.length} sem estoque`, color: '#FFB800' };
+    if (outOfStockProducts.length > 0)
+      return { label: `${outOfStockProducts.length} produto(s) sem estoque`, color: '#FF5A5A' };
+    if (pendingLeads > 0)
+      return { label: `${pendingLeads} pedido(s) aguardando atendimento`, color: '#FFB800' };
+    if (revenueVsYesterday !== null && revenueVsYesterday > 0)
+      return { label: `Vendas ${revenueVsYesterday}% acima de ontem`, color: '#00E08A' };
+    return { label: 'Operação funcionando normalmente', color: '#00E08A' };
+  })();
 
-  if (loading) {
-    return (
-      <div className="p-4 space-y-3 pb-24">
-        <div className={`h-52 rounded-[32px] bg-[length:200%_100%] bg-gradient-to-r from-[#2a2a2e] via-[#333337] to-[#2a2a2e] animate-[skeleton-shine_1.5s_ease-in-out_infinite]`} />
-        <div className="grid grid-cols-2 gap-3">
-          <div className={`h-24 ${shimmer}`} />
-          <div className={`h-24 ${shimmer}`} />
-          <div className={`col-span-2 h-20 ${shimmer}`} />
-        </div>
-        <div className={`h-60 rounded-[32px] bg-[length:200%_100%] bg-gradient-to-r from-[#2a2a2e] via-[#333337] to-[#2a2a2e] animate-[skeleton-shine_1.5s_ease-in-out_infinite]`} />
+  // ── INSIGHTS DINÂMICOS ────────────────────────────────────────────────
+  const insights = useMemo(() => {
+    const list = [];
+    if (outOfStockProducts.length > 0)
+      list.push({ icon: <AlertTriangle size={12}/>, color: '#FF5A5A', bg: 'rgba(255,90,90,0.08)', border: 'rgba(255,90,90,0.15)',
+        label: 'Estoque crítico', desc: outOfStockProducts.slice(0,2).map(p => p.name).join(', ') + (outOfStockProducts.length > 2 ? ` +${outOfStockProducts.length-2}` : ''), action: 'Ver Estoque', tab: 'inventory' });
+    if (pendingLeads > 0)
+      list.push({ icon: <Clock size={12}/>, color: '#FFB800', bg: 'rgba(255,184,0,0.08)', border: 'rgba(255,184,0,0.15)',
+        label: `${pendingLeads} pedido(s) novo(s)`, desc: 'Aguardando atendimento', action: 'Atender', tab: 'leads' });
+    if (revenueVsYesterday !== null && revenueVsYesterday > 10)
+      list.push({ icon: <TrendingUp size={12}/>, color: '#00E08A', bg: 'rgba(0,224,138,0.08)', border: 'rgba(0,224,138,0.15)',
+        label: `+${revenueVsYesterday}% vs ontem`, desc: 'Receita acima da média', action: null, tab: null });
+    if (list.length === 0)
+      list.push({ icon: <CheckCircle2 size={12}/>, color: '#00C2FF', bg: 'rgba(0,194,255,0.08)', border: 'rgba(0,194,255,0.15)',
+        label: 'Sem alertas ativos', desc: 'Tudo sob controle', action: null, tab: null });
+    return list;
+  }, [outOfStockProducts, pendingLeads, revenueVsYesterday]);
+
+  // ── MOTION VARIANTS ───────────────────────────────────────────────────
+  const fadeUp = shouldReduceMotion
+    ? {}
+    : { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } } };
+  const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.055 } } };
+
+  // ── SKELETON ──────────────────────────────────────────────────────────
+  const sk = 'bg-[length:200%_100%] bg-gradient-to-r from-[#10131A] via-[#1c2030] to-[#10131A] animate-[skeleton-shine_1.5s_ease-in-out_infinite]';
+  if (loading) return (
+    <div className="p-4 space-y-3 pb-32">
+      <div className={`h-10 rounded-2xl ${sk}`} />
+      <div className="grid grid-cols-2 gap-2">
+        <div className={`col-span-2 h-20 rounded-2xl ${sk}`} />
+        {[0,1,2,3].map(i => <div key={i} className={`h-20 rounded-2xl ${sk}`} />)}
       </div>
-    );
-  }
+      <div className={`h-40 rounded-2xl ${sk}`} />
+      <div className={`h-28 rounded-2xl ${sk}`} />
+      <div className={`h-52 rounded-2xl ${sk}`} />
+    </div>
+  );
+
+  // ── HELPERS ───────────────────────────────────────────────────────────
+  const CARD = { background: '#10131A', border: '1px solid rgba(255,255,255,0.06)' };
+  const LABEL = { color: '#71717A', letterSpacing: '0.1em' };
+  const timeAgo = (raw) => {
+    if (!raw) return '';
+    const m = Math.floor((Date.now() - new Date(raw).getTime()) / 60000);
+    if (m < 1) return 'agora';
+    if (m < 60) return `${m}min`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    return `${Math.floor(h/24)}d`;
+  };
 
   return (
-    <div className="p-4 space-y-3 animate-in pb-24">
+    <motion.div variants={stagger} initial="hidden" animate="show" className="p-4 space-y-3 pb-32">
 
-      {/* ── Card Vendas Totais / Receita ── */}
-      <div className="relative overflow-hidden rounded-[32px] border shadow-2xl" style={{ background: 'linear-gradient(135deg, #0d2b1f 0%, #0a1f16 100%)', borderColor: 'rgba(0,200,150,0.12)' }}>
-        {/* Noise texture */}
-        <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.035, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`, backgroundSize: '200px' }} />
-        {/* Watermark $ */}
-        <div className="absolute -right-3 -top-5 select-none pointer-events-none" style={{ opacity: 0.06, fontSize: 176, fontWeight: 900, color: '#fff', lineHeight: 1, fontStyle: 'italic', fontFamily: 'sans-serif' }}>$</div>
-        <div className="p-6 relative z-10">
-          <p className="text-[10px] font-bold uppercase flex items-center gap-2 mb-1" style={{ color: 'rgba(0,200,150,0.7)', letterSpacing: '0.18em' }}>
-            <TrendingUp size={11}/> Vendas Totais / Receita
-          </p>
-          <h3 className="font-black text-white italic leading-none drop-shadow-md" style={{ fontSize: '2.3rem', letterSpacing: '-0.03em' }}>
-            R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </h3>
-          <div className="h-24 mt-5 -mx-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 4, right: 6, bottom: 0, left: 6 }}>
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.38)', fontWeight: 700, letterSpacing: '0.05em' }} axisLine={false} tickLine={false} />
-                <ReTooltip
-                  cursor={{ fill: 'rgba(0,200,150,0.06)' }}
-                  contentStyle={{ background: '#0a0a0c', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, fontSize: 11, fontWeight: 900 }}
-                  labelStyle={{ color: '#6b7280' }}
-                  formatter={(v) => [`R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Vendas']}
-                />
-                <Bar dataKey="valor" radius={[6, 6, 0, 0]} isAnimationActive animationBegin={0} animationDuration={800}>
-                  {chartData.map((e, i) => (
-                    <Cell
-                      key={i}
-                      fill={e.key === todayKey ? '#00c896' : e.valor > 0 ? 'rgba(0,200,150,0.45)' : '#27272a'}
-                      style={e.key === todayKey ? { filter: 'drop-shadow(0 0 5px rgba(0,200,150,0.55))' } : {}}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* ── 1. STATUS GERAL ── */}
+      <motion.div variants={fadeUp}>
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl" style={CARD}>
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inset-0 rounded-full opacity-60" style={{ background: opStatus.color }} />
+            <span className="relative rounded-full h-2 w-2" style={{ background: opStatus.color }} />
+          </span>
+          <p className="text-[11px] font-medium" style={{ color: opStatus.color }}>{opStatus.label}</p>
         </div>
-      </div>
+      </motion.div>
 
-      {/* ── Cards Pedidos + Peças + Ticket Médio ── */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-zinc-900 rounded-[24px] shadow-xl flex flex-col justify-between" style={{ padding: '18px 20px', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <p className="text-[10px] font-bold uppercase flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em' }}>
-            <ShoppingBag size={14} style={{ color: 'rgba(0,200,150,0.6)' }}/> Pedidos
-          </p>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 8, paddingTop: 8 }}>
-            <h3 className="font-bold text-white" style={{ fontSize: '2rem' }}>{validLeads.length}</h3>
-          </div>
-        </div>
-        <div className="bg-zinc-900 rounded-[24px] shadow-xl flex flex-col justify-between" style={{ padding: '18px 20px', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <p className="text-[10px] font-bold uppercase flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em' }}>
-            <Package size={14} style={{ color: 'rgba(0,200,150,0.6)' }}/> Peças Vendidas
-          </p>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 8, paddingTop: 8 }}>
-            <h3 className="font-bold text-white" style={{ fontSize: '2rem' }}>{totalItemsSold}</h3>
-          </div>
-        </div>
-        <div className="col-span-2 bg-zinc-900 rounded-[24px] shadow-xl flex flex-col justify-between" style={{ padding: '18px 20px', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <p className="text-[10px] font-bold uppercase flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em' }}>
-            <BarChart3 size={14} style={{ color: 'rgba(0,200,150,0.6)' }}/> Ticket Médio (TM)
-          </p>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 8, paddingTop: 8 }} className="flex items-center gap-2">
-            <h3 className="font-bold" style={{ fontSize: '1.8rem', color: '#00c896' }}>{formatBRL(avgTicket)}</h3>
-            <TrendingUp size={15} style={{ color: '#00c896', opacity: 0.65 }} />
-          </div>
-        </div>
-      </div>
+      {/* ── 2. KPIs ── */}
+      <motion.div variants={fadeUp} className="grid grid-cols-2 gap-2">
 
-      {/* ── Lista Pedidos Recentes ── */}
-      <div className="rounded-[32px] border p-5" style={{ background: 'rgba(24,24,27,0.5)', borderColor: 'rgba(255,255,255,0.05)' }}>
-        <h4 className="text-[11px] font-bold uppercase flex items-center gap-2 mb-4" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.12em' }}>
-          <Clock size={13}/> Pedidos Recentes
-        </h4>
-        {(leads || []).slice(0, 4).length === 0 ? (
-          <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Nenhuma atividade ainda.</p>
-        ) : (
-          <div>
-            {(leads || []).slice(0, 4).map((l, i) => {
-              const initial = (l.name || 'D').trim().charAt(0).toUpperCase();
+        {/* Faturamento Hoje — full width */}
+        <div className="col-span-2 rounded-2xl p-4" style={CARD}>
+          <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Faturamento Hoje</p>
+          <div className="flex items-end justify-between gap-2">
+            <span className="font-bold text-white leading-none" style={{ fontSize: '2rem', fontVariantNumeric: 'tabular-nums' }}>
+              {formatBRL(todayData.valor)}
+            </span>
+            {revenueVsYesterday !== null && (
+              <span className="text-[10px] font-semibold px-2 py-1 rounded-lg mb-0.5 shrink-0" style={{
+                color: revenueVsYesterday >= 0 ? '#00E08A' : '#FF5A5A',
+                background: revenueVsYesterday >= 0 ? 'rgba(0,224,138,0.1)' : 'rgba(255,90,90,0.1)'
+              }}>
+                {revenueVsYesterday >= 0 ? '+' : ''}{revenueVsYesterday}% ontem
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Pedidos Hoje */}
+        <div className="rounded-2xl p-4" style={CARD}>
+          <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Pedidos Hoje</p>
+          <span className="font-bold text-white" style={{ fontSize: '1.75rem', fontVariantNumeric: 'tabular-nums' }}>{todayData.pedidos}</span>
+        </div>
+
+        {/* Ticket Médio */}
+        <div className="rounded-2xl p-4" style={CARD}>
+          <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Ticket Médio</p>
+          <span className="font-bold" style={{ fontSize: '1.75rem', color: '#00E08A', fontVariantNumeric: 'tabular-nums' }}>{formatBRL(avgTicket)}</span>
+        </div>
+
+        {/* Peças Vendidas */}
+        <div className="rounded-2xl p-4" style={CARD}>
+          <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Peças Vendidas</p>
+          <span className="font-bold text-white" style={{ fontSize: '1.75rem', fontVariantNumeric: 'tabular-nums' }}>{totalItemsSold}</span>
+        </div>
+
+        {/* Sem Estoque */}
+        <div className="rounded-2xl p-4" style={{ ...CARD, borderColor: outOfStockProducts.length > 0 ? 'rgba(255,90,90,0.25)' : 'rgba(255,255,255,0.06)' }}>
+          <p className="text-[10px] font-medium uppercase mb-2" style={LABEL}>Sem Estoque</p>
+          <span className="font-bold" style={{ fontSize: '1.75rem', color: outOfStockProducts.length > 0 ? '#FF5A5A' : '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}>
+            {outOfStockProducts.length}
+          </span>
+        </div>
+
+      </motion.div>
+
+      {/* ── 3. GRÁFICO 7 DIAS ── */}
+      <motion.div variants={fadeUp} className="rounded-2xl p-4" style={CARD}>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[10px] font-medium uppercase" style={LABEL}>Vendas · 7 dias</p>
+          <span className="text-[11px] font-semibold" style={{ color: '#00E08A' }}>{formatBRL(totalRevenue)}</span>
+        </div>
+        <div className="h-[72px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 2, right: 4, bottom: 0, left: 4 }}>
+              <XAxis dataKey="label" tick={{ fontSize: 8, fill: 'rgba(255,255,255,0.28)', fontWeight: 500 }} axisLine={false} tickLine={false} />
+              <ReTooltip
+                cursor={{ fill: 'rgba(0,224,138,0.04)' }}
+                contentStyle={{ background: '#0B0D12', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, fontSize: 11, fontWeight: 600 }}
+                labelStyle={{ color: '#71717A' }}
+                formatter={(v) => [`R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Vendas']}
+              />
+              <Bar dataKey="valor" radius={[4, 4, 0, 0]} isAnimationActive animationBegin={0} animationDuration={700}>
+                {chartData.map((e, i) => (
+                  <Cell key={i} fill={e.key === todayKey ? '#00E08A' : e.valor > 0 ? 'rgba(0,224,138,0.3)' : 'rgba(255,255,255,0.04)'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
+
+      {/* ── 4. INSIGHTS ── */}
+      <motion.div variants={fadeUp} className="space-y-2">
+        <p className="text-[10px] font-medium uppercase px-0.5" style={LABEL}>Insights</p>
+        {insights.map((ins, i) => (
+          <motion.div key={i} variants={fadeUp} className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: ins.bg, border: `1px solid ${ins.border}` }}>
+            <span style={{ color: ins.color }}>{ins.icon}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold" style={{ color: ins.color }}>{ins.label}</p>
+              <p className="text-[10px]" style={{ color: '#71717A' }}>{ins.desc}</p>
+            </div>
+            {ins.action && setAdminTab && (
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                onClick={() => setAdminTab(ins.tab)}
+                className="text-[10px] font-semibold px-3 py-1.5 rounded-xl shrink-0"
+                style={{ color: ins.color, background: `${ins.color}18`, border: `1px solid ${ins.color}30` }}
+              >
+                {ins.action}
+              </motion.button>
+            )}
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* ── 5. AÇÕES RÁPIDAS ── */}
+      <motion.div variants={fadeUp}>
+        <p className="text-[10px] font-medium uppercase px-0.5 mb-2" style={LABEL}>Ações Rápidas</p>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: 'Novo Produto', icon: <Package size={14}/>, tab: 'inventory' },
+            { label: 'Pedidos',      icon: <ShoppingBag size={14}/>, tab: 'leads', badge: pendingLeads > 0 ? pendingLeads : null },
+            { label: 'Promoções',   icon: <Megaphone size={14}/>, tab: 'banners' },
+            { label: 'Atendimento', icon: <MessageCircle size={14}/>, tab: 'crm' },
+          ].map(a => (
+            <motion.button
+              key={a.tab}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => setAdminTab?.(a.tab)}
+              className="flex items-center gap-2.5 px-4 py-3 rounded-2xl text-left relative touch-manipulation"
+              style={CARD}
+            >
+              <span style={{ color: '#00E08A' }}>{a.icon}</span>
+              <span className="text-[11px] font-medium" style={{ color: '#A1A1AA' }}>{a.label}</span>
+              {a.badge && (
+                <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#FF5A5A', color: '#fff' }}>{a.badge}</span>
+              )}
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* ── 6. PEDIDOS RECENTES ── */}
+      <motion.div variants={fadeUp}>
+        <div className="flex items-center justify-between px-0.5 mb-2">
+          <p className="text-[10px] font-medium uppercase" style={LABEL}>Pedidos Recentes</p>
+          {setAdminTab && (
+            <button onClick={() => setAdminTab('leads')} className="text-[10px] font-semibold" style={{ color: '#00E08A' }}>Ver todos</button>
+          )}
+        </div>
+        <div className="rounded-2xl overflow-hidden" style={CARD}>
+          {(leads || []).slice(0, 5).length === 0 ? (
+            <div className="p-6 text-center">
+              <p className="text-[11px]" style={{ color: '#71717A' }}>Nenhum pedido ainda.</p>
+            </div>
+          ) : (
+            (leads || []).slice(0, 5).map((l, i, arr) => {
+              const initial = (l.name || '?').trim().charAt(0).toUpperCase();
               const st = l.status || 'NOVO';
-              const badgeStyle =
-                st === 'NOVO'        ? { color: '#60a5fa', background: 'rgba(59,130,246,0.2)' }
-                : st === 'CONCLUÍDO' ? { color: '#00c896', background: 'rgba(0,200,150,0.15)' }
-                : st === 'CANCELADO' ? { color: '#f87171', background: 'rgba(239,68,68,0.15)' }
-                :                     { color: '#fbbf24', background: 'rgba(245,158,11,0.2)' };
+              const stStyle =
+                st === 'NOVO'        ? { color: '#00C2FF', bg: 'rgba(0,194,255,0.12)' }
+                : st === 'CONCLUÍDO' ? { color: '#00E08A', bg: 'rgba(0,224,138,0.12)' }
+                : st === 'CANCELADO' ? { color: '#FF5A5A', bg: 'rgba(255,90,90,0.12)' }
+                :                     { color: '#FFB800', bg: 'rgba(255,184,0,0.12)' };
               return (
-                <div
+                <motion.div
                   key={i}
-                  className="flex items-center gap-3 py-3 active:scale-[0.98] transition-transform cursor-pointer"
-                  style={{ borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                  whileTap={{ backgroundColor: 'rgba(255,255,255,0.015)' }}
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                  style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
                 >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-black text-[13px]" style={{ background: '#0d2b1f', color: '#00c896' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold" style={{ background: 'rgba(0,224,138,0.08)', color: '#00E08A' }}>
                     {initial}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-black text-white uppercase truncate">{(l.name || 'Desconhecido').split(' ')[0]}</p>
-                    <p className="text-[9px] font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>#{l.orderNumber || '0000'}</p>
+                    <p className="text-[12px] font-semibold text-white truncate">{(l.name || 'Desconhecido').split(' ')[0]}</p>
+                    <p className="text-[10px]" style={{ color: '#71717A' }}>#{l.orderNumber || '0000'}{l._raw?.created_at ? ` · ${timeAgo(l._raw.created_at)}` : ''}</p>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="text-[11px] font-black" style={{ color: '#00c896' }}>{formatBRL(l.value || 0)}</span>
-                    <span className="text-[9px] font-black uppercase rounded-full" style={{ ...badgeStyle, padding: '3px 8px' }}>{st}</span>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className="text-[12px] font-semibold text-white" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatBRL(l.value || 0)}</span>
+                    <span className="text-[9px] font-semibold uppercase rounded-lg px-2 py-0.5" style={{ color: stStyle.color, background: stStyle.bg }}>{st}</span>
                   </div>
-                </div>
+                </motion.div>
               );
-            })}
-          </div>
-        )}
-      </div>
+            })
+          )}
+        </div>
+      </motion.div>
 
-    </div>
+    </motion.div>
   );
 };
 
@@ -3842,7 +3973,7 @@ function App() {
           {/* CONTEÚDO PRINCIPAL */}
           <main className="flex-1 max-w-[640px] mx-auto lg:max-w-none lg:mx-0 pb-24 lg:pb-8">
             <AdminTabErrorBoundary resetKey={adminTab}>
-              {adminTab === 'dashboard' && <AdminDashboard leads={leads} products={products} loading={!leadsLoaded} />}
+              {adminTab === 'dashboard' && <AdminDashboard leads={leads} products={products} loading={!leadsLoaded} setAdminTab={setAdminTab} />}
               {adminTab === 'inventory' && <AdminInventory products={products} setProducts={setProducts} showToast={showToast} availableCollections={availableCollections} productImageFile={productImageFile} setProductImageFile={setProductImageFile} uploadImage={uploadImage} />}
               {adminTab === 'leads' && <AdminLeads leads={leads} setLeads={setLeads} products={products} setProducts={setProducts} showToast={showToast} config={config} />}
               {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} />}
