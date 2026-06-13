@@ -4596,7 +4596,7 @@ function App() {
                           {/* Linha 3 — WhatsApp */}
                           {!isOutOfStock && (
                             <a
-                              href={`https://wa.me/${String(config?.whatsapp || '5534984148067').replace(/\D/g,'')}?text=${encodeURIComponent(`Olá! Tenho interesse em um produto da Fluxo Outlet 👇\n\n*${product.name}*\nSKU: ${product.sku || 'N/A'}\nCategoria: ${product.category || ''}${product.subcategory ? ' > ' + product.subcategory : ''}\nPreço: R$ ${product.price?.toFixed(2).replace('.', ',')}\nLink: ${window.location.origin}/produto/${product.id}\n\nPodem me ajudar?`)}`}
+                              href={`https://wa.me/${String(config?.whatsapp || '5534984148067').replace(/\D/g,'')}?text=${encodeURIComponent(`Olá! Tenho interesse em um produto da Fluxo Outlet 👇\n\n*${product.name}*\nSKU: ${product.sku || 'N/A'}\nCategoria: ${product.category || ''}${product.subcategory ? ' > ' + product.subcategory : ''}\nPreço: R$ ${product.price?.toFixed(2).replace('.', ',')}\nLink: ${window.location.origin}/?produto=${product.sku}\n\nPodem me ajudar?`)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={e => e.stopPropagation()}
