@@ -2442,8 +2442,15 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
           <div className="flex justify-between items-center"><h3 className="font-black italic uppercase text-white tracking-widest text-lg">Banners</h3><button onClick={() => setEditBannerMode('new')} className="bg-emerald-500 text-zinc-950 px-4 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg">+ Novo</button></div>
           {(banners || []).map(b => (
             <div key={b.id} className={`bg-zinc-900 p-4 rounded-[24px] border flex items-center gap-4 ${b.active ? 'border-emerald-500/30' : 'border-white/5 opacity-60'}`}>
-              <img src={b.image} className="w-20 h-12 rounded-lg object-cover" alt="Banner" />
-              <div className="flex-1 truncate"><h4 className="font-black text-white text-[10px] uppercase truncate">{b.title}</h4><span style={{ fontSize: 9, color: '#52525b', fontWeight: 900 }}>#{b.banner_order}</span></div>
+              <img src={b.image || b.image_desktop} className="w-20 h-12 rounded-lg object-cover" alt="Banner" />
+              <div className="flex-1 truncate">
+                <h4 className="font-black text-white text-[10px] uppercase truncate">{b.title}</h4>
+                <div className="flex items-center gap-2 mt-1">
+                  <span style={{ fontSize: 9, color: '#52525b', fontWeight: 900 }}>#{b.banner_order}</span>
+                  <span className="text-[9px] font-black" style={{ color: b.image ? '#10b981' : '#52525b' }}>📱 {b.image ? 'OK' : '—'}</span>
+                  <span className="text-[9px] font-black" style={{ color: b.image_desktop ? '#10b981' : '#ef4444' }}>🖥️ {b.image_desktop ? 'OK' : 'falta'}</span>
+                </div>
+              </div>
               <div className="flex gap-1"><button onClick={() => setEditBannerMode(b)} className="p-2 bg-white/5 rounded-lg text-zinc-400"><Edit3 size={12}/></button><button onClick={() => setBanners((banners || []).filter(i => i.id !== b.id))} className="p-2 bg-red-500/10 rounded-lg text-red-500"><Trash2 size={12}/></button></div>
             </div>
           ))}
@@ -3708,9 +3715,28 @@ function App() {
   // localStorage removido para evitar divergência entre dispositivos.
   // config agora vive no Supabase; nada pra persistir localmente
 
-  const activeBanners = useMemo(() => (banners || []).filter(b => b.active), [banners]);
+  // Detecta desktop (>=1024px) p/ separar banners por dispositivo
+  const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(min-width: 1024px)').matches : false
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = (e) => setIsDesktopViewport(e.matches);
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, []);
+
+  // Banner é exclusivo por dispositivo: desktop só mostra quem tem imagem desktop;
+  // mobile só quem tem imagem mobile. Um nunca puxa o do outro.
+  const activeBanners = useMemo(
+    () => (banners || []).filter(b => b.active && (isDesktopViewport ? b.image_desktop : b.image)),
+    [banners, isDesktopViewport]
+  );
   useEffect(() => { currentBannerSlideRef.current = currentBannerSlide; }, [currentBannerSlide]);
   useEffect(() => { activeBannersLengthRef.current = activeBanners.length; }, [activeBanners.length]);
+  // Mantém o slide dentro do range quando a lista muda (ex.: troca mobile<->desktop)
+  useEffect(() => { setCurrentBannerSlide(s => (s >= activeBanners.length ? 0 : s)); }, [activeBanners.length]);
   const availableCollections = useMemo(() => {
     const set = new Set();
     (banners || []).forEach(b => { if (b.collection_name) set.add(b.collection_name); });
