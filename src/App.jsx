@@ -26,6 +26,7 @@ import AdminCRM from './components/AdminCRM';
 import { criarAtendimentoFromPedido } from './lib/crm';
 import { fetchRatingsBatch, fetchProductReviews, fetchExistingReview, submitReview } from './lib/reviews';
 import KpiCard from './components/KpiCard';
+import AdminGrowth from './components/AdminGrowth';
 
 // ==========================================
 // 1. CONFIGURAÇÃO E DADOS INICIAIS
@@ -4439,6 +4440,7 @@ function App() {
     { key: 'inventory', icon: <Box size={18}/>, label: 'Estoque' },
     { key: 'leads', icon: <User size={18}/>, label: 'Pedidos', badge: newOrdersCount > 0 ? (newOrdersCount > 99 ? '99+' : String(newOrdersCount)) : null },
     { key: 'crm', icon: <MessageCircle size={18}/>, label: 'Atend.' },
+    { key: 'growth', icon: <Flame size={18}/>, label: 'Vendas' },
     { key: 'banners', icon: <Megaphone size={18}/>, label: 'Promo' },
     { key: 'config', icon: <Settings size={18}/>, label: 'Setup' },
     { key: 'rastreio', icon: <Database size={18}/>, label: 'CAPI' },
@@ -4481,6 +4483,7 @@ function App() {
               {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} products={products} setProducts={setProducts} uploadImage={uploadImage} />}
               {adminTab === 'rastreio' && <AdminRastreio />}
               {adminTab === 'crm' && <AdminCRM showToast={showToast} config={config} />}
+              {adminTab === 'growth' && <AdminGrowth leads={leads} products={products} config={config} />}
             </AdminTabErrorBoundary>
           </main>
         </div>
