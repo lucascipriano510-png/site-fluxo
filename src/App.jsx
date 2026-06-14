@@ -6513,7 +6513,7 @@ function App() {
                     type="text"
                     placeholder="O que você procura?"
                     value={searchQuery}
-                    onChange={e => { setSearchQuery(e.target.value); if (e.target.value) { setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } }}
+                    onChange={e => setSearchQuery(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } }}
                     className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-10 text-[16px] font-bold text-white outline-none focus:border-emerald-500/40"
                   />
@@ -6527,12 +6527,12 @@ function App() {
                 {/* Bloco B — Atalhos de descoberta */}
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { emoji: '🔥', label: 'Novidades', active: noveltyMode, action: () => { setNoveltyMode(true); setSelectedCategory('TODOS'); setSelectedSize('TODOS'); setKitsOnly(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
-                    { emoji: '⭐', label: 'Top', active: !noveltyMode && !kitsOnly && selectedCategory === 'TODOS' && selectedSize === 'TODOS', action: () => { setSelectedCategory('TODOS'); setSelectedSize('TODOS'); setKitsOnly(false); setNoveltyMode(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
-                    { emoji: '🎁', label: 'Kits', active: kitsOnly, action: () => { setKitsOnly(true); setNoveltyMode(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
-                  ].map(({ emoji, label, active, action }) => (
-                    <button key={label} type="button" onClick={action} className={`bg-zinc-900 border rounded-2xl py-3 flex flex-col items-center gap-1 touch-manipulation active:scale-95 transition-transform ${active ? 'border-emerald-500/50' : 'border-white/10'}`}>
-                      <span className="text-lg leading-none">{emoji}</span>
+                    { Icon: Flame, label: 'Novidades', active: noveltyMode, action: () => { setNoveltyMode(true); setSelectedCategory('TODOS'); setSelectedSize('TODOS'); setKitsOnly(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                    { Icon: Star, label: 'Top', active: !noveltyMode && !kitsOnly && selectedCategory === 'TODOS' && selectedSize === 'TODOS', action: () => { setSelectedCategory('TODOS'); setSelectedSize('TODOS'); setKitsOnly(false); setNoveltyMode(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                    { Icon: Zap, label: 'Kits', active: kitsOnly, action: () => { setKitsOnly(true); setNoveltyMode(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
+                  ].map(({ Icon, label, active, action }) => (
+                    <button key={label} type="button" onClick={action} className={`bg-zinc-900 border rounded-2xl py-3 flex flex-col items-center gap-1.5 touch-manipulation active:scale-95 transition-transform ${active ? 'border-emerald-500/50' : 'border-white/10'}`}>
+                      <Icon size={18} className={active ? 'text-emerald-400' : 'text-zinc-400'} strokeWidth={2.2} />
                       <span className={`text-[9px] font-black uppercase tracking-widest ${active ? 'text-emerald-400' : 'text-zinc-400'}`}>{label}</span>
                     </button>
                   ))}
