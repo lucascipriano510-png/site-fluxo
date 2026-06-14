@@ -5259,11 +5259,11 @@ function App() {
                                       {formatBRL(product.price || 0)}
                                     </span>
                                   )}
-                                  <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : hasPromo ? '#00E08A' : '#F3F4F6', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: hasPromo ? '2px' : 0 }}>
+                                  <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : '#F3F4F6', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: hasPromo ? '2px' : 0 }}>
                                     {formatBRL(mainPrice || 0)}
                                   </p>
                                   {!isOutOfStock && (
-                                    <span style={{ color: '#00E08A', fontSize: '9.5px', fontWeight: 700, letterSpacing: '0.02em', marginTop: '3px' }}>
+                                    <span style={{ color: '#A1A1AA', fontSize: '9.5px', fontWeight: 600, letterSpacing: '0.02em', marginTop: '3px' }}>
                                       5% OFF no Pix · {formatBRL((mainPrice || 0) * 0.95)}
                                     </span>
                                   )}
