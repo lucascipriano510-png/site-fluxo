@@ -248,18 +248,24 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
   );
 };
 
-const BannerImage = ({ src, alt, active }) => {
+const BannerImage = ({ src, srcDesktop, alt, active }) => {
   const [loaded, setLoaded] = React.useState(false);
 
   React.useEffect(() => {
     setLoaded(false);
-  }, [src]);
+  }, [src, srcDesktop]);
 
-  if (!src) return <div className="absolute inset-0 bg-black" />;
+  if (!src && !srcDesktop) return <div className="absolute inset-0 bg-black" />;
 
-  // Banner ativo usa URL direta do Supabase (sem wsrv.nl no caminho crítico do LCP)
-  const imgSrc = active ? src : optimizeImage(src, 1920, 90);
-  const imgSrcSet = active ? undefined : buildSrcSet(src, [640, 900, 1280, 1920, 2560], 90);
+  // Mobile (4:5) — comportamento original preservado para o LCP
+  const mobileBase = src || srcDesktop;
+  const imgSrc = active ? mobileBase : optimizeImage(mobileBase, 1920, 90);
+  const imgSrcSet = active ? undefined : buildSrcSet(mobileBase, [640, 900, 1280, 1920, 2560], 90);
+
+  // Desktop (16:9) — imagem própria quando existe; senão cai pra mobile
+  const deskBase = srcDesktop || src;
+  const deskSrc = active ? deskBase : optimizeImage(deskBase, 2560, 90);
+  const deskSrcSet = active ? undefined : buildSrcSet(deskBase, [1280, 1920, 2560], 90);
 
   return (
     <>
@@ -273,27 +279,30 @@ const BannerImage = ({ src, alt, active }) => {
           }}
         />
       )}
-      <img
-        src={imgSrc}
-        srcSet={imgSrcSet}
-        sizes="100vw"
-        className={`w-full h-full object-cover transition-opacity duration-500 banner-img ${loaded ? 'opacity-100' : 'opacity-0'}`}
-        style={{ objectPosition: 'center 55%' }}
-        alt={alt}
-        loading={active ? 'eager' : 'lazy'}
-        decoding="async"
-        fetchPriority={active ? 'high' : 'low'}
-        onLoad={() => setLoaded(true)}
-        onError={(e) => {
-          if (!e.target.dataset.fallback) {
-            e.target.dataset.fallback = '1';
-            markWsrvFailed();
-            e.target.src = src; // URL original sem proxy
-            e.target.srcset = '';
-          }
-        }}
-        draggable={false}
-      />
+      <picture className="block w-full h-full">
+        {srcDesktop && <source media="(min-width: 1024px)" srcSet={deskSrcSet || deskSrc} sizes="100vw" />}
+        <img
+          src={imgSrc}
+          srcSet={imgSrcSet}
+          sizes="100vw"
+          className={`w-full h-full object-cover transition-opacity duration-500 banner-img ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          style={{ objectPosition: 'center 55%' }}
+          alt={alt}
+          loading={active ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchPriority={active ? 'high' : 'low'}
+          onLoad={() => setLoaded(true)}
+          onError={(e) => {
+            if (!e.target.dataset.fallback) {
+              e.target.dataset.fallback = '1';
+              markWsrvFailed();
+              e.target.src = mobileBase; // URL original sem proxy
+              e.target.srcset = '';
+            }
+          }}
+          draggable={false}
+        />
+      </picture>
     </>
   );
 };
@@ -2354,10 +2363,14 @@ const ProductReviewsList = ({ productId }) => {
 const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBannerImageFile, uploadImage }) => {
   const [editBannerMode, setEditBannerMode] = useState(null);
   const [previewBannerImage, setPreviewBannerImage] = useState('');
+  const [bannerDesktopFile, setBannerDesktopFile] = useState(null);
+  const [previewDesktopImage, setPreviewDesktopImage] = useState('');
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
-  useEffect(() => { 
-    setPreviewBannerImage(editBannerMode?.image || ''); 
+  useEffect(() => {
+    setPreviewBannerImage(editBannerMode?.image || '');
     setBannerImageFile(null);
+    setPreviewDesktopImage(editBannerMode?.image_desktop || '');
+    setBannerDesktopFile(null);
   }, [editBannerMode]);
 
   const handleBannerFileChange = (e) => {
@@ -2372,14 +2385,31 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
     }
   };
 
+  const handleBannerDesktopFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBannerDesktopFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewDesktopImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveBanner = async (e) => {
     e.preventDefault();
     setIsUploadingBanner(true);
     try {
       let imageUrl = editBannerMode?.image || '';
       if (bannerImageFile) {
-        showToast('Enviando banner em alta resolução...', 'info');
+        showToast('Enviando banner mobile em alta resolução...', 'info');
         imageUrl = await uploadImage(bannerImageFile);
+      }
+      let imageDesktopUrl = editBannerMode?.image_desktop || '';
+      if (bannerDesktopFile) {
+        showToast('Enviando banner desktop em alta resolução...', 'info');
+        imageDesktopUrl = await uploadImage(bannerDesktopFile);
       }
       const fd = new FormData(e.target);
       const data = {
@@ -2389,6 +2419,7 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
         buttonText: fd.get('buttonText'),
         collection_name: fd.get('collection_name'),
         image: imageUrl,
+        image_desktop: imageDesktopUrl || null,
         active: fd.get('active') === 'on',
         banner_order: parseInt(fd.get('banner_order') || '999', 10),
         external_link: fd.get('external_link') || null,
@@ -2420,12 +2451,20 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
       ) : (
         <form onSubmit={handleSaveBanner} className="bg-zinc-900 p-8 rounded-[32px] border border-white/10 space-y-4 shadow-2xl relative">
           <button type="button" onClick={() => setEditBannerMode(null)} className="absolute top-6 right-6 text-zinc-500"><X/></button>
-          <div className="relative overflow-hidden bg-zinc-950 border-2 border-dashed border-white/10 rounded-[20px] aspect-video flex flex-col items-center justify-center cursor-pointer">
-            {previewBannerImage ? <img src={previewBannerImage} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Preview" /> : <ImagePlus size={32} className="text-zinc-800" />}
-            <span className="relative z-10 text-[9px] font-black uppercase text-white">Carregar Banner 4:5 · Mobile (1080×1350px recomendado)</span>
+          {/* Banner MOBILE — vertical 4:5 */}
+          <div className="relative overflow-hidden bg-zinc-950 border-2 border-dashed border-white/10 rounded-[20px] aspect-[4/5] max-h-64 flex flex-col items-center justify-center cursor-pointer">
+            {previewBannerImage ? <img src={previewBannerImage} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Preview mobile" /> : <ImagePlus size={32} className="text-zinc-800" />}
+            <span className="relative z-10 text-[9px] font-black uppercase text-white text-center px-4">📱 Banner Mobile · 4:5 (1080×1350px)</span>
             <input type="file" accept="image/*" onChange={handleBannerFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
           </div>
-          <span style={{ fontSize: 9, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Use proporção 4:5 (vertical) para mobile e o site adapta automaticamente</span>
+
+          {/* Banner DESKTOP — horizontal 16:9 */}
+          <div className="relative overflow-hidden bg-zinc-950 border-2 border-dashed border-white/10 rounded-[20px] aspect-video flex flex-col items-center justify-center cursor-pointer">
+            {previewDesktopImage ? <img src={previewDesktopImage} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Preview desktop" /> : <ImagePlus size={32} className="text-zinc-800" />}
+            <span className="relative z-10 text-[9px] font-black uppercase text-white text-center px-4">🖥️ Banner Desktop · 16:9 (1920×1080px)</span>
+            <input type="file" accept="image/*" onChange={handleBannerDesktopFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+          </div>
+          <span style={{ fontSize: 9, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Suba as duas versões: 4:5 aparece no celular, 16:9 no computador. Se faltar a do desktop, ele usa a do celular.</span>
           <input name="title" defaultValue={editBannerMode?.title} placeholder="Título (opcional)" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none" />
           <input name="subtitle" defaultValue={editBannerMode?.subtitle} placeholder="Subtítulo" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none" />
 	          <input name="buttonText" defaultValue={editBannerMode?.buttonText || 'VER PEÇAS'} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase" required />
@@ -4609,7 +4648,7 @@ function App() {
       {(activeBanners.length > 0 || !bannersLoaded) && (
         <section
           ref={bannerRef}
-          className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-auto lg:h-[480px] overflow-hidden select-none"
+          className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-auto lg:h-[520px] overflow-hidden select-none"
           style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
@@ -4625,7 +4664,7 @@ function App() {
               return (
                 <div key={idx} className="w-full h-full shrink-0 relative overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
                   <div className="absolute inset-0" style={{ transform: isActive ? 'scale(1.09)' : 'scale(1)', transition: isActive ? 'transform 10s ease-out' : 'transform 0.6s ease', transformOrigin: '55% 45%' }}>
-                    <BannerImage src={banner.image} alt={banner.title || 'Banner'} active={isActive} />
+                    <BannerImage src={banner.image} srcDesktop={banner.image_desktop} alt={banner.title || 'Banner'} active={isActive} />
                   </div>
                   <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-zinc-950/75 to-transparent pointer-events-none" />
                   <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />

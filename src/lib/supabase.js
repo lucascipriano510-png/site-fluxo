@@ -126,6 +126,7 @@ export async function upsertBanner(banner) {
     button_text: banner.buttonText || banner.button_text || 'VER PEÇAS',
     collection_name: banner.collection_name || null,
     image: banner.image || '',
+    image_desktop: banner.image_desktop || null,
     active: !!banner.active,
     banner_order: typeof banner.banner_order === 'number' ? banner.banner_order : 999,
     external_link: banner.external_link || null,
