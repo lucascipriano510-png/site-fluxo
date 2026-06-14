@@ -4609,7 +4609,7 @@ function App() {
       {(activeBanners.length > 0 || !bannersLoaded) && (
         <section
           ref={bannerRef}
-          className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-auto lg:min-h-[440px] lg:max-h-[520px] overflow-hidden select-none"
+          className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-auto lg:h-[480px] overflow-hidden select-none"
           style={{ touchAction: 'pan-y' }}
         >
           {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
@@ -4797,10 +4797,10 @@ function App() {
                 }`}>
                   {imgUrl ? (
                     <img src={imgUrl} alt={cat} className="w-full h-full object-cover" style={{ objectPosition: imgPos }} loading="lazy" decoding="async" />
-                  ) : hasLogo ? (
-                    <img src={config.logoUrl} alt={cat} className="w-8 h-8 object-contain mix-blend-screen opacity-50" loading="lazy" />
                   ) : (
-                    <div className="w-full h-full bg-zinc-950" />
+                    <span className={`text-lg lg:text-xl font-black select-none transition-colors ${isActive ? 'text-emerald-400/80' : 'text-white/25'}`}>
+                      {(cat || '?').charAt(0)}
+                    </span>
                   )}
                   {imgUrl && <div className="absolute inset-0 bg-black/25 pointer-events-none" />}
                   {isActive && <div className="absolute inset-[3px] rounded-full border border-emerald-500/40 pointer-events-none" />}
