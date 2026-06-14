@@ -5274,7 +5274,6 @@ function App() {
                               );
                             })()}
                             {!isOutOfStock && (
-                              <div className="flex items-center gap-1.5 shrink-0">
                               <motion.button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
@@ -5315,20 +5314,33 @@ function App() {
                                 )}
                                 COMPRAR
                               </motion.button>
-                              <a
-                                href={`https://wa.me/${String(config?.whatsapp || '5534984148067').replace(/\D/g,'')}?text=${encodeURIComponent(`Olá! Tenho interesse neste produto da Fluxo Outlet 👇\n\n*${product.name}*\nSKU: ${product.sku || 'N/A'}\nPreço: R$ ${(product.price || 0).toFixed(2).replace('.', ',')}\n${'https://www.fluxooutlet.com.br/?produto=' + (product.sku || '')}\n\nPodem me ajudar?`)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                aria-label="Perguntar no WhatsApp"
-                                className="flex items-center justify-center shrink-0 active:scale-90 transition-transform"
-                                style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#25D366' }}
-                              >
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                              </a>
-                              </div>
                             )}
                           </div>
+
+                          {/* Linha 3 — WhatsApp */}
+                          {!isOutOfStock && (
+                            <a
+                              href={`https://wa.me/${String(config?.whatsapp || '5534984148067').replace(/\D/g,'')}?text=${encodeURIComponent(`Olá! Tenho interesse em um produto da Fluxo Outlet 👇\n\n*${product.name}*\nSKU: ${product.sku || 'N/A'}\nCategoria: ${product.category || ''}${product.subcategory ? ' > ' + product.subcategory : ''}\nPreço: R$ ${product.price?.toFixed(2).replace('.', ',')}\nLink: ${'https://www.fluxooutlet.com.br/?produto=' + product.sku}\n\nPodem me ajudar?`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              className="flex items-center justify-center gap-1.5 w-full touch-manipulation transition-colors mb-1.5"
+                              style={{
+                                minHeight: '36px', borderRadius: '6px',
+                                border: '1px solid #25D366', color: '#25D366',
+                                fontSize: '10px', fontWeight: 700,
+                                letterSpacing: '0.06em', textTransform: 'uppercase',
+                                background: 'transparent', textDecoration: 'none',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(37,211,102,0.08)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="#25D366" style={{ flexShrink: 0 }}>
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                              </svg>
+                              WhatsApp
+                            </a>
+                          )}
 
                           {/* Linha 4 — estrelas */}
                           <div onClick={e => e.stopPropagation()}>
@@ -5944,28 +5956,6 @@ function App() {
             <ChevronRight size={18} strokeWidth={3} className="md:hidden text-zinc-500" />
           </button>
         </div>
-      )}
-
-      {/* BOTÃO FLUTUANTE WHATSAPP — atendimento e venda direta */}
-      {!showCart && !isCartModalOpen && !showLeadModal && !showQuickMenu && !showMyOrders && !showUserDrawer && (
-        <a
-          href={`https://wa.me/${String(config?.whatsapp || '5534984148067').replace(/\D/g,'')}?text=${encodeURIComponent('Olá! Vim pelo site da Fluxo Outlet e quero tirar uma dúvida 👇')}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Falar no WhatsApp"
-          className="fixed right-4 z-[85] flex items-center justify-center rounded-full active:scale-90 transition-transform touch-manipulation"
-          style={{
-            bottom: cart.length > 0 ? 'calc(env(safe-area-inset-bottom, 0px) + 96px)' : 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
-            width: '56px', height: '56px', background: '#25D366',
-            boxShadow: '0 8px 30px rgba(37,211,102,0.45)',
-          }}
-        >
-          {/* dot online */}
-          <span className="absolute top-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-[#25D366]" style={{ background: '#00E08A' }} aria-hidden="true" />
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
-        </a>
       )}
 
       {/* MODAL — Adicionado ao Carrinho */}
