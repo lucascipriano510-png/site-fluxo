@@ -66,3 +66,6 @@ credentials.json
 *.pem
 *.key
 .credentials
+
+# Supabase CLI temp
+supabase/.temp/
