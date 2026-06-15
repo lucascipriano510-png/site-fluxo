@@ -330,13 +330,12 @@ const setActiveGalleryAt = (x, y) => {
   activeGalleryEl = el;
   if (el && galleryRegistry.has(el)) galleryRegistry.get(el).activate();
 };
-const clearActiveGallery = () => {
-  if (activeGalleryEl && galleryRegistry.has(activeGalleryEl)) galleryRegistry.get(activeGalleryEl).deactivate();
-  activeGalleryEl = null;
-};
 const ensureGalleryListeners = () => {
   if (galleryListenersOn || typeof window === 'undefined') return;
   galleryListenersOn = true;
+  // Importante: NÃO paramos no touchend. O card que começou a passar continua
+  // sozinho até que OUTRA ÁREA seja tocada — aí ou outro card assume (sobre um
+  // card) ou para (toque fora de qualquer card). Por isso só ouvimos start/move.
   const onStart = (e) => { const t = e.touches && e.touches[0]; if (t) setActiveGalleryAt(t.clientX, t.clientY); };
   const onMove = (e) => {
     const now = Date.now();
@@ -346,8 +345,6 @@ const ensureGalleryListeners = () => {
   };
   window.addEventListener('touchstart', onStart, { passive: true });
   window.addEventListener('touchmove', onMove, { passive: true });
-  window.addEventListener('touchend', clearActiveGallery, { passive: true });
-  window.addEventListener('touchcancel', clearActiveGallery, { passive: true });
 };
 
 const AutoScrollGallery = ({ count = 1, children }) => {
