@@ -43,6 +43,10 @@ export async function upsertProduct(product) {
     bot_description: product.bot_description || null,
     promotional_price: product.promotional_price != null ? Number(product.promotional_price) : null,
     featured_order: product.featured_order != null ? Number(product.featured_order) : 999,
+    // Oferta do Dia
+    offer_active: !!product.offer_active,
+    offer_discount_percent: product.offer_discount_percent != null ? Number(product.offer_discount_percent) : null,
+    offer_ends_at: product.offer_ends_at || null,
   };
   const { data, error } = await supabase
     .from('products')

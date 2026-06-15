@@ -15,6 +15,8 @@ import {
   GripVertical, Instagram, ShieldQuestion, Globe, HelpCircle, ScanLine, Scan, Menu
 } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct as deleteProductRemote, fetchBanners, upsertBanner, deleteBanner as deleteBannerRemote, uploadImage, fetchAllKitItems, fetchKitItems, saveKitItems } from './lib/supabase';
+import OfferCountdown from './components/OfferCountdown';
+import { isOfferLive, offerPrice, offerPercent, offerEndsAt, todayLocalISO, formatDayMonth } from './lib/offers';
 import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, updateOrderValue, restoreOrderStock } from './lib/orders';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
@@ -1061,6 +1063,11 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
   const [searchTagInput, setSearchTagInput] = useState('');
   const [botDescription, setBotDescription] = useState('');
   const [promotionalPrice, setPromotionalPrice] = useState('');
+  // ===== OFERTA DO DIA =====
+  const [offerActive, setOfferActive] = useState(false);
+  const [offerDiscount, setOfferDiscount] = useState(''); // % de desconto
+  const [offerEndDate, setOfferEndDate] = useState('');   // 'YYYY-MM-DD' (último dia, inclusivo)
+  const [normalPricePreview, setNormalPricePreview] = useState(''); // espelha o Preço Normal p/ preview
 
   // ===== KIT (Bundle Builder) =====
   const [isKit, setIsKit] = useState(false);
@@ -1099,6 +1106,10 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setSearchTags(Array.isArray(editMode.search_tags) ? editMode.search_tags : []);
       setBotDescription(editMode.bot_description || '');
       setPromotionalPrice(editMode.promotional_price != null ? String(editMode.promotional_price) : '');
+      setOfferActive(!!editMode.offer_active);
+      setOfferDiscount(editMode.offer_discount_percent != null ? String(editMode.offer_discount_percent) : '');
+      setOfferEndDate(editMode.offer_ends_at ? String(editMode.offer_ends_at).slice(0, 10) : '');
+      setNormalPricePreview(editMode.price != null ? String(editMode.price) : '');
       if (editMode.is_kit && editMode.id) {
         fetchKitItems(editMode.id)
           .then(rows => setKitComponentIds(rows.map(r => r.product_id)))
@@ -1120,6 +1131,10 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setSearchTags([]);
       setBotDescription('');
       setPromotionalPrice('');
+      setOfferActive(false);
+      setOfferDiscount('');
+      setOfferEndDate('');
+      setNormalPricePreview('');
     }
     setSecondaryColorInput('');
     setSearchTagInput('');
@@ -1331,6 +1346,10 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
         bot_description: botDescription.trim() || null,
         promotional_price: promotionalPrice !== '' ? parseFloat(promotionalPrice) : null,
         featured_order: editMode !== 'new' && typeof editMode.featured_order === 'number' ? editMode.featured_order : 999,
+        // Oferta do Dia — só vale se tiver % E data de validade
+        offer_active: offerActive && offerDiscount !== '' && parseFloat(offerDiscount) > 0 && !!offerEndDate,
+        offer_discount_percent: offerDiscount !== '' ? parseFloat(offerDiscount) : null,
+        offer_ends_at: offerEndDate || null,
       };
       const updatedProducts = editMode === 'new' ? [data, ...products] : products.map(p => p.id === data.id ? data : p);
       setProducts(updatedProducts);
@@ -1691,12 +1710,96 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Preço Normal (R$)</label>
-                <input name="price" type="number" step="0.01" defaultValue={editMode?.price} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" required />
+                <input name="price" type="number" step="0.01" defaultValue={editMode?.price} onChange={e => setNormalPricePreview(e.target.value)} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" required />
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Preço Promo (opcional)</label>
                 <input type="number" step="0.01" value={promotionalPrice} onChange={e => setPromotionalPrice(e.target.value)} placeholder="—" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl font-bold text-sm text-white focus:border-emerald-500/50 outline-none" />
               </div>
+            </div>
+          </div>
+
+          {/* BLOCO 5.5 — OFERTA DO DIA */}
+          <div className="p-[1.5px] rounded-[28px] bg-gradient-to-br from-amber-400/40 via-amber-500/10 to-red-500/30">
+            <div className="bg-zinc-900 p-5 rounded-[27px] space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5" style={{ color: '#fbbf24' }}>
+                  <Flame size={12} className="fill-amber-400 text-amber-400"/> Oferta do Dia
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setOfferActive(v => !v)}
+                  className="flex items-center gap-2"
+                  aria-pressed={offerActive}
+                >
+                  <span className={`text-[10px] font-black uppercase ${offerActive ? 'text-amber-400' : 'text-zinc-500'}`}>{offerActive ? 'Ativa' : 'Desligada'}</span>
+                  <div className={`w-10 h-5 rounded-full p-0.5 transition-all ${offerActive ? 'bg-gradient-to-r from-amber-400 to-red-500' : 'bg-zinc-700'}`}>
+                    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${offerActive ? 'translate-x-5' : ''}`} />
+                  </div>
+                </button>
+              </div>
+
+              {offerActive && (
+                <div className="space-y-4 animate-in">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Desconto (%)</label>
+                      <div className="relative">
+                        <input
+                          type="number" min="1" max="99" step="1" inputMode="numeric"
+                          value={offerDiscount}
+                          onChange={e => setOfferDiscount(e.target.value)}
+                          placeholder="Ex: 30"
+                          className="w-full p-4 pr-9 bg-zinc-950 border border-amber-500/20 rounded-2xl font-bold text-sm text-white outline-none focus:border-amber-400/60"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-400 font-black text-sm pointer-events-none">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Válida até (incl.)</label>
+                      <input
+                        type="date"
+                        value={offerEndDate}
+                        min={todayLocalISO()}
+                        onChange={e => setOfferEndDate(e.target.value)}
+                        className="w-full p-4 bg-zinc-950 border border-amber-500/20 rounded-2xl font-bold text-sm text-white outline-none focus:border-amber-400/60 [color-scheme:dark]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preview da oferta — De / Por / -% */}
+                  {(() => {
+                    const base = parseFloat(normalPricePreview);
+                    const pct = parseFloat(offerDiscount);
+                    const valid = base > 0 && pct > 0 && pct < 100;
+                    const novo = valid ? Math.round(base * (1 - pct / 100) * 100) / 100 : 0;
+                    return (
+                      <div className="rounded-2xl p-4 bg-zinc-950/60 border border-white/5 flex items-center justify-between gap-3">
+                        {valid ? (
+                          <>
+                            <div className="flex flex-col leading-tight">
+                              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide line-through">De {formatBRL(base)}</span>
+                              <span className="text-xl font-black text-white tracking-tight">Por {formatBRL(novo)}</span>
+                            </div>
+                            <span className="shrink-0 text-[12px] font-black text-zinc-950 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-red-500 shadow-[0_4px_14px_rgba(245,158,11,0.4)]">
+                              -{Math.round(pct)}%
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Defina preço normal, % e data para ver o preview</span>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  <div className="flex items-start gap-2 px-1">
+                    <Clock size={12} className="text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-[9.5px] font-bold text-zinc-400 leading-snug">
+                      O temporizador busca a <span className="text-amber-300">meia-noite</span>{offerEndDate ? <> — acaba na virada do dia <span className="text-amber-300">{formatDayMonth(offerEndDate)}</span></> : ''}. Itens em oferta <span className="text-amber-300">não recebem</span> os 5% do Pix (a oferta já é o desconto).
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -3907,6 +4010,20 @@ function App() {
   const categories = useMemo(() => ['TODOS', ...new Set((products || []).filter(p => !p.is_kit).map(p => p.category))], [products]);
   const subtotal = useMemo(() => (cart || []).reduce((acc, item) => acc + (item.price * item.quantity), 0), [cart]);
 
+  // Oferta do Dia: ao expirar um relógio, este state muda e re-renderiza a loja toda,
+  // recalculando preço/visibilidade (isOfferLive) de cada produto na hora certa.
+  const [, setOfferExpiryBump] = useState(0);
+  const bumpOffers = () => setOfferExpiryBump(v => v + 1);
+
+  // Pix 5% NÃO incide sobre itens em oferta. Calcula só a base elegível.
+  const pixBaseSubtotal = useMemo(
+    () => (cart || []).filter(i => !i.offer_applied).reduce((acc, i) => acc + (i.price * i.quantity), 0),
+    [cart]
+  );
+  const pixDiscount = useMemo(() => pixBaseSubtotal * 0.05, [pixBaseSubtotal]);
+  const totalComPix = useMemo(() => subtotal - pixDiscount, [subtotal, pixDiscount]);
+  const hasOfferInCart = useMemo(() => (cart || []).some(i => i.offer_applied), [cart]);
+
   const handleProductClick = (product) => {
     if (!product) return;
     // Kits podem ser abertos mesmo sem estoque próprio (estoque vem dos componentes)
@@ -3944,8 +4061,11 @@ function App() {
           quantity: updatedCart[existingIdx].quantity + quantity,
         };
       } else {
+        const live = isOfferLive(selectedProduct);
         updatedCart.push({
           ...selectedProduct,
+          price: live ? offerPrice(selectedProduct) : selectedProduct.price,
+          offer_applied: live,
           size: sizeName || 'U',
           quantity,
           itemKey,
@@ -5152,21 +5272,27 @@ function App() {
                              Restam {product.stock}
                            </div>
                          )}
-                         {/* Badge de desconto % */}
+                         {/* Badge de desconto % — oferta tem prioridade sobre a promo */}
                          {!isOutOfStock && (() => {
+                           const live = isOfferLive(product);
                            const promo = product.promotional_price;
-                           if (!promo || promo >= product.price) return null;
-                           const pct = Math.round((1 - promo / product.price) * 100);
+                           const pct = live
+                             ? offerPercent(product)
+                             : (promo && promo < product.price ? Math.round((1 - promo / product.price) * 100) : 0);
                            if (pct <= 0) return null;
                            const hasRestam = !product.is_kit && (product.stock || 0) <= 3;
                            return (
                              <div style={{
                                position: 'absolute', top: '8px',
                                ...(hasRestam ? { right: '8px' } : { left: '8px' }),
-                               zIndex: 20, background: '#e53e3e', color: '#fff',
-                               fontWeight: 700, fontSize: '11px', borderRadius: '4px',
+                               zIndex: 20, color: '#fff',
+                               fontWeight: 800, fontSize: '11px', borderRadius: '5px',
                                padding: '3px 7px', lineHeight: 1.2,
+                               display: 'flex', alignItems: 'center', gap: '3px',
+                               background: live ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : '#e53e3e',
+                               boxShadow: live ? '0 2px 10px rgba(245,158,11,0.45)' : 'none',
                              }}>
+                               {live && <Flame size={9} style={{ fill: '#fff' }} />}
                                -{pct}% OFF
                              </div>
                            );
@@ -5252,24 +5378,33 @@ function App() {
                           {/* Linha 2 — preço + botão */}
                           <div className="flex items-center justify-between gap-2 mb-1.5">
                             {(() => {
+                              const live = !isOutOfStock && isOfferLive(product);
                               const promo = product.promotional_price;
-                              const hasPromo = !isOutOfStock && promo && promo < product.price;
-                              const mainPrice = hasPromo ? promo : product.price;
+                              const hasPromo = !isOutOfStock && !live && promo && promo < product.price;
+                              const mainPrice = live ? offerPrice(product) : (hasPromo ? promo : product.price);
+                              const showStrike = live || hasPromo;
                               return (
                                 <div className="flex flex-col leading-none min-w-0">
-                                  {hasPromo && (
+                                  {showStrike && (
                                     <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>
                                       {formatBRL(product.price || 0)}
                                     </span>
                                   )}
-                                  <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : '#F3F4F6', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: hasPromo ? '2px' : 0 }}>
+                                  <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? '#fde68a' : '#F3F4F6'), fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0 }}>
                                     {formatBRL(mainPrice || 0)}
                                   </p>
-                                  {!isOutOfStock && (
+                                  {!isOutOfStock && live ? (
+                                    <OfferCountdown
+                                      target={offerEndsAt(product)}
+                                      variant="compact"
+                                      onExpire={bumpOffers}
+                                      style={{ marginTop: '4px' }}
+                                    />
+                                  ) : !isOutOfStock ? (
                                     <span style={{ color: '#A1A1AA', fontSize: '9.5px', fontWeight: 600, letterSpacing: '0.02em', marginTop: '3px' }}>
                                       5% OFF no Pix · {formatBRL((mainPrice || 0) * 0.95)}
                                     </span>
-                                  )}
+                                  ) : null}
                                 </div>
                               );
                             })()}
@@ -5320,7 +5455,7 @@ function App() {
                           {/* Linha 3 — WhatsApp */}
                           {!isOutOfStock && (
                             <a
-                              href={`https://wa.me/${String(config?.whatsapp || '5534984148067').replace(/\D/g,'')}?text=${encodeURIComponent(`Olá! Tenho interesse em um produto da Fluxo Outlet 👇\n\n*${product.name}*\nSKU: ${product.sku || 'N/A'}\nCategoria: ${product.category || ''}${product.subcategory ? ' > ' + product.subcategory : ''}\nPreço: R$ ${product.price?.toFixed(2).replace('.', ',')}\nLink: ${'https://www.fluxooutlet.com.br/?produto=' + product.sku}\n\nPodem me ajudar?`)}`}
+                              href={`https://wa.me/${String(config?.whatsapp || '5534984148067').replace(/\D/g,'')}?text=${encodeURIComponent(`Olá! Tenho interesse em um produto da Fluxo Outlet 👇\n\n*${product.name}*\nSKU: ${product.sku || 'N/A'}\nCategoria: ${product.category || ''}${product.subcategory ? ' > ' + product.subcategory : ''}\n${isOfferLive(product) ? `🔥 OFERTA DO DIA (-${offerPercent(product)}%): R$ ${offerPrice(product).toFixed(2).replace('.', ',')} (de R$ ${product.price?.toFixed(2).replace('.', ',')})` : `Preço: R$ ${product.price?.toFixed(2).replace('.', ',')}`}\nLink: ${'https://www.fluxooutlet.com.br/?produto=' + product.sku}\n\nPodem me ajudar?`)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={e => e.stopPropagation()}
@@ -5669,7 +5804,24 @@ function App() {
                 <div className="flex flex-col gap-1">
                   <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest self-start">REF: {selectedProduct.sku}</span>
                   <h2 className="text-2xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{selectedProduct.name}</h2>
-                  {selectedProduct.promotional_price ? (
+                  {isOfferLive(selectedProduct) ? (
+                    <div className="mt-3 p-[1.5px] rounded-3xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40">
+                      <div className="rounded-[22px] bg-zinc-950/80 p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.25em]" style={{ color: '#fbbf24' }}>
+                            <Flame size={11} className="fill-amber-400 text-amber-400"/> Oferta do Dia
+                          </span>
+                          <span className="text-[10px] font-black text-zinc-950 px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-red-500">-{offerPercent(selectedProduct)}%</span>
+                        </div>
+                        <div className="flex items-baseline gap-3">
+                          <span className="text-3xl font-black tracking-tighter" style={{ color: '#fde68a' }}>{formatBRL(offerPrice(selectedProduct))}</span>
+                          <span className="text-base font-bold text-zinc-500 line-through">{formatBRL(selectedProduct.price || 0)}</span>
+                        </div>
+                        <OfferCountdown target={offerEndsAt(selectedProduct)} variant="full" onExpire={bumpOffers} />
+                        <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Acaba à meia-noite · não acumula 5% Pix</p>
+                      </div>
+                    </div>
+                  ) : selectedProduct.promotional_price ? (
                     <div className="flex items-baseline gap-3 mt-2">
                       <span className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(selectedProduct.promotional_price)}</span>
                       <span className="text-base font-bold text-zinc-500 line-through">{formatBRL(selectedProduct.price || 0)}</span>
@@ -5855,7 +6007,31 @@ function App() {
               )}
               <h1 className="text-4xl font-black text-white leading-tight uppercase tracking-tight mb-1">{selectedProduct.name}</h1>
               <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-6">REF: {selectedProduct.sku}</p>
-              <p className="text-5xl font-black text-emerald-400 tracking-tighter mb-10">{formatBRL(selectedProduct.price || 0)}</p>
+              {isOfferLive(selectedProduct) ? (
+                <div className="mb-10 p-[1.5px] rounded-3xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40 inline-block">
+                  <div className="rounded-[22px] bg-zinc-950/80 p-5 space-y-4">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#fbbf24' }}>
+                        <Flame size={13} className="fill-amber-400 text-amber-400"/> Oferta do Dia
+                      </span>
+                      <span className="text-[11px] font-black text-zinc-950 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-red-500 shadow-[0_4px_14px_rgba(245,158,11,0.4)]">-{offerPercent(selectedProduct)}% OFF</span>
+                    </div>
+                    <div className="flex items-baseline gap-4">
+                      <span className="text-5xl font-black tracking-tighter" style={{ color: '#fde68a' }}>{formatBRL(offerPrice(selectedProduct))}</span>
+                      <span className="text-xl font-bold text-zinc-500 line-through">{formatBRL(selectedProduct.price || 0)}</span>
+                    </div>
+                    <OfferCountdown target={offerEndsAt(selectedProduct)} variant="full" onExpire={bumpOffers} />
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Acaba à meia-noite · itens em oferta não acumulam os 5% do Pix</p>
+                  </div>
+                </div>
+              ) : selectedProduct.promotional_price ? (
+                <div className="flex items-baseline gap-4 mb-10">
+                  <span className="text-5xl font-black text-emerald-400 tracking-tighter">{formatBRL(selectedProduct.promotional_price)}</span>
+                  <span className="text-xl font-bold text-zinc-500 line-through">{formatBRL(selectedProduct.price || 0)}</span>
+                </div>
+              ) : (
+                <p className="text-5xl font-black text-emerald-400 tracking-tighter mb-10">{formatBRL(selectedProduct.price || 0)}</p>
+              )}
 
               <div className="mb-8">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-3">Selecione o Tamanho</p>
@@ -6046,7 +6222,10 @@ function App() {
                             <button onClick={() => setCart(cart.filter(i => i.itemKey !== item.itemKey))} className="text-zinc-600 hover:text-red-500 touch-manipulation"><Trash2 size={16}/></button>
                           </div>
                           <div className="flex justify-between items-center mt-3">
-                            <span className="font-black text-emerald-500 text-sm">{formatBRL(item.price || 0)}</span>
+                            <span className={`font-black text-sm flex items-center gap-1.5 ${item.offer_applied ? 'text-amber-400' : 'text-emerald-500'}`}>
+                              {formatBRL(item.price || 0)}
+                              {item.offer_applied && <span className="text-[7px] font-black text-zinc-950 px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-400 to-red-500 tracking-wide">OFERTA</span>}
+                            </span>
                             <div className="flex items-center bg-zinc-950 rounded-lg border border-white/5 p-1">
                               <button onClick={() => { if(item.quantity > 1) setCart(cart.map(i => i.itemKey === item.itemKey ? {...i, quantity: i.quantity - 1} : i)) }} className="text-zinc-400 p-1.5 touch-manipulation"><Minus size={12}/></button>
                               <span className="font-black text-xs text-white w-6 text-center">{item.quantity}</span>
@@ -6068,13 +6247,19 @@ function App() {
               <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 px-6 py-6 max-w-md mx-auto z-50 shadow-2xl">
                 <div className="space-y-2 mb-4">
                    <div className="flex justify-between items-center text-[11px] font-bold uppercase text-zinc-400"><span>Subtotal</span><span>{formatBRL(subtotal)}</span></div>
-                   <div className="flex justify-between items-center text-[11px] font-bold uppercase"><span className="text-zinc-400">Desconto Pix (5%)</span><span className="text-emerald-500">- {formatBRL(subtotal * 0.05)}</span></div>
+                   <div className="flex justify-between items-center text-[11px] font-bold uppercase"><span className="text-zinc-400">Desconto Pix (5%)</span><span className="text-emerald-500">- {formatBRL(pixDiscount)}</span></div>
+                   {hasOfferInCart && (
+                     <div className="flex items-start gap-1.5 text-[9px] font-bold text-amber-400/90 uppercase tracking-wide leading-snug">
+                       <Flame size={11} className="shrink-0 mt-px fill-amber-400 text-amber-400" />
+                       <span>Itens em oferta já estão com desconto e não acumulam os 5% do Pix.</span>
+                     </div>
+                   )}
                    <div className="flex justify-between items-end pt-3 border-t border-white/10">
                      <div className="flex flex-col">
                        <p className="text-[12px] font-black text-white uppercase tracking-widest">Total no Pix</p>
                        <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">ou {formatBRL(subtotal)} em até 4x sem juros</span>
                      </div>
-                     <h3 className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(subtotal * 0.95)}</h3>
+                     <h3 className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(totalComPix)}</h3>
                    </div>
                 </div>
                 {/* Entrega local — diferencial Uberaba */}
