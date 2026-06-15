@@ -302,24 +302,66 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
 };
 
 // ──────────────────────────────────────────────────────────────
-// Galeria do card com AUTOPLAY (mobile/desktop).
-// As imagens do produto passam sozinhas, devagar, enquanto o card está visível
-// na tela — sem precisar segurar nem tocar. Assim, ao rolar a página o cliente
-// já vê as fotos trocando e descobre que há mais de uma. Só roda se houver +1
-// foto; pausa quando o card sai da viewport ou a aba fica em segundo plano.
-// Não bloqueia o scroll vertical (nenhum handler de toque / preventDefault).
+// Galeria do card que passa as fotos SÓ ONDE O DEDO ESTÁ PASSANDO (mobile).
+// Enquanto o cliente rola e o dedo passa por cima de um card (sem precisar
+// segurar/pressionar), AQUELE card vai trocando as fotos sozinho. Saiu dele
+// (foi pra outro card ou levantou o dedo), para. Apenas um por vez muda.
+// Não bloqueia o scroll vertical: só listeners passivos (nunca preventDefault).
+// Como o touchmove fica "preso" no alvo inicial, um rastreador global usa
+// elementFromPoint p/ saber sobre qual card o dedo está a cada momento.
 // ──────────────────────────────────────────────────────────────
 const HOLD_SCROLL_STYLE = { position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' };
-const AUTOPLAY_MS = 2200; // ritmo leve entre as fotos
+const AUTOPLAY_MS = 1400; // ritmo entre as fotos enquanto o dedo está sobre o card
+
+// Registro de galerias + rastreador global de toque (inicializado uma vez).
+const galleryRegistry = new Map(); // element -> { activate, deactivate }
+let activeGalleryEl = null;
+let galleryListenersOn = false;
+let lastPointCheck = 0;
+
+const setActiveGalleryAt = (x, y) => {
+  let el = null;
+  try {
+    const node = document.elementFromPoint(x, y);
+    el = node ? node.closest('[data-autogallery="1"]') : null;
+  } catch { el = null; }
+  if (el === activeGalleryEl) return;
+  if (activeGalleryEl && galleryRegistry.has(activeGalleryEl)) galleryRegistry.get(activeGalleryEl).deactivate();
+  activeGalleryEl = el;
+  if (el && galleryRegistry.has(el)) galleryRegistry.get(el).activate();
+};
+const clearActiveGallery = () => {
+  if (activeGalleryEl && galleryRegistry.has(activeGalleryEl)) galleryRegistry.get(activeGalleryEl).deactivate();
+  activeGalleryEl = null;
+};
+const ensureGalleryListeners = () => {
+  if (galleryListenersOn || typeof window === 'undefined') return;
+  galleryListenersOn = true;
+  const onStart = (e) => { const t = e.touches && e.touches[0]; if (t) setActiveGalleryAt(t.clientX, t.clientY); };
+  const onMove = (e) => {
+    const now = Date.now();
+    if (now - lastPointCheck < 90) return; // throttle leve
+    lastPointCheck = now;
+    const t = e.touches && e.touches[0]; if (t) setActiveGalleryAt(t.clientX, t.clientY);
+  };
+  window.addEventListener('touchstart', onStart, { passive: true });
+  window.addEventListener('touchmove', onMove, { passive: true });
+  window.addEventListener('touchend', clearActiveGallery, { passive: true });
+  window.addEventListener('touchcancel', clearActiveGallery, { passive: true });
+};
 
 const AutoScrollGallery = ({ count = 1, children }) => {
   const ref = React.useRef(null);
-  const visibleRef = React.useRef(false);
+  const timerRef = React.useRef(null);
   const multi = count > 1;
 
   React.useEffect(() => {
     if (!multi) return;
+    ensureGalleryListeners();
     const el = ref.current;
+    if (!el) return;
+    el.setAttribute('data-autogallery', '1');
+
     const advance = () => {
       const node = ref.current; if (!node) return;
       const w = node.clientWidth || 1;
@@ -328,23 +370,21 @@ const AutoScrollGallery = ({ count = 1, children }) => {
       if (next > maxLeft + 1) next = 0; // chegou no fim → volta ao início (loop)
       node.scrollTo({ left: next, behavior: 'smooth' });
     };
+    const controller = {
+      activate: () => {
+        if (timerRef.current) return;
+        advance();                                   // já troca ao passar o dedo
+        timerRef.current = setInterval(advance, AUTOPLAY_MS);
+      },
+      deactivate: () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } },
+    };
+    galleryRegistry.set(el, controller);
 
-    let io;
-    if (el && typeof IntersectionObserver !== 'undefined') {
-      io = new IntersectionObserver(
-        (entries) => entries.forEach((e) => { visibleRef.current = e.isIntersecting; }),
-        { threshold: 0.5 } // só roda quando metade do card está na tela
-      );
-      io.observe(el);
-    } else {
-      visibleRef.current = true;
-    }
-
-    const id = setInterval(() => {
-      if (visibleRef.current && document.visibilityState !== 'hidden') advance();
-    }, AUTOPLAY_MS);
-
-    return () => { if (io) io.disconnect(); clearInterval(id); };
+    return () => {
+      controller.deactivate();
+      galleryRegistry.delete(el);
+      if (activeGalleryEl === el) activeGalleryEl = null;
+    };
   }, [multi]);
 
   return (
