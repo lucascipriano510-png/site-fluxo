@@ -17,6 +17,7 @@ import {
 import { fetchProducts, upsertProduct, deleteProduct as deleteProductRemote, fetchBanners, upsertBanner, deleteBanner as deleteBannerRemote, uploadImage, fetchAllKitItems, fetchKitItems, saveKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import { isOfferLive, offerPrice, offerPercent, offerEndsAt, todayLocalISO, formatDayMonth, offerCampaign, OFFER_CAMPAIGNS, CAMPAIGN_LABELS, CAMPAIGN_SHORT } from './lib/offers';
+import { parseQueryIntent, productMatchesIntent, productHaystack, scoreProductForSearch, hasActiveQuery } from './lib/search';
 import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, updateOrderValue, restoreOrderStock } from './lib/orders';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
@@ -4438,24 +4439,21 @@ function App() {
     }
   };
 
+  const searchIntent = useMemo(() => parseQueryIntent(searchQuery), [searchQuery]);
+  const searchActive = hasActiveQuery(searchIntent);
+
   const filteredProducts = useMemo(() => {
     const base = (products || []).filter(p => {
       if (p.is_active === false) return false;
       if (kitsOnly) {
         if (!p.is_kit) return false;
-        const q = searchQuery.toLowerCase().trim();
-        const haystack = `${p.name || ''} ${p.sku || ''}`.toLowerCase();
-        const tokens = q.split(/\s+/).filter(Boolean);
-        return tokens.length === 0 || tokens.every(t => haystack.includes(t));
+        return productMatchesIntent(p, searchIntent);
       }
       if (p.is_kit) return false;
       if (p.stock <= 0) return false;
       const matchesCat = selectedCategory === 'TODOS' || p.category === selectedCategory;
       const matchesSub = selectedSubcategory === 'TODOS' || (p.subcategory || '').toUpperCase() === selectedSubcategory;
-      const q = searchQuery.toLowerCase().trim();
-      const haystack = `${p.name || ''} ${p.subcategory || ''} ${p.category || ''} ${p.sku || ''}`.toLowerCase();
-      const tokens = q.split(/\s+/).filter(Boolean);
-      const matchesSearch = tokens.length === 0 || tokens.every(t => haystack.includes(t));
+      const matchesSearch = productMatchesIntent(p, searchIntent);
       const sizeNorm = String(selectedSize || '').trim().toUpperCase();
       const matchesSize = sizeNorm === 'TODOS' || (Array.isArray(p.sizes) && p.sizes.some(s => {
         const sName = String((typeof s === 'string' ? s : s.size) || '').trim().toUpperCase();
@@ -4470,7 +4468,7 @@ function App() {
     const recent = base.filter(p => p.created_at && new Date(p.created_at) > thirtyDaysAgo);
     if (recent.length > 0) return recent;
     return [...base].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 8);
-  }, [noveltyMode, kitsOnly, selectedCategory, selectedSubcategory, searchQuery, selectedSize, products, activeCollectionFilter]);
+  }, [noveltyMode, kitsOnly, selectedCategory, selectedSubcategory, searchIntent, selectedSize, products, activeCollectionFilter]);
 
   // Subcategorias disponíveis dentro da categoria atual (ignora produtos sem estoque)
   const availableSubcategories = useMemo(() => {
@@ -4583,6 +4581,13 @@ function App() {
   }, [productsLoaded, products]);
 
   const sortedProducts = useMemo(() => {
+    // Com busca ativa: ordena por RELEVÂNCIA (nome exato > começa com > contém...).
+    if (searchActive) {
+      return [...filteredProducts]
+        .map(p => ({ p, s: scoreProductForSearch(p, searchIntent) }))
+        .sort((a, b) => b.s - a.s || (b.p.sales || 0) - (a.p.sales || 0))
+        .map(x => x.p);
+    }
     return [...filteredProducts].sort((a, b) => {
       const aMode  = ratingsMap[a.id]?.mode  || 0;
       const bMode  = ratingsMap[b.id]?.mode  || 0;
@@ -4595,7 +4600,7 @@ function App() {
       if (bSales !== aSales) return bSales - aSales;
       return 0;
     });
-  }, [filteredProducts, ratingsMap]);
+  }, [filteredProducts, ratingsMap, searchActive, searchIntent]);
 
   const totalPages = Math.max(1, Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE));
   const paginatedProducts = useMemo(() => {
@@ -5093,9 +5098,33 @@ function App() {
       <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-screen lg:max-w-[1280px] lg:mx-auto" data-testid="catalog-main">
         <div className="relative group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-          <input id="search-input" placeholder="O que você procura?" data-testid="input-search" className="w-full border py-4 pl-14 pr-6 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <input id="search-input" placeholder="Busque por peça, cor, tamanho ou preço…" data-testid="input-search" className="w-full border py-4 pl-14 pr-12 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} aria-label="Limpar busca" className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white bg-zinc-800/60 rounded-full p-1.5 touch-manipulation active:scale-90 transition-all"><X size={13} /></button>
+          )}
         </div>
-        
+        {/* Chips do que a busca entendeu — feedback de busca inteligente */}
+        {searchActive && (() => {
+          const chips = [];
+          if (searchIntent.onlyOffer) chips.push({ k: 'promo', label: 'Em promoção', icon: <Flame size={10} className="fill-amber-400 text-amber-400" /> });
+          if (searchIntent.onlyNew) chips.push({ k: 'novo', label: 'Novidades' });
+          if (searchIntent.priceMin != null && searchIntent.priceMax != null) chips.push({ k: 'faixa', label: `${formatBRL(searchIntent.priceMin)} – ${formatBRL(searchIntent.priceMax)}` });
+          else if (searchIntent.priceMax != null) chips.push({ k: 'ate', label: `Até ${formatBRL(searchIntent.priceMax)}` });
+          else if (searchIntent.priceMin != null) chips.push({ k: 'apartir', label: `A partir de ${formatBRL(searchIntent.priceMin)}` });
+          if (searchIntent.sizes.length > 0) chips.push({ k: 'tam', label: `Tam: ${searchIntent.sizes.join(', ')}` });
+          if (chips.length === 0) return null;
+          return (
+            <div className="flex flex-wrap items-center gap-2 -mt-2">
+              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Filtrando:</span>
+              {chips.map(c => (
+                <span key={c.k} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-amber-300 bg-amber-400/10 border border-amber-400/25 rounded-full px-2.5 py-1">
+                  {c.icon}{c.label}
+                </span>
+              ))}
+            </div>
+          );
+        })()}
+
         <div id="catalog-section" className="flex gap-3 lg:gap-5 overflow-x-auto lg:overflow-x-visible lg:flex-wrap lg:justify-center no-scrollbar pb-1 lg:pb-0 mask-linear lg:[mask-image:none] native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
           {/* Botão destacado de KITS — sempre primeiro */}
           {(products || []).some(p => p.is_kit) && (
