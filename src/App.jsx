@@ -302,71 +302,53 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
 };
 
 // ──────────────────────────────────────────────────────────────
-// Galeria do card com "segurar pra passar" (mobile).
-// Enquanto o cliente rola e o dedo dá uma seguradinha (fica parado) sobre a
-// imagem, o carrossel do produto avança devagar sozinho — só se houver +1 foto.
-// Não bloqueia o scroll vertical (nunca chama preventDefault) e é leve:
-// a cada movimento real o gatilho reseta; só dispara quando o dedo para.
+// Galeria do card com AUTOPLAY (mobile/desktop).
+// As imagens do produto passam sozinhas, devagar, enquanto o card está visível
+// na tela — sem precisar segurar nem tocar. Assim, ao rolar a página o cliente
+// já vê as fotos trocando e descobre que há mais de uma. Só roda se houver +1
+// foto; pausa quando o card sai da viewport ou a aba fica em segundo plano.
+// Não bloqueia o scroll vertical (nenhum handler de toque / preventDefault).
 // ──────────────────────────────────────────────────────────────
 const HOLD_SCROLL_STYLE = { position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' };
+const AUTOPLAY_MS = 2200; // ritmo leve entre as fotos
 
-const HoldScrollGallery = ({ count = 1, children }) => {
+const AutoScrollGallery = ({ count = 1, children }) => {
   const ref = React.useRef(null);
-  const st = React.useRef({ x: 0, y: 0, hold: null, timer: null });
+  const visibleRef = React.useRef(false);
   const multi = count > 1;
 
-  React.useEffect(() => () => {
-    const s = st.current;
-    if (s.hold) clearTimeout(s.hold);
-    if (s.timer) clearInterval(s.timer);
-  }, []);
-
-  const stopAdvance = () => { const s = st.current; if (s.timer) { clearInterval(s.timer); s.timer = null; } };
-  const clearHold = () => { const s = st.current; if (s.hold) { clearTimeout(s.hold); s.hold = null; } };
-
-  const advanceStep = () => {
-    const el = ref.current; if (!el) return;
-    const w = el.clientWidth || 1;
-    const maxLeft = el.scrollWidth - w;
-    let next = Math.round(el.scrollLeft / w) * w + w;
-    if (next > maxLeft + 1) next = 0; // chegou no fim → volta ao início (loop suave)
-    el.scrollTo({ left: next, behavior: 'smooth' });
-  };
-
-  const startAdvance = () => {
-    const s = st.current;
-    if (s.timer) return;
-    advanceStep();                              // primeiro avanço ao segurar
-    s.timer = setInterval(advanceStep, 1500);   // lento e leve
-  };
-
-  const onTouchStart = (e) => {
+  React.useEffect(() => {
     if (!multi) return;
-    const t = e.touches[0]; const s = st.current;
-    s.x = t.clientX; s.y = t.clientY;
-    clearHold();
-    s.hold = setTimeout(startAdvance, 110);      // detecta a "seguradinha" (sensível)
-  };
-  const onTouchMove = (e) => {
-    if (!multi) return;
-    const t = e.touches[0]; const s = st.current;
-    if (Math.abs(t.clientX - s.x) > 8 || Math.abs(t.clientY - s.y) > 8) {
-      s.x = t.clientX; s.y = t.clientY;
-      clearHold(); stopAdvance();                // dedo voltou a deslizar → pausa
-      s.hold = setTimeout(startAdvance, 110);     // re-arma p/ quando parar de novo
+    const el = ref.current;
+    const advance = () => {
+      const node = ref.current; if (!node) return;
+      const w = node.clientWidth || 1;
+      const maxLeft = node.scrollWidth - w;
+      let next = Math.round(node.scrollLeft / w) * w + w;
+      if (next > maxLeft + 1) next = 0; // chegou no fim → volta ao início (loop)
+      node.scrollTo({ left: next, behavior: 'smooth' });
+    };
+
+    let io;
+    if (el && typeof IntersectionObserver !== 'undefined') {
+      io = new IntersectionObserver(
+        (entries) => entries.forEach((e) => { visibleRef.current = e.isIntersecting; }),
+        { threshold: 0.5 } // só roda quando metade do card está na tela
+      );
+      io.observe(el);
+    } else {
+      visibleRef.current = true;
     }
-  };
-  const onTouchEnd = () => { clearHold(); stopAdvance(); };
+
+    const id = setInterval(() => {
+      if (visibleRef.current && document.visibilityState !== 'hidden') advance();
+    }, AUTOPLAY_MS);
+
+    return () => { if (io) io.disconnect(); clearInterval(id); };
+  }, [multi]);
 
   return (
-    <div
-      ref={ref}
-      style={HOLD_SCROLL_STYLE}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      onTouchCancel={onTouchEnd}
-    >
+    <div ref={ref} style={HOLD_SCROLL_STYLE}>
       {children}
     </div>
   );
@@ -5344,13 +5326,13 @@ function App() {
                   <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5">
                     <div className="rounded-[27px] bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
                       <div className="aspect-[4/5] relative">
-                        <HoldScrollGallery count={heroImages.length}>
+                        <AutoScrollGallery count={heroImages.length}>
                           {heroImages.map((imgSrc, i) => (
                             <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                               <ProductImage src={imgSrc} alt={hero.name} priority={i === 0} order={i === 0 ? 20 : 1500 + i} sizes="92vw" />
                             </div>
                           ))}
-                        </HoldScrollGallery>
+                        </AutoScrollGallery>
                         {/* Vinheta lateral premium */}
                         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(120% 80% at 50% 35%, transparent 50%, rgba(0,0,0,0.45) 100%)' }} />
                         {/* Gradient inferior */}
@@ -5415,13 +5397,13 @@ function App() {
                           <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/4">
                             <div className="rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
                               <div className="aspect-[3/4] relative overflow-hidden">
-                                <HoldScrollGallery count={fg.length}>
+                                <AutoScrollGallery count={fg.length}>
                                   {fg.map((imgSrc, i) => (
                                     <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                                       <ProductImage src={imgSrc} alt={product.name} priority={i === 0 && idx < 2} order={i === 0 ? 30 + idx : 1500 + idx * 10 + i} sizes="55vw" />
                                     </div>
                                   ))}
-                                </HoldScrollGallery>
+                                </AutoScrollGallery>
                                 <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 bg-black/55 backdrop-blur-sm border border-white/15 rounded-full px-2 py-[3px]">
                                   <span className="text-[6px] font-black uppercase tracking-[0.25em] text-white/85">N.º {String(idx + 2).padStart(2, '0')}</span>
                                 </div>
@@ -5587,13 +5569,13 @@ function App() {
                          })()}
 
                          {/* Carrossel nativo — deslize para ver fotos adicionais */}
-                         <HoldScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
+                         <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                                <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} />
                              </div>
                            ))}
-                         </HoldScrollGallery>
+                         </AutoScrollGallery>
 
                         {isOutOfStock && (
                            <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px] flex items-center justify-center">
