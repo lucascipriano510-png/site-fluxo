@@ -186,35 +186,84 @@ const buildSrcSet = (src, widths = [400, 600, 900, 1200, 1600], quality = 90) =>
   return widths.map((w) => `${optimizeImage(src, w, quality)} ${w}w`).join(', ');
 };
 
-const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesProp }) => {
+// ──────────────────────────────────────────────────────────────
+// Fila de carregamento de imagens com concorrência limitada.
+// Garante ORDEM: imagens com menor `priority` (topo da página) baixam
+// antes das de baixo. Uma imagem no fim da lista nunca começa antes das
+// primeiras — só ganha um "slot" quando chega a sua vez.
+// ──────────────────────────────────────────────────────────────
+const IMG_CONCURRENCY = 3; // quantas imagens podem baixar ao mesmo tempo
+let imgActive = 0;
+let imgQueue = [];
+
+const pumpImgQueue = () => {
+  imgQueue.sort((a, b) => a.priority - b.priority);
+  while (imgActive < IMG_CONCURRENCY && imgQueue.length > 0) {
+    const job = imgQueue.shift();
+    job.started = true;
+    imgActive++;
+    try { job.onStart(); } catch { imgActive--; }
+  }
+};
+
+// Pede permissão para carregar. `onStart` é chamado quando for a vez.
+// Retorna um handle com done()/cancel() para liberar o slot.
+const acquireImgSlot = (priority, onStart) => {
+  const job = { priority, onStart, started: false, finished: false };
+  imgQueue.push(job);
+  pumpImgQueue();
+  const release = () => {
+    if (job.finished) return;
+    job.finished = true;
+    if (job.started) { imgActive = Math.max(0, imgActive - 1); pumpImgQueue(); }
+    else { imgQueue = imgQueue.filter(j => j !== job); }
+  };
+  return { done: release, cancel: release };
+};
+
+const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, sizes: sizesProp }) => {
   const [loaded, setLoaded] = React.useState(false);
   const [inView, setInView] = React.useState(priority);
+  const [canLoad, setCanLoad] = React.useState(false); // a fila liberou o slot
   const wrapperRef = React.useRef(null);
+  const slotRef = React.useRef(null);
 
+  // 1) Detecta proximidade da viewport (não carrega o que está longe pra baixo).
   React.useEffect(() => {
     if (!src) return;
     setLoaded(false);
+    setCanLoad(false);
     if (priority) { setInView(true); return; }
     setInView(false);
     const el = wrapperRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') {
-      setInView(true);
-      return;
-    }
+    if (!el || typeof IntersectionObserver === 'undefined') { setInView(true); return; }
     const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setInView(true);
-            io.disconnect();
-          }
-        });
-      },
+      (entries) => entries.forEach((entry) => {
+        if (entry.isIntersecting) { setInView(true); io.disconnect(); }
+      }),
       { rootMargin: '400px 0px', threshold: 0.01 }
     );
     io.observe(el);
     return () => io.disconnect();
   }, [src, priority]);
+
+  // 2) Estando por perto, entra na fila ORDENADA e só carrega quando for a vez.
+  React.useEffect(() => {
+    if (!src || !(priority || inView)) return;
+    const slot = acquireImgSlot(priority ? 0 : order, () => setCanLoad(true));
+    slotRef.current = slot;
+    return () => { slot.cancel(); slotRef.current = null; };
+  }, [src, inView, priority, order]);
+
+  const finishSlot = () => { if (slotRef.current) { slotRef.current.done(); slotRef.current = null; } };
+
+  // Watchdog: se uma imagem demorar demais, libera o slot pra não travar a fila
+  // (a imagem continua carregando em paralelo, só deixa de bloquear as próximas).
+  React.useEffect(() => {
+    if (!canLoad) return;
+    const t = setTimeout(finishSlot, 7000);
+    return () => clearTimeout(t);
+  }, [canLoad]);
 
   const srcSet = buildSrcSet(src, [320, 480, 640, 900, 1200], 80);
 
@@ -223,7 +272,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
       {!loaded && (
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%)', backgroundSize: '200% 100%', animation: 'skeleton-shine 1.4s ease-in-out infinite', zIndex: 1 }} />
       )}
-      {inView && (
+      {canLoad && (
         <img
           src={optimizeImage(src, 1000, 80)}
           srcSet={srcSet}
@@ -231,14 +280,16 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
-          fetchPriority={priority ? 'high' : 'low'}
-          onLoad={() => setLoaded(true)}
+          fetchPriority={priority ? 'high' : 'auto'}
+          onLoad={() => { setLoaded(true); finishSlot(); }}
           onError={(e) => {
             if (!e.target.dataset.fallback) {
               e.target.dataset.fallback = '1';
               markWsrvFailed();
               e.target.src = src; // URL original do Supabase sem proxy
               e.target.srcset = '';
+            } else {
+              finishSlot(); // libera o slot mesmo se o fallback falhar
             }
           }}
           draggable={false}
@@ -259,15 +310,16 @@ const BannerImage = ({ src, srcDesktop, alt, active }) => {
 
   if (!src && !srcDesktop) return <div className="absolute inset-0 bg-black" />;
 
-  // Mobile (4:5) — comportamento original preservado para o LCP
+  // Mobile (4:5) — sempre otimizado (WebP+resize). O banner é o LCP: servir o
+  // original cru (vários MB) atrasava a primeira pintura. onError volta pro original.
   const mobileBase = src || srcDesktop;
-  const imgSrc = active ? mobileBase : optimizeImage(mobileBase, 1920, 90);
-  const imgSrcSet = active ? undefined : buildSrcSet(mobileBase, [640, 900, 1280, 1920, 2560], 90);
+  const imgSrc = optimizeImage(mobileBase, 1280, 82);
+  const imgSrcSet = buildSrcSet(mobileBase, [640, 900, 1280, 1920], 82);
 
   // Desktop (16:9) — imagem própria quando existe; senão cai pra mobile
   const deskBase = srcDesktop || src;
-  const deskSrc = active ? deskBase : optimizeImage(deskBase, 2560, 90);
-  const deskSrcSet = active ? undefined : buildSrcSet(deskBase, [1280, 1920, 2560], 90);
+  const deskSrc = optimizeImage(deskBase, 1920, 82);
+  const deskSrcSet = buildSrcSet(deskBase, [1280, 1920, 2560], 82);
 
   return (
     <>
@@ -5056,7 +5108,7 @@ function App() {
                           className="block w-full text-left rounded-[15px] overflow-hidden bg-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.7)]"
                         >
                           <div className="aspect-[4/5] relative overflow-hidden">
-                            <ProductImage src={product.image} alt={product.name} sizes="55vw" />
+                            <ProductImage src={product.image} alt={product.name} order={10 + idx} sizes="55vw" />
                             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/10 to-transparent pointer-events-none" />
                             {/* Badge -% */}
                             <div className="absolute top-2 left-2 z-10 flex items-center gap-1 text-white text-[10px] font-black px-2 py-1 rounded-md"
@@ -5153,7 +5205,7 @@ function App() {
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' }}>
                           {heroImages.map((imgSrc, i) => (
                             <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                              <ProductImage src={imgSrc} alt={hero.name} priority={i === 0} sizes="92vw" />
+                              <ProductImage src={imgSrc} alt={hero.name} priority={i === 0} order={i === 0 ? 20 : 1500 + i} sizes="92vw" />
                             </div>
                           ))}
                         </div>
@@ -5224,7 +5276,7 @@ function App() {
                                 <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' }}>
                                   {fg.map((imgSrc, i) => (
                                     <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                                      <ProductImage src={imgSrc} alt={product.name} priority={i === 0} sizes="55vw" />
+                                      <ProductImage src={imgSrc} alt={product.name} priority={i === 0 && idx < 2} order={i === 0 ? 30 + idx : 1500 + idx * 10 + i} sizes="55vw" />
                                     </div>
                                   ))}
                                 </div>
@@ -5396,7 +5448,7 @@ function App() {
                          <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' }}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 4 && i === 0} />
+                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} />
                              </div>
                            ))}
                          </div>
