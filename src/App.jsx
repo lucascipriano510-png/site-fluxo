@@ -345,7 +345,7 @@ const HoldScrollGallery = ({ count = 1, children }) => {
     const t = e.touches[0]; const s = st.current;
     s.x = t.clientX; s.y = t.clientY;
     clearHold();
-    s.hold = setTimeout(startAdvance, 400);      // detecta a "seguradinha"
+    s.hold = setTimeout(startAdvance, 200);      // detecta a "seguradinha" (sensível)
   };
   const onTouchMove = (e) => {
     if (!multi) return;
@@ -353,7 +353,7 @@ const HoldScrollGallery = ({ count = 1, children }) => {
     if (Math.abs(t.clientX - s.x) > 8 || Math.abs(t.clientY - s.y) > 8) {
       s.x = t.clientX; s.y = t.clientY;
       clearHold(); stopAdvance();                // dedo voltou a deslizar → pausa
-      s.hold = setTimeout(startAdvance, 400);     // re-arma p/ quando parar de novo
+      s.hold = setTimeout(startAdvance, 200);     // re-arma p/ quando parar de novo
     }
   };
   const onTouchEnd = () => { clearHold(); stopAdvance(); };
