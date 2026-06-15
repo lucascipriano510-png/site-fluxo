@@ -4993,6 +4993,107 @@ function App() {
           </div>
         )}
 
+        {/* OFERTAS DO DIA — carrossel (entre Categorias e Destaques) */}
+        {(() => {
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
+          if (!isDefaultView) return null;
+          const liveOffers = (products || [])
+            .filter(p => isOfferLive(p) && (p.is_kit || (p.stock || 0) > 0))
+            .sort((a, b) => (offerEndsAt(a)?.getTime() || 0) - (offerEndsAt(b)?.getTime() || 0));
+          if (liveOffers.length === 0) return null;
+          return (
+            <section
+              className="relative -mx-6 lg:mx-0 lg:rounded-3xl overflow-hidden animate-in"
+              data-testid="offers-section"
+              style={{ background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.08) 0%, rgba(9,9,11,0) 58%)' }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" aria-hidden="true" />
+              {/* Cabeçalho editorial */}
+              <div className="px-6 pt-9 pb-5">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <Flame size={13} className="fill-amber-400 text-amber-400" />
+                      <span className="text-[9px] font-black uppercase tracking-[0.4em]" style={{ color: '#fbbf24' }}>Por tempo limitado</span>
+                      <span className="h-px w-6 bg-amber-400/40" />
+                    </div>
+                    <h2 className="font-black uppercase text-white leading-[0.88] tracking-tight" style={{ fontSize: '2.35rem' }}>
+                      Ofertas<br/>
+                      <span className="italic font-serif" style={{ fontWeight: 500, background: 'linear-gradient(90deg,#fde68a,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>do Dia</span>
+                    </h2>
+                  </div>
+                  <div className="flex flex-col items-end pb-1">
+                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/35">Acaba à 00h</span>
+                    <span className="text-[10px] font-black tabular-nums text-amber-300/80">
+                      {String(liveOffers.length).padStart(2, '0')} <span className="text-white/30">{liveOffers.length === 1 ? 'peça' : 'peças'}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trilho horizontal */}
+              <div
+                className="flex gap-3 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-9 px-6 carousel-scroll"
+                style={{ touchAction: 'pan-x pan-y' }}
+                data-testid="offers-rail"
+              >
+                {liveOffers.map((product, idx) => {
+                  const pct = offerPercent(product);
+                  const novo = offerPrice(product);
+                  const isLow = !product.is_kit && (product.stock || 0) <= 3;
+                  return (
+                    <motion.div
+                      key={product.id}
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '80px' }}
+                      transition={{ duration: 0.5, delay: Math.min(idx, 6) * 0.06, ease: [0.16, 1, 0.3, 1] }}
+                      className="shrink-0 w-[52%] max-w-[200px] snap-start touch-manipulation"
+                      data-testid={`offer-card-${product.id}`}
+                    >
+                      <div className="p-[1.5px] rounded-2xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40">
+                        <button
+                          type="button"
+                          onClick={() => handleProductClick(product)}
+                          className="block w-full text-left rounded-[15px] overflow-hidden bg-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.7)]"
+                        >
+                          <div className="aspect-[4/5] relative overflow-hidden">
+                            <ProductImage src={product.image} alt={product.name} sizes="55vw" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/10 to-transparent pointer-events-none" />
+                            {/* Badge -% */}
+                            <div className="absolute top-2 left-2 z-10 flex items-center gap-1 text-white text-[10px] font-black px-2 py-1 rounded-md"
+                              style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', boxShadow: '0 2px 10px rgba(245,158,11,0.45)' }}>
+                              <Flame size={9} style={{ fill: '#fff' }} /> -{pct}%
+                            </div>
+                            {isLow && (
+                              <div className="absolute top-2 right-2 z-10 bg-zinc-950/80 backdrop-blur-md border border-red-400/40 rounded-full px-2 py-0.5">
+                                <span className="text-[7px] font-black uppercase tracking-[0.2em] text-red-300">Últimas {product.stock}</span>
+                              </div>
+                            )}
+                            {/* Contagem regressiva sobre a imagem */}
+                            <div className="absolute bottom-2 left-2 right-2 z-10 flex justify-center">
+                              <OfferCountdown target={offerEndsAt(product)} variant="compact" onExpire={bumpOffers} />
+                            </div>
+                          </div>
+                          <div className="p-3">
+                            <h3 className="uppercase line-clamp-1 mb-1.5" style={{ color: '#D4D4D8', fontSize: '9.5px', fontWeight: 600, letterSpacing: '0.08em' }}>{product.name}</h3>
+                            <div className="flex items-baseline gap-2">
+                              <span style={{ color: '#fde68a', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: 800, letterSpacing: '-0.01em' }}>{formatBRL(novo)}</span>
+                              <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>{formatBRL(product.price || 0)}</span>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+                <div className="shrink-0 w-2" aria-hidden="true" />
+              </div>
+              <div className="h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent mb-2" aria-hidden="true" />
+            </section>
+          );
+        })()}
+
         {/* DESTAQUES */}
         {(() => {
           const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
