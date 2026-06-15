@@ -301,6 +301,77 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
   );
 };
 
+// ──────────────────────────────────────────────────────────────
+// Galeria do card com "segurar pra passar" (mobile).
+// Enquanto o cliente rola e o dedo dá uma seguradinha (fica parado) sobre a
+// imagem, o carrossel do produto avança devagar sozinho — só se houver +1 foto.
+// Não bloqueia o scroll vertical (nunca chama preventDefault) e é leve:
+// a cada movimento real o gatilho reseta; só dispara quando o dedo para.
+// ──────────────────────────────────────────────────────────────
+const HOLD_SCROLL_STYLE = { position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' };
+
+const HoldScrollGallery = ({ count = 1, children }) => {
+  const ref = React.useRef(null);
+  const st = React.useRef({ x: 0, y: 0, hold: null, timer: null });
+  const multi = count > 1;
+
+  React.useEffect(() => () => {
+    const s = st.current;
+    if (s.hold) clearTimeout(s.hold);
+    if (s.timer) clearInterval(s.timer);
+  }, []);
+
+  const stopAdvance = () => { const s = st.current; if (s.timer) { clearInterval(s.timer); s.timer = null; } };
+  const clearHold = () => { const s = st.current; if (s.hold) { clearTimeout(s.hold); s.hold = null; } };
+
+  const advanceStep = () => {
+    const el = ref.current; if (!el) return;
+    const w = el.clientWidth || 1;
+    const maxLeft = el.scrollWidth - w;
+    let next = Math.round(el.scrollLeft / w) * w + w;
+    if (next > maxLeft + 1) next = 0; // chegou no fim → volta ao início (loop suave)
+    el.scrollTo({ left: next, behavior: 'smooth' });
+  };
+
+  const startAdvance = () => {
+    const s = st.current;
+    if (s.timer) return;
+    advanceStep();                              // primeiro avanço ao segurar
+    s.timer = setInterval(advanceStep, 1500);   // lento e leve
+  };
+
+  const onTouchStart = (e) => {
+    if (!multi) return;
+    const t = e.touches[0]; const s = st.current;
+    s.x = t.clientX; s.y = t.clientY;
+    clearHold();
+    s.hold = setTimeout(startAdvance, 400);      // detecta a "seguradinha"
+  };
+  const onTouchMove = (e) => {
+    if (!multi) return;
+    const t = e.touches[0]; const s = st.current;
+    if (Math.abs(t.clientX - s.x) > 8 || Math.abs(t.clientY - s.y) > 8) {
+      s.x = t.clientX; s.y = t.clientY;
+      clearHold(); stopAdvance();                // dedo voltou a deslizar → pausa
+      s.hold = setTimeout(startAdvance, 400);     // re-arma p/ quando parar de novo
+    }
+  };
+  const onTouchEnd = () => { clearHold(); stopAdvance(); };
+
+  return (
+    <div
+      ref={ref}
+      style={HOLD_SCROLL_STYLE}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
+    >
+      {children}
+    </div>
+  );
+};
+
 const BannerImage = ({ src, srcDesktop, alt, active }) => {
   const [loaded, setLoaded] = React.useState(false);
 
@@ -5202,13 +5273,13 @@ function App() {
                   <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5">
                     <div className="rounded-[27px] bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
                       <div className="aspect-[4/5] relative">
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' }}>
+                        <HoldScrollGallery count={heroImages.length}>
                           {heroImages.map((imgSrc, i) => (
                             <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                               <ProductImage src={imgSrc} alt={hero.name} priority={i === 0} order={i === 0 ? 20 : 1500 + i} sizes="92vw" />
                             </div>
                           ))}
-                        </div>
+                        </HoldScrollGallery>
                         {/* Vinheta lateral premium */}
                         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(120% 80% at 50% 35%, transparent 50%, rgba(0,0,0,0.45) 100%)' }} />
                         {/* Gradient inferior */}
@@ -5273,13 +5344,13 @@ function App() {
                           <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/20 to-white/4">
                             <div className="rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
                               <div className="aspect-[3/4] relative overflow-hidden">
-                                <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' }}>
+                                <HoldScrollGallery count={fg.length}>
                                   {fg.map((imgSrc, i) => (
                                     <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                                       <ProductImage src={imgSrc} alt={product.name} priority={i === 0 && idx < 2} order={i === 0 ? 30 + idx : 1500 + idx * 10 + i} sizes="55vw" />
                                     </div>
                                   ))}
-                                </div>
+                                </HoldScrollGallery>
                                 <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 bg-black/55 backdrop-blur-sm border border-white/15 rounded-full px-2 py-[3px]">
                                   <span className="text-[6px] font-black uppercase tracking-[0.25em] text-white/85">N.º {String(idx + 2).padStart(2, '0')}</span>
                                 </div>
@@ -5445,13 +5516,13 @@ function App() {
                          })()}
 
                          {/* Carrossel nativo — deslize para ver fotos adicionais */}
-                         <div style={{ position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' }}>
+                         <HoldScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                                <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} />
                              </div>
                            ))}
-                         </div>
+                         </HoldScrollGallery>
 
                         {isOutOfStock && (
                            <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px] flex items-center justify-center">
