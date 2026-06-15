@@ -16,6 +16,8 @@ export const DEFAULT_CONFIG = {
     'DESIGN AUTÊNTICO E EXCLUSIVO',
   ],
   category_images: {},
+  // Ordem dos carrosséis de oferta na home (quais aparecem primeiro)
+  offerCampaignOrder: ['dia', 'semana', 'mes'],
 };
 
 // row supabase -> shape usado no app (camelCase)
@@ -29,6 +31,9 @@ const rowToConfig = (row) => ({
   logoZoom: Number(row.logo_zoom || 1.5),
   marqueePhrases: Array.isArray(row.marquee_phrases) ? row.marquee_phrases : DEFAULT_CONFIG.marqueePhrases,
   category_images: (row.category_images && typeof row.category_images === 'object') ? row.category_images : {},
+  offerCampaignOrder: Array.isArray(row.offer_campaign_order) && row.offer_campaign_order.length > 0
+    ? row.offer_campaign_order
+    : DEFAULT_CONFIG.offerCampaignOrder,
 });
 
 // Busca a config global (id='main')
@@ -56,6 +61,9 @@ export async function upsertSiteConfig(config) {
     logo_zoom: Number(config.logoZoom || 1.5),
     marquee_phrases: Array.isArray(config.marqueePhrases) ? config.marqueePhrases : [],
     category_images: (config.category_images && typeof config.category_images === 'object') ? config.category_images : {},
+    offer_campaign_order: Array.isArray(config.offerCampaignOrder) && config.offerCampaignOrder.length > 0
+      ? config.offerCampaignOrder
+      : DEFAULT_CONFIG.offerCampaignOrder,
   };
   const { data, error } = await supabase
     .from('site_config')

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct as deleteProductRemote, fetchBanners, upsertBanner, deleteBanner as deleteBannerRemote, uploadImage, fetchAllKitItems, fetchKitItems, saveKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
-import { isOfferLive, offerPrice, offerPercent, offerEndsAt, todayLocalISO, formatDayMonth } from './lib/offers';
+import { isOfferLive, offerPrice, offerPercent, offerEndsAt, todayLocalISO, formatDayMonth, offerCampaign, OFFER_CAMPAIGNS, CAMPAIGN_LABELS, CAMPAIGN_SHORT } from './lib/offers';
 import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, updateOrderValue, restoreOrderStock } from './lib/orders';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
@@ -345,7 +345,7 @@ const HoldScrollGallery = ({ count = 1, children }) => {
     const t = e.touches[0]; const s = st.current;
     s.x = t.clientX; s.y = t.clientY;
     clearHold();
-    s.hold = setTimeout(startAdvance, 200);      // detecta a "seguradinha" (sensível)
+    s.hold = setTimeout(startAdvance, 110);      // detecta a "seguradinha" (sensível)
   };
   const onTouchMove = (e) => {
     if (!multi) return;
@@ -353,7 +353,7 @@ const HoldScrollGallery = ({ count = 1, children }) => {
     if (Math.abs(t.clientX - s.x) > 8 || Math.abs(t.clientY - s.y) > 8) {
       s.x = t.clientX; s.y = t.clientY;
       clearHold(); stopAdvance();                // dedo voltou a deslizar → pausa
-      s.hold = setTimeout(startAdvance, 200);     // re-arma p/ quando parar de novo
+      s.hold = setTimeout(startAdvance, 110);     // re-arma p/ quando parar de novo
     }
   };
   const onTouchEnd = () => { clearHold(); stopAdvance(); };
@@ -1189,6 +1189,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
   const [offerActive, setOfferActive] = useState(false);
   const [offerDiscount, setOfferDiscount] = useState(''); // % de desconto
   const [offerEndDate, setOfferEndDate] = useState('');   // 'YYYY-MM-DD' (último dia, inclusivo)
+  const [offerCampaignSel, setOfferCampaignSel] = useState('dia'); // dia | semana | mes
   const [normalPricePreview, setNormalPricePreview] = useState(''); // espelha o Preço Normal p/ preview
 
   // ===== KIT (Bundle Builder) =====
@@ -1231,6 +1232,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setOfferActive(!!editMode.offer_active);
       setOfferDiscount(editMode.offer_discount_percent != null ? String(editMode.offer_discount_percent) : '');
       setOfferEndDate(editMode.offer_ends_at ? String(editMode.offer_ends_at).slice(0, 10) : '');
+      setOfferCampaignSel(editMode.offer_campaign || 'dia');
       setNormalPricePreview(editMode.price != null ? String(editMode.price) : '');
       if (editMode.is_kit && editMode.id) {
         fetchKitItems(editMode.id)
@@ -1256,6 +1258,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setOfferActive(false);
       setOfferDiscount('');
       setOfferEndDate('');
+      setOfferCampaignSel('dia');
       setNormalPricePreview('');
     }
     setSecondaryColorInput('');
@@ -1472,6 +1475,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
         offer_active: offerActive && offerDiscount !== '' && parseFloat(offerDiscount) > 0 && !!offerEndDate,
         offer_discount_percent: offerDiscount !== '' ? parseFloat(offerDiscount) : null,
         offer_ends_at: offerEndDate || null,
+        offer_campaign: offerCampaignSel || 'dia',
       };
       const updatedProducts = editMode === 'new' ? [data, ...products] : products.map(p => p.id === data.id ? data : p);
       setProducts(updatedProducts);
@@ -1887,6 +1891,26 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
                         className="w-full p-4 bg-zinc-950 border border-amber-500/20 rounded-2xl font-bold text-sm text-white outline-none focus:border-amber-400/60 [color-scheme:dark]"
                       />
                     </div>
+                  </div>
+
+                  {/* Campanha — onde esta oferta aparece na home */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Campanha</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {OFFER_CAMPAIGNS.map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setOfferCampaignSel(c)}
+                          className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-wide border transition-all active:scale-95 ${offerCampaignSel === c
+                            ? 'text-zinc-950 border-transparent bg-gradient-to-r from-amber-400 to-red-500 shadow-[0_4px_14px_rgba(245,158,11,0.35)]'
+                            : 'text-zinc-400 border-white/10 bg-zinc-950 hover:border-amber-400/40'}`}
+                        >
+                          {CAMPAIGN_SHORT[c]}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[9px] font-bold text-zinc-600 px-1">Aparece no carrossel "{CAMPAIGN_LABELS[offerCampaignSel]}" da home.</p>
                   </div>
 
                   {/* Preview da oferta — De / Por / -% */}
@@ -2749,6 +2773,18 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uplo
       .sort((a, b) => (a.featured_order ?? 999) - (b.featured_order ?? 999))
   );
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [campaignOrder, setCampaignOrder] = useState(() => {
+    const saved = Array.isArray(config.offerCampaignOrder) ? config.offerCampaignOrder.filter(c => OFFER_CAMPAIGNS.includes(c)) : [];
+    // garante que todas as campanhas existam na lista, sem duplicar
+    return [...saved, ...OFFER_CAMPAIGNS.filter(c => !saved.includes(c))];
+  });
+  const moveCampaign = (i, dir) => {
+    const j = i + dir;
+    if (j < 0 || j >= campaignOrder.length) return;
+    const list = [...campaignOrder];
+    [list[i], list[j]] = [list[j], list[i]];
+    setCampaignOrder(list);
+  };
   const [categoryImages, setCategoryImages] = useState(config.category_images || {});
   const [uploadingCategory, setUploadingCategory] = useState(null);
   const [cropModal, setCropModal] = useState(null);
@@ -2871,6 +2907,7 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uplo
       logoZoom: parseFloat(fd.get('logoZoom') || 1.5),
       marqueePhrases: phrases.filter(p => p.trim() !== ''),
       category_images: categoryImages,
+      offerCampaignOrder: campaignOrder,
     };
     setConfig(newConfig);
     showToast('Sistema Atualizado!', 'success');
@@ -2952,6 +2989,33 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uplo
             </div>
           )}
           <button type="button" onClick={handleSaveOrder} disabled={isSavingOrder || featuredList.length === 0} className="bg-emerald-500 text-zinc-950 font-black text-[11px] uppercase tracking-widest rounded-2xl py-4 w-full mt-4 active:scale-95 transition-transform disabled:opacity-50">{isSavingOrder ? 'Salvando...' : 'Salvar Ordem'}</button>
+        </div>
+
+        {/* SEÇÃO: PROMO — ordem dos carrosséis de oferta */}
+        <div className="p-[1.5px] rounded-[32px] bg-gradient-to-br from-amber-400/40 via-amber-500/10 to-red-500/30">
+          <div className="bg-zinc-900 p-6 rounded-[31px] space-y-4">
+            <h4 className="text-[10px] font-black uppercase tracking-widest mb-1 flex items-center gap-2" style={{ color: '#fbbf24' }}><Flame size={14} className="fill-amber-400 text-amber-400"/> Promo · Ofertas</h4>
+            <p className="text-[10px] font-bold text-zinc-500 leading-snug">Arraste a ordem dos carrosséis de oferta na home. O de cima aparece primeiro. A campanha de cada produto é definida no cadastro do produto.</p>
+            <div>
+              {campaignOrder.map((c, i) => {
+                const liveCount = (products || []).filter(p => isOfferLive(p) && offerCampaign(p) === c && (p.is_kit || (p.stock || 0) > 0)).length;
+                return (
+                  <div key={c} className="flex items-center gap-3 py-3 border-b border-white/5">
+                    <span className="w-6 h-6 rounded-lg bg-gradient-to-r from-amber-400 to-red-500 text-zinc-950 text-[11px] font-black flex items-center justify-center shrink-0">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-black text-white truncate">{CAMPAIGN_LABELS[c]}</p>
+                      <p className="text-[9px] font-bold text-zinc-500 uppercase">{liveCount} {liveCount === 1 ? 'oferta ativa' : 'ofertas ativas'}</p>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <button type="button" onClick={() => moveCampaign(i, -1)} disabled={i === 0} className="w-7 h-7 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all flex items-center justify-center disabled:opacity-30"><ChevronUp size={13}/></button>
+                      <button type="button" onClick={() => moveCampaign(i, 1)} disabled={i === campaignOrder.length - 1} className="w-7 h-7 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all flex items-center justify-center disabled:opacity-30"><ChevronDown size={13}/></button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[9px] font-bold text-zinc-600">Salva junto com o botão "Salvar Sistema" abaixo.</p>
+          </div>
         </div>
 
         {/* SEÇÃO: Imagens de Categoria */}
@@ -5115,99 +5179,106 @@ function App() {
           </div>
         )}
 
-        {/* OFERTAS DO DIA — carrossel (entre Categorias e Destaques) */}
+        {/* OFERTAS — carrosséis por campanha (Dia/Semana/Mês), na ordem do Setup */}
         {(() => {
           const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
           if (!isDefaultView) return null;
-          const liveOffers = (products || [])
-            .filter(p => isOfferLive(p) && (p.is_kit || (p.stock || 0) > 0))
-            .sort((a, b) => (offerEndsAt(a)?.getTime() || 0) - (offerEndsAt(b)?.getTime() || 0));
-          if (liveOffers.length === 0) return null;
-          return (
-            <section
-              className="relative -mx-6 lg:mx-0 lg:rounded-3xl overflow-hidden animate-in"
-              data-testid="offers-section"
-              style={{ background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.08) 0%, rgba(9,9,11,0) 58%)' }}
-            >
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" aria-hidden="true" />
-              {/* Cabeçalho editorial */}
-              <div className="px-6 pt-9 pb-5">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <Flame size={13} className="fill-amber-400 text-amber-400" />
-                      <span className="text-[9px] font-black uppercase tracking-[0.4em]" style={{ color: '#fbbf24' }}>Por tempo limitado</span>
-                      <span className="h-px w-6 bg-amber-400/40" />
+          const orderCfg = Array.isArray(config?.offerCampaignOrder) && config.offerCampaignOrder.length > 0 ? config.offerCampaignOrder : OFFER_CAMPAIGNS;
+          const campaignsOrdered = [...orderCfg.filter(c => OFFER_CAMPAIGNS.includes(c)), ...OFFER_CAMPAIGNS.filter(c => !orderCfg.includes(c))];
+
+          const sections = campaignsOrdered.map(camp => ({
+            camp,
+            list: (products || [])
+              .filter(p => isOfferLive(p) && offerCampaign(p) === camp && (p.is_kit || (p.stock || 0) > 0))
+              .sort((a, b) => (offerEndsAt(a)?.getTime() || 0) - (offerEndsAt(b)?.getTime() || 0)),
+          })).filter(s => s.list.length > 0);
+          if (sections.length === 0) return null;
+
+          return sections.map(({ camp, list }, secIdx) => {
+            const suffix = (CAMPAIGN_LABELS[camp] || 'Ofertas').replace(/^Ofertas\s*/i, '');
+            return (
+              <section
+                key={camp}
+                className="relative -mx-6 lg:mx-0 lg:rounded-3xl overflow-hidden animate-in"
+                data-testid={`offers-section-${camp}`}
+                style={{ background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.08) 0%, rgba(9,9,11,0) 58%)' }}
+              >
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" aria-hidden="true" />
+                <div className="px-6 pt-9 pb-5">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <Flame size={13} className="fill-amber-400 text-amber-400" />
+                        <span className="text-[9px] font-black uppercase tracking-[0.4em]" style={{ color: '#fbbf24' }}>Por tempo limitado</span>
+                        <span className="h-px w-6 bg-amber-400/40" />
+                      </div>
+                      <h2 className="font-black uppercase text-white leading-[0.88] tracking-tight" style={{ fontSize: '2.35rem' }}>
+                        Ofertas<br/>
+                        <span className="italic font-serif" style={{ fontWeight: 500, background: 'linear-gradient(90deg,#fde68a,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{suffix}</span>
+                      </h2>
                     </div>
-                    <h2 className="font-black uppercase text-white leading-[0.88] tracking-tight" style={{ fontSize: '2.35rem' }}>
-                      Ofertas<br/>
-                      <span className="italic font-serif" style={{ fontWeight: 500, background: 'linear-gradient(90deg,#fde68a,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>do Dia</span>
-                    </h2>
-                  </div>
-                  <div className="flex flex-col items-end pb-1">
-                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/35">Acaba à 00h</span>
-                    <span className="text-[10px] font-black tabular-nums text-amber-300/80">
-                      {String(liveOffers.length).padStart(2, '0')} <span className="text-white/30">{liveOffers.length === 1 ? 'peça' : 'peças'}</span>
-                    </span>
+                    <div className="flex flex-col items-end pb-1">
+                      <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/35">Acaba à 00h</span>
+                      <span className="text-[10px] font-black tabular-nums text-amber-300/80">
+                        {String(list.length).padStart(2, '0')} <span className="text-white/30">{list.length === 1 ? 'peça' : 'peças'}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Trilho horizontal */}
-              <div
-                className="flex gap-3 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-9 px-6 carousel-scroll"
-                style={{ touchAction: 'pan-x pan-y' }}
-                data-testid="offers-rail"
-              >
-                {liveOffers.map((product, idx) => {
-                  const pct = offerPercent(product);
-                  const novo = offerPrice(product);
-                  return (
-                    <motion.div
-                      key={product.id}
-                      initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: '80px' }}
-                      transition={{ duration: 0.5, delay: Math.min(idx, 6) * 0.06, ease: [0.16, 1, 0.3, 1] }}
-                      className="shrink-0 w-[52%] max-w-[200px] snap-start touch-manipulation"
-                      data-testid={`offer-card-${product.id}`}
-                    >
-                      <div className="p-[1.5px] rounded-2xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40">
-                        <button
-                          type="button"
-                          onClick={() => handleProductClick(product)}
-                          className="block w-full text-left rounded-[15px] overflow-hidden bg-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.7)]"
-                        >
-                          <div className="aspect-[4/5] relative overflow-hidden">
-                            <ProductImage src={product.image} alt={product.name} order={10 + idx} sizes="55vw" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/10 to-transparent pointer-events-none" />
-                            {/* Badge -% */}
-                            <div className="absolute top-2 left-2 z-10 flex items-center gap-1 text-white text-[10px] font-black px-2 py-1 rounded-md"
-                              style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', boxShadow: '0 2px 10px rgba(245,158,11,0.45)' }}>
-                              <Flame size={9} style={{ fill: '#fff' }} /> -{pct}%
+                <div
+                  className="flex gap-3 overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory pb-9 px-6 carousel-scroll"
+                  style={{ touchAction: 'pan-x pan-y' }}
+                  data-testid={`offers-rail-${camp}`}
+                >
+                  {list.map((product, idx) => {
+                    const pct = offerPercent(product);
+                    const novo = offerPrice(product);
+                    return (
+                      <motion.div
+                        key={product.id}
+                        initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: '80px' }}
+                        transition={{ duration: 0.5, delay: Math.min(idx, 6) * 0.06, ease: [0.16, 1, 0.3, 1] }}
+                        className="shrink-0 w-[52%] max-w-[200px] snap-start touch-manipulation"
+                        data-testid={`offer-card-${product.id}`}
+                      >
+                        <div className="p-[1.5px] rounded-2xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40">
+                          <button
+                            type="button"
+                            onClick={() => handleProductClick(product)}
+                            className="block w-full text-left rounded-[15px] overflow-hidden bg-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.7)]"
+                          >
+                            <div className="aspect-[4/5] relative overflow-hidden">
+                              <ProductImage src={product.image} alt={product.name} order={10 + secIdx * 40 + idx} sizes="55vw" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/10 to-transparent pointer-events-none" />
+                              <div className="absolute top-2 left-2 z-10 flex items-center gap-1 text-white text-[10px] font-black px-2 py-1 rounded-md"
+                                style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', boxShadow: '0 2px 10px rgba(245,158,11,0.45)' }}>
+                                <Flame size={9} style={{ fill: '#fff' }} /> -{pct}%
+                              </div>
+                              <div className="absolute bottom-2 left-2 right-2 z-10 flex justify-center">
+                                <OfferCountdown target={offerEndsAt(product)} variant="compact" onExpire={bumpOffers} />
+                              </div>
                             </div>
-                            {/* Contagem regressiva sobre a imagem */}
-                            <div className="absolute bottom-2 left-2 right-2 z-10 flex justify-center">
-                              <OfferCountdown target={offerEndsAt(product)} variant="compact" onExpire={bumpOffers} />
+                            <div className="p-3">
+                              <h3 className="uppercase line-clamp-1 mb-1.5" style={{ color: '#D4D4D8', fontSize: '9.5px', fontWeight: 600, letterSpacing: '0.08em' }}>{product.name}</h3>
+                              <div className="flex items-baseline gap-2">
+                                <span style={{ color: '#fde68a', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: 800, letterSpacing: '-0.01em' }}>{formatBRL(novo)}</span>
+                                <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>{formatBRL(product.price || 0)}</span>
+                              </div>
                             </div>
-                          </div>
-                          <div className="p-3">
-                            <h3 className="uppercase line-clamp-1 mb-1.5" style={{ color: '#D4D4D8', fontSize: '9.5px', fontWeight: 600, letterSpacing: '0.08em' }}>{product.name}</h3>
-                            <div className="flex items-baseline gap-2">
-                              <span style={{ color: '#fde68a', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: 800, letterSpacing: '-0.01em' }}>{formatBRL(novo)}</span>
-                              <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>{formatBRL(product.price || 0)}</span>
-                            </div>
-                          </div>
-                        </button>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-                <div className="shrink-0 w-2" aria-hidden="true" />
-              </div>
-              <div className="h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent mb-2" aria-hidden="true" />
-            </section>
-          );
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                  <div className="shrink-0 w-2" aria-hidden="true" />
+                </div>
+                <div className="h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent mb-2" aria-hidden="true" />
+              </section>
+            );
+          });
         })()}
 
         {/* DESTAQUES */}

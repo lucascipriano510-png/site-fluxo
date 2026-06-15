@@ -13,6 +13,19 @@
 //  - offer_discount_percent  number  (ex.: 30 = 30% OFF)
 //  - offer_ends_at           'YYYY-MM-DD' (último dia, inclusive)
 
+// Campanhas de oferta (rótulo + chave). Ordem padrão de exibição na home.
+export const OFFER_CAMPAIGNS = ['dia', 'semana', 'mes'];
+export const CAMPAIGN_LABELS = {
+  dia: 'Ofertas do Dia',
+  semana: 'Ofertas da Semana',
+  mes: 'Ofertas do Mês',
+};
+export const CAMPAIGN_SHORT = { dia: 'Dia', semana: 'Semana', mes: 'Mês' };
+export function offerCampaign(product) {
+  const c = String(product?.offer_campaign || 'dia').toLowerCase();
+  return OFFER_CAMPAIGNS.includes(c) ? c : 'dia';
+}
+
 // Instante exato em que a oferta expira: meia-noite (00:00) da virada do dia escolhido.
 export function offerEndsAt(product) {
   const raw = product?.offer_ends_at;

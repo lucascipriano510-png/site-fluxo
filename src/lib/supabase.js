@@ -47,6 +47,7 @@ export async function upsertProduct(product) {
     offer_active: !!product.offer_active,
     offer_discount_percent: product.offer_discount_percent != null ? Number(product.offer_discount_percent) : null,
     offer_ends_at: product.offer_ends_at || null,
+    offer_campaign: product.offer_campaign || 'dia',
   };
   const { data, error } = await supabase
     .from('products')
