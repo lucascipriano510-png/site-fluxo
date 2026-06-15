@@ -167,15 +167,14 @@ const optimizeImage = (src, width = 600, quality = 90) => {
       return u.toString();
     }
 
-    // Supabase Storage: URL direta sem proxy
-    if (clean.includes('supabase.co/storage')) {
-      return src;
-    }
-
     // Se wsrv.nl já falhou nessa sessão, usa URL direta para qualquer origem
     if (wsrvFailed) return src;
 
-    // Outras URLs externas: wsrv.nl para WebP + resize
+    // Supabase Storage + demais URLs externas: wsrv.nl faz resize + WebP on-the-fly.
+    // CRÍTICO p/ performance: os uploads são salvos em ALTA RESOLUÇÃO (1–5 MB cada).
+    // Sem este proxy, um card de ~200px baixava a imagem original inteira (ex.: 1,66 MB
+    // → 27 KB em WebP 400px). O onError do <img> volta pra URL original do Supabase se
+    // o proxy falhar, então nunca quebra a imagem.
     return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we`;
   } catch {
     return src;
@@ -217,7 +216,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
     return () => io.disconnect();
   }, [src, priority]);
 
-  const srcSet = buildSrcSet(src);
+  const srcSet = buildSrcSet(src, [320, 480, 640, 900, 1200], 80);
 
   return (
     <div ref={wrapperRef} className="absolute inset-0">
@@ -226,7 +225,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, sizes: sizesPr
       )}
       {inView && (
         <img
-          src={optimizeImage(src, 1200, 90)}
+          src={optimizeImage(src, 1000, 80)}
           srcSet={srcSet}
           sizes={sizesProp || "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw"}
           alt={alt}
