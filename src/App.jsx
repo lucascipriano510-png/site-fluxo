@@ -5040,7 +5040,6 @@ function App() {
                 {liveOffers.map((product, idx) => {
                   const pct = offerPercent(product);
                   const novo = offerPrice(product);
-                  const isLow = !product.is_kit && (product.stock || 0) <= 3;
                   return (
                     <motion.div
                       key={product.id}
@@ -5065,11 +5064,6 @@ function App() {
                               style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', boxShadow: '0 2px 10px rgba(245,158,11,0.45)' }}>
                               <Flame size={9} style={{ fill: '#fff' }} /> -{pct}%
                             </div>
-                            {isLow && (
-                              <div className="absolute top-2 right-2 z-10 bg-zinc-950/80 backdrop-blur-md border border-red-400/40 rounded-full px-2 py-0.5">
-                                <span className="text-[7px] font-black uppercase tracking-[0.2em] text-red-300">Últimas {product.stock}</span>
-                              </div>
-                            )}
                             {/* Contagem regressiva sobre a imagem */}
                             <div className="absolute bottom-2 left-2 right-2 z-10 flex justify-center">
                               <OfferCountdown target={offerEndsAt(product)} variant="compact" onExpire={bumpOffers} />
