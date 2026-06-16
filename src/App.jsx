@@ -4536,6 +4536,9 @@ function App() {
   useEffect(() => {
     if (_isFirstCategoryChange.current) { _isFirstCategoryChange.current = false; return; }
     setSelectedSubcategory('TODOS');
+    // Limpa refinamentos de cor/preço ao trocar de categoria (some os chips no home).
+    setSelectedColor('TODOS');
+    setPriceRange('TODOS');
   }, [selectedCategory]);
 
   // Sincroniza filtros com a URL (query params) sem recarregar a página.
@@ -5288,8 +5291,8 @@ function App() {
           </div>
         )}
 
-        {/* Filtro de COR */}
-        {!kitsOnly && availableColors.length > 1 && (
+        {/* Filtro de COR — só dentro de uma categoria (evita poluir o home) */}
+        {!kitsOnly && selectedCategory !== 'TODOS' && availableColors.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center">
             {availableColors.map(c => {
               const active = selectedColor === c;
@@ -5306,8 +5309,8 @@ function App() {
           </div>
         )}
 
-        {/* Filtro de FAIXA DE PREÇO */}
-        {!kitsOnly && (
+        {/* Filtro de FAIXA DE PREÇO — só dentro de uma categoria (evita poluir o home) */}
+        {!kitsOnly && selectedCategory !== 'TODOS' && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center">
             <button onClick={() => setPriceRange('TODOS')} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${priceRange === 'TODOS' ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>Qualquer preço</button>
             {PRICE_RANGES.map(r => (
