@@ -18,6 +18,7 @@ import { fetchProducts, upsertProduct, deleteProduct as deleteProductRemote, fet
 import OfferCountdown from './components/OfferCountdown';
 import { isOfferLive, offerPrice, offerPercent, offerEndsAt, todayLocalISO, formatDayMonth, offerCampaign, OFFER_CAMPAIGNS, CAMPAIGN_LABELS, CAMPAIGN_SHORT } from './lib/offers';
 import { parseQueryIntent, productMatchesIntent, productHaystack, scoreProductForSearch, hasActiveQuery } from './lib/search';
+import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
 import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, updateOrderValue, restoreOrderStock } from './lib/orders';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
@@ -3981,6 +3982,7 @@ function App() {
   useEffect(() => {
     if (userProfile?.name && userProfile?.phone) {
       setCurrentLead({ name: userProfile.name, phone: userProfile.phone });
+      setKnownLead(userProfile.phone, userProfile.name); // cliente reconhecido → sinais já identificados
     }
   }, [userProfile]);
 
@@ -4256,6 +4258,7 @@ function App() {
     if (!product.is_kit && product.stock <= 0) return;
     setSelectedProduct(product);
     setSelectedSizes({});
+    emitSignal('produto_visto', { product }); // sinal: lead olhou esta peça
   };
 
   const handleSizeSelect = (sizeName, maxStock) => {
@@ -4279,6 +4282,7 @@ function App() {
     let updatedCart = [...cart];
     entries.forEach(([sizeName, qty]) => {
       const quantity = Number(qty) || 1;
+      emitSignal('carrinho_add', { product: selectedProduct, size: sizeName || 'U', qty: quantity }); // sinal com detalhe (cor/tam/marca)
       const itemKey = `${selectedProduct.id}-${sizeName || 'U'}`;
       const existingIdx = updatedCart.findIndex(item => item.itemKey === itemKey);
       if (existingIdx >= 0) {
@@ -4330,6 +4334,7 @@ function App() {
       // Validação básica
       const customerName = String(currentLead?.name ?? '').trim();
       const customerPhone = String(currentLead?.phone ?? '').replace(/\D/g, '');
+      setKnownLead(customerPhone, customerName); // identifica o lead p/ os sinais
       if (!customerName) { showToast('Informe seu nome.', 'error'); setIsLoading(false); return; }
       if (customerPhone.length < 10) { showToast('Informe um WhatsApp válido com DDD.', 'error'); setIsLoading(false); return; }
       if (!cart || cart.length === 0) { showToast('Carrinho vazio.', 'error'); setIsLoading(false); return; }
@@ -5900,7 +5905,7 @@ function App() {
                               href={`https://wa.me/${String(config?.whatsapp || '5534984148067').replace(/\D/g,'')}?text=${encodeURIComponent(`Olá! Tenho interesse em um produto da Fluxo Outlet 👇\n\n*${product.name}*\nSKU: ${product.sku || 'N/A'}\nCategoria: ${product.category || ''}${product.subcategory ? ' > ' + product.subcategory : ''}\n${isOfferLive(product) ? `🔥 OFERTA DO DIA (-${offerPercent(product)}%): R$ ${offerPrice(product).toFixed(2).replace('.', ',')} (de R$ ${product.price?.toFixed(2).replace('.', ',')})` : `Preço: R$ ${product.price?.toFixed(2).replace('.', ',')}`}\nLink: ${'https://www.fluxooutlet.com.br/?produto=' + product.sku}\n\nPodem me ajudar?`)}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              onClick={e => e.stopPropagation()}
+                              onClick={e => { e.stopPropagation(); emitSignal('whatsapp_produto', { product, meta: { via: 'card' } }); }}
                               className="flex items-center justify-center gap-1.5 w-full touch-manipulation transition-colors mb-1.5"
                               style={{
                                 minHeight: '36px', borderRadius: '6px',
@@ -6710,7 +6715,7 @@ function App() {
                    <div className="flex items-center gap-2"><MapPin size={13} className="text-emerald-500 shrink-0" /><span className="text-[10px] font-bold text-zinc-300">Ou retire na loja — grátis</span></div>
                    <div className="flex items-center gap-2"><Truck size={13} className="text-zinc-500 shrink-0" /><span className="text-[10px] font-bold text-zinc-500">Outras regiões: frete combinado no WhatsApp</span></div>
                 </div>
-                <button onClick={() => { setShowCart(false); setShowLeadModal(true); }} className="w-full py-5 rounded-2xl font-black text-[11px] uppercase bg-white text-zinc-950 active:scale-95 shadow-2xl flex items-center justify-center gap-2 touch-manipulation">Finalizar Pedido <Lock size={14}/></button>
+                <button onClick={() => { emitSignal('checkout_aberto', { cart: cartSnapshot(cart) }); setShowCart(false); setShowLeadModal(true); }} className="w-full py-5 rounded-2xl font-black text-[11px] uppercase bg-white text-zinc-950 active:scale-95 shadow-2xl flex items-center justify-center gap-2 touch-manipulation">Finalizar Pedido <Lock size={14}/></button>
               </div>
             )}
           </div>
@@ -6765,7 +6770,12 @@ function App() {
                  </div>
                  <div className="space-y-4 relative z-10 text-left pt-6">
                    <div className="space-y-1"><label className="text-[9px] font-black uppercase text-zinc-500 px-2 tracking-widest">Nome Completo</label><input placeholder="Ex: João da Silva" className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-white/30 shadow-inner client-input" value={currentLead.name} onChange={e => setCurrentLead({...currentLead, name: e.target.value})} /></div>
-                   <div className="space-y-1"><label className="text-[9px] font-black uppercase text-zinc-500 px-2 tracking-widest">WhatsApp (Com DDD)</label><input placeholder="Ex: 34999999999" type="tel" className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-white/30 shadow-inner client-input" value={currentLead.phone} onChange={e => setCurrentLead({...currentLead, phone: e.target.value.replace(/\D/g, '')})} /></div>
+                   <div className="space-y-1"><label className="text-[9px] font-black uppercase text-zinc-500 px-2 tracking-widest">WhatsApp (Com DDD)</label><input placeholder="Ex: 34999999999" type="tel" className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-white/30 shadow-inner client-input" value={currentLead.phone} onChange={e => {
+                     const ph = e.target.value.replace(/\D/g, '');
+                     setCurrentLead({ ...currentLead, phone: ph });
+                     // Capturou contato: identifica o lead e liga todo o histórico anônimo ao telefone
+                     if (ph.length >= 10) { setKnownLead(ph, currentLead.name); emitSignal('telefone_informado', { phone: ph, name: currentLead.name, cart: cartSnapshot(cart) }); }
+                   }} /></div>
                  <button onClick={handleFinalize} disabled={isLoading} className="w-full py-5 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 mt-2 flex justify-center items-center gap-2 touch-manipulation">{isLoading ? 'Processando...' : 'Finalizar Pedido via WhatsApp'} <Zap size={14}/></button>
                 </div>
                 <p className="text-[8px] font-bold uppercase tracking-widest text-zinc-600 flex items-center justify-center gap-1 opacity-70 mt-6"><Lock size={10}/> Ambiente 100% Seguro</p>
