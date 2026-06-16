@@ -3895,6 +3895,7 @@ function App() {
       tamanho: (sp.get('tamanho') || 'TODOS').toUpperCase(),
       busca: sp.get('busca') || '',
       kits: sp.get('kits') === '1',
+      colecao: sp.get('colecao') || null,
     };
   })();
   const [selectedCategory, setSelectedCategory] = useState(_initialUrlFilters.categoria || 'TODOS');
@@ -4009,7 +4010,7 @@ function App() {
   const mobileGalleryRef = useRef(null);
   const desktopGalleryRef = useRef(null);
   const featuredPeekedRef = useRef(false);
-  const [activeCollectionFilter, setActiveCollectionFilter] = useState(null);
+  const [activeCollectionFilter, setActiveCollectionFilter] = useState(_initialUrlFilters.colecao || null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
   const viewportOverlayStyle = { top: visualFrame.top, height: visualFrame.height || '100dvh' };
@@ -4553,6 +4554,7 @@ function App() {
         setOrDel('tamanho', selectedSize, 'TODOS');
         setOrDel('busca', (searchQuery || '').trim(), '');
         setOrDel('kits', kitsOnly ? '1' : '', '');
+        setOrDel('colecao', activeCollectionFilter || '', '');
         const newSearch = sp.toString();
         const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '') + url.hash;
         const current = window.location.pathname + window.location.search + window.location.hash;
@@ -4560,7 +4562,7 @@ function App() {
       } catch {}
     }, 200);
     return () => clearTimeout(handle);
-  }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery, kitsOnly]);
+  }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery, kitsOnly, activeCollectionFilter]);
 
   // Reage ao botão voltar/avançar do navegador para refletir os filtros da URL
   useEffect(() => {
@@ -4572,12 +4574,21 @@ function App() {
       setSelectedSize((sp.get('tamanho') || 'TODOS').toUpperCase());
       setSearchQuery(sp.get('busca') || '');
       setKitsOnly(sp.get('kits') === '1');
+      setActiveCollectionFilter(sp.get('colecao') || null);
       // Fecha modal de produto se o parâmetro sumiu da URL
       if (!sp.get('produto')) { setSelectedProduct(null); setSelectedSizes({}); }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
+
+  // Deep link de coleção (?colecao=X): rola direto pro catálogo já filtrado.
+  const _scrolledToColecao = React.useRef(false);
+  useEffect(() => {
+    if (_scrolledToColecao.current || !productsLoaded || !_initialUrlFilters.colecao) return;
+    _scrolledToColecao.current = true;
+    setTimeout(() => document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+  }, [productsLoaded]);
 
   // Sincroniza produto aberto com a URL (?produto=SKU) para deep linking.
   // Não apaga o param enquanto produtos ainda não carregaram (evita destruir deeplink antes de resolver).
