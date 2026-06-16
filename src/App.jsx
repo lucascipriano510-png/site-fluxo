@@ -222,6 +222,23 @@ const acquireImgSlot = (priority, onStart) => {
   return { done: release, cancel: release };
 };
 
+// Faixas de preço (chips de filtro). max=null => sem teto.
+const PRICE_RANGES = [
+  { key: 'ate100', label: 'Até R$ 100', min: null, max: 100 },
+  { key: '100a200', label: 'R$ 100–200', min: 100, max: 200 },
+  { key: '200a300', label: 'R$ 200–300', min: 200, max: 300 },
+  { key: '300mais', label: 'R$ 300+', min: 300, max: null },
+];
+// Cor do nome → bolinha do chip de cor. Desconhecida cai num cinza neutro.
+const COLOR_HEX = {
+  preto: '#111111', branco: '#f4f4f5', azul: '#3b82f6', 'azul marinho': '#1e3a8a',
+  vermelho: '#ef4444', verde: '#22c55e', bege: '#d8c3a5', cinza: '#9ca3af',
+  marrom: '#8b5a2b', rosa: '#ec4899', amarelo: '#eab308', laranja: '#f97316',
+  roxo: '#8b5cf6', lilas: '#c4b5fd', vinho: '#7f1d1d', dourado: '#d4af37',
+  prata: '#c0c0c0', nude: '#e3bc9a', caramelo: '#c97b3c', off: '#efe9dd',
+};
+const colorDot = (name) => COLOR_HEX[String(name || '').toLowerCase()] || null;
+
 const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, sizes: sizesProp }) => {
   const [loaded, setLoaded] = React.useState(false);
   const [inView, setInView] = React.useState(priority);
@@ -3884,6 +3901,8 @@ function App() {
   const [selectedSubcategory, setSelectedSubcategory] = useState(_initialUrlFilters.sub || 'TODOS');
   const [searchQuery, setSearchQuery] = useState(_initialUrlFilters.busca || '');
   const [selectedSize, setSelectedSize] = useState(_initialUrlFilters.tamanho || 'TODOS');
+  const [selectedColor, setSelectedColor] = useState('TODOS');
+  const [priceRange, setPriceRange] = useState('TODOS');
   const [kitsOnly, setKitsOnly] = useState(!!_initialUrlFilters.kits);
    const [currentPage, setCurrentPage] = useState(() => {
     // Restaura a página a partir do path /paginaN (preferido) ou /pagina/N (fallback legado),
@@ -4461,14 +4480,26 @@ function App() {
         return sName === sizeNorm && sStock > 0;
       }));
       const matchesCollection = !activeCollectionFilter || p.collection_name === activeCollectionFilter;
-      return matchesCat && matchesSub && matchesSearch && matchesSize && matchesCollection;
+      const matchesColor = selectedColor === 'TODOS'
+        || String(p.color || '').toLowerCase() === selectedColor
+        || (Array.isArray(p.secondary_colors) && p.secondary_colors.some(c => String(c || '').toLowerCase() === selectedColor));
+      let matchesPrice = true;
+      if (priceRange !== 'TODOS') {
+        const r = PRICE_RANGES.find(x => x.key === priceRange);
+        if (r) {
+          const eff = isOfferLive(p) ? offerPrice(p) : ((p.promotional_price > 0 && p.promotional_price < p.price) ? p.promotional_price : (p.price || 0));
+          if (r.min != null && eff < r.min) matchesPrice = false;
+          if (r.max != null && eff > r.max) matchesPrice = false;
+        }
+      }
+      return matchesCat && matchesSub && matchesSearch && matchesSize && matchesCollection && matchesColor && matchesPrice;
     });
     if (!noveltyMode) return base;
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const recent = base.filter(p => p.created_at && new Date(p.created_at) > thirtyDaysAgo);
     if (recent.length > 0) return recent;
     return [...base].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 8);
-  }, [noveltyMode, kitsOnly, selectedCategory, selectedSubcategory, searchIntent, selectedSize, products, activeCollectionFilter]);
+  }, [noveltyMode, kitsOnly, selectedCategory, selectedSubcategory, searchIntent, selectedSize, selectedColor, priceRange, products, activeCollectionFilter]);
 
   // Subcategorias disponíveis dentro da categoria atual (ignora produtos sem estoque)
   const availableSubcategories = useMemo(() => {
@@ -4614,7 +4645,7 @@ function App() {
   useEffect(() => {
     if (isFirstFilterRun.current) { isFirstFilterRun.current = false; return; }
     setCurrentPage(1);
-  }, [selectedCategory, selectedSubcategory, searchQuery, selectedSize, activeCollectionFilter]);
+  }, [selectedCategory, selectedSubcategory, searchQuery, selectedSize, selectedColor, priceRange, activeCollectionFilter]);
   // Se a página atual ficar fora do range (ex.: filtro reduziu lista), corrige.
   // Só corrige depois que a carga remota terminou — evita /pagina2 voltar para / na primeira renderização.
   useEffect(() => {
@@ -4677,6 +4708,25 @@ function App() {
     });
     return ['TODOS', ...Array.from(set)];
   }, [products, selectedCategory, selectedSubcategory, activeCollectionFilter]);
+
+  // Cores disponíveis na categoria/sub atual (com estoque). Inclui cores secundárias.
+  const availableColors = useMemo(() => {
+    const set = new Set();
+    (products || []).forEach(p => {
+      if (p.stock <= 0 || p.is_kit) return;
+      if (selectedCategory !== 'TODOS' && p.category !== selectedCategory) return;
+      if (selectedSubcategory !== 'TODOS' && (p.subcategory || '').toUpperCase() !== selectedSubcategory) return;
+      if (activeCollectionFilter && p.collection_name !== activeCollectionFilter) return;
+      if (p.color) set.add(String(p.color).toLowerCase());
+      (Array.isArray(p.secondary_colors) ? p.secondary_colors : []).forEach(c => c && set.add(String(c).toLowerCase()));
+    });
+    return ['TODOS', ...Array.from(set)];
+  }, [products, selectedCategory, selectedSubcategory, activeCollectionFilter]);
+
+  // Se a cor selecionada sumir da lista (troca de categoria), volta pra TODOS.
+  useEffect(() => {
+    if (selectedColor !== 'TODOS' && !availableColors.includes(selectedColor)) setSelectedColor('TODOS');
+  }, [availableColors, selectedColor]);
 
   const categorySizesMap = useMemo(() => {
     const map = {};
@@ -5227,9 +5277,37 @@ function App() {
           </div>
         )}
 
+        {/* Filtro de COR */}
+        {!kitsOnly && availableColors.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center">
+            {availableColors.map(c => {
+              const active = selectedColor === c;
+              const dot = c !== 'TODOS' ? colorDot(c) : null;
+              return (
+                <button key={c} onClick={() => setSelectedColor(c)} data-testid={`color-filter-${c}`} className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${active ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>
+                  {c !== 'TODOS' && (
+                    <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0" style={dot ? { background: dot } : { background: 'conic-gradient(from 0deg,#f87171,#fbbf24,#34d399,#60a5fa,#c084fc,#f87171)' }} />
+                  )}
+                  {c === 'TODOS' ? 'Todas as cores' : c}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Filtro de FAIXA DE PREÇO */}
+        {!kitsOnly && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center">
+            <button onClick={() => setPriceRange('TODOS')} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${priceRange === 'TODOS' ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>Qualquer preço</button>
+            {PRICE_RANGES.map(r => (
+              <button key={r.key} onClick={() => setPriceRange(r.key)} data-testid={`price-filter-${r.key}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${priceRange === r.key ? 'bg-emerald-500 text-zinc-950 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>{r.label}</button>
+            ))}
+          </div>
+        )}
+
         {/* OFERTAS — carrosséis por campanha (Dia/Semana/Mês), na ordem do Setup */}
         {(() => {
-          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
           if (!isDefaultView) return null;
           const orderCfg = Array.isArray(config?.offerCampaignOrder) && config.offerCampaignOrder.length > 0 ? config.offerCampaignOrder : OFFER_CAMPAIGNS;
           const campaignsOrdered = [...orderCfg.filter(c => OFFER_CAMPAIGNS.includes(c)), ...OFFER_CAMPAIGNS.filter(c => !orderCfg.includes(c))];
@@ -5315,6 +5393,10 @@ function App() {
                                 <span style={{ color: '#fde68a', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: 800, letterSpacing: '-0.01em' }}>{formatBRL(novo)}</span>
                                 <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>{formatBRL(product.price || 0)}</span>
                               </div>
+                              <div className="flex items-center gap-1.5 mt-1.5" style={{ color: '#34d399' }}>
+                                <Truck size={10} strokeWidth={2.4} className="shrink-0" />
+                                <span style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Frete grátis · {(config?.location || 'Uberaba').split(',')[0].trim()}</span>
+                              </div>
                             </div>
                           </button>
                         </div>
@@ -5331,7 +5413,7 @@ function App() {
 
         {/* DESTAQUES */}
         {(() => {
-          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
           if (!isDefaultView) return null;
           const featured = (products || [])
             .filter(p => p.featured && (p.is_kit || (p.stock || 0) > 0))
@@ -5787,6 +5869,16 @@ function App() {
                               </motion.button>
                             )}
                           </div>
+
+                          {/* Selo de frete / entrega local */}
+                          {!isOutOfStock && (
+                            <div className="flex items-center gap-1.5 mb-1.5" style={{ color: '#34d399' }}>
+                              <Truck size={11} strokeWidth={2.4} className="shrink-0" />
+                              <span style={{ fontSize: '8.5px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                Frete grátis · {(config?.location || 'Uberaba').split(',')[0].trim()}
+                              </span>
+                            </div>
+                          )}
 
                           {/* Linha 3 — WhatsApp */}
                           {!isOutOfStock && (
