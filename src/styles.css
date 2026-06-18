@@ -268,6 +268,26 @@
   }
 }
 
+/* ── Virtual scrolling agressivo (estilo Amazon) ───────────────────────────
+ * Só a área visível + uma faixa de folga é de fato renderizada/pintada.
+ * Os cards fora dessa área têm o conteúdo "desligado" pelo navegador
+ * (pula layout/estilo/paint = economiza carga real de CPU/GPU/memória) e
+ * voltam INSTANTÂNEO ao reaparecer — o DOM e a imagem continuam vivos, então
+ * não há reload nem skeleton piscando no scroll de volta.
+ * `contain-intrinsic-size: auto Xpx` reserva a altura dos cards ainda não
+ * pintados (evita pulo de scroll) e o `auto` faz o navegador lembrar o
+ * tamanho real após a primeira pintura. */
+.cv-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px; /* 2 colunas (mobile) */
+}
+@media (min-width: 768px) {
+  .cv-card { contain-intrinsic-size: auto 400px; } /* 4 colunas */
+}
+@media (min-width: 1280px) {
+  .cv-card { contain-intrinsic-size: auto 470px; } /* 5 colunas */
+}
+
 @keyframes skeleton-shine {
   0%   { background-position:  200% 0; }
   100% { background-position: -200% 0; }
