@@ -4018,6 +4018,20 @@ function App() {
   const viewportOverlayStyle = { top: visualFrame.top, height: visualFrame.height || '100dvh' };
   const viewportPanelMaxHeight = visualFrame.height ? `calc(${visualFrame.height}px - 10px)` : 'calc(100dvh - 10px)';
 
+  // Card de produto (não-kit) aberto: vira página em fluxo no mobile.
+  const productPageOpen = !!(selectedProduct && !selectedProduct.is_kit);
+  // Enquanto aberto, o DOCUMENTO passa a rolar (URL recolhe) e a loja some no mobile.
+  useEffect(() => {
+    if (!productPageOpen) return;
+    document.documentElement.classList.add('product-scroll');
+    window.scrollTo(0, 0);
+    return () => document.documentElement.classList.remove('product-scroll');
+  }, [productPageOpen]);
+  // Troca de produto (relacionados) com a página aberta: volta ao topo.
+  useEffect(() => {
+    if (productPageOpen) window.scrollTo(0, 0);
+  }, [selectedProduct?.id, productPageOpen]);
+
   // Announcement bar: rotate phrases with fade
   const [marqueeIdx, setMarqueeIdx] = useState(0);
   useEffect(() => {
@@ -4939,6 +4953,8 @@ function App() {
           <button
             className="select-none flex-1 lg:flex-none flex items-center justify-center lg:justify-start mx-2 lg:mx-0 touch-manipulation active:opacity-80 transition-opacity"
             onClick={() => {
+              setSelectedProduct(null);
+              setSelectedSizes({});
               setSelectedCategory('TODOS');
               setSelectedSubcategory('TODOS');
               setSelectedSize('TODOS');
@@ -5050,6 +5066,9 @@ function App() {
 
         </div>
       </header>
+
+      {/* CORPO DA LOJA — oculto no mobile quando a página de produto está aberta */}
+      <div className={productPageOpen ? 'hidden lg:block' : ''}>
 
       {/* ── Barra de Benefícios ─────────────────────────────── */}
       <div
@@ -6116,6 +6135,8 @@ function App() {
           </div>
         </div>
       </footer>
+      </div>
+      {/* /CORPO DA LOJA */}
 
       {showAdminLogin && (
         <div className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 animate-in">
@@ -6177,30 +6198,20 @@ function App() {
         ).slice(0, 4);
         return (
         <React.Fragment key={`product-modal-${selectedProduct.id}`}>
-          {/* ── MOBILE: bottom sheet (oculto no desktop) ── */}
+          {/* ── MOBILE: página de produto em fluxo no documento (oculto no desktop) ── */}
+          {/* A barra real (hambúrguer/logo/perfil/sacola) fica sticky logo acima — barra compartilhada com o home. */}
           <motion.div
-            className="fixed inset-x-0 bottom-0 z-[100] flex items-end justify-center overflow-hidden lg:hidden"
-            style={viewportOverlayStyle}
+            className="lg:hidden bg-zinc-950 min-h-screen"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} />
-            <motion.div
-              className="relative bg-zinc-950 w-full max-w-md rounded-t-[40px] border-t border-white/10 shadow-2xl overflow-hidden flex flex-col"
-              style={{ maxHeight: viewportPanelMaxHeight }}
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full z-10 pointer-events-none" />
-              <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="absolute top-4 right-4 z-20 text-white bg-black/50 backdrop-blur-md rounded-full p-2.5 touch-manipulation border border-white/10 active:scale-90 transition-transform"><X size={18}/></button>
-
-              {/* Gallery — swipeable carousel with indicators */}
-              <div className="relative w-full bg-zinc-900 pt-12 shrink-0">
-                <div className="relative w-full aspect-[4/3] overflow-hidden">
+              {/* Gallery — full-bleed, colada na barra (sem puxador) */}
+              <div className="relative w-full bg-zinc-900">
+                {/* Voltar — flutua sobre a imagem, logo abaixo da barra Fluxo */}
+                <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="absolute top-3 left-3 z-20 flex items-center gap-1 text-white bg-black/50 backdrop-blur-md rounded-full pl-2 pr-3 py-2 touch-manipulation border border-white/10 active:scale-90 transition-transform text-[10px] font-black uppercase tracking-widest"><ChevronLeft size={16}/> Voltar</button>
+                <div className="relative w-full aspect-[4/5] overflow-hidden">
                   <div
                     ref={mobileGalleryRef}
                     className="flex h-full overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll"
@@ -6245,8 +6256,8 @@ function App() {
                 )}
               </div>
 
-              {/* Scrollable body */}
-              <div className="flex-1 overflow-y-auto px-7 pt-5 pb-32 flex flex-col gap-6">
+              {/* Body — flui no documento (scroll único) */}
+              <div className="px-7 pt-5 pb-40 flex flex-col gap-6">
                 {/* Info */}
                 <div className="flex flex-col gap-1">
                   <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest self-start">REF: {selectedProduct.sku}</span>
@@ -6368,8 +6379,8 @@ function App() {
                 )}
               </div>
 
-              {/* Sticky CTA */}
-              <div className="absolute bottom-0 left-0 right-0 px-7 py-4 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 z-10">
+              {/* CTA fixo no rodapé do viewport (mobile) */}
+              <div className="fixed bottom-0 left-0 right-0 px-7 py-4 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 z-[60] lg:hidden" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
                 <button
                   onClick={handleCommitToCart}
                   disabled={Object.keys(selectedSizes).length === 0}
@@ -6378,7 +6389,6 @@ function App() {
                   {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola (${Object.values(selectedSizes).reduce((a,b)=>a+b,0)})`} <ShoppingBag size={14}/>
                 </button>
               </div>
-            </motion.div>
           </motion.div>
 
           {/* ── DESKTOP: página de produto real (oculto no mobile) ── */}
@@ -6555,7 +6565,7 @@ function App() {
       </AnimatePresence>
 
       {/* BARRA FLUTUANTE DA SACOLA */}
-      {cart.length > 0 && !showCart && !isCartModalOpen && (
+      {cart.length > 0 && !showCart && !isCartModalOpen && !productPageOpen && (
         <div
           className="fixed bottom-0 left-0 right-0 z-[90] pt-3 md:left-auto md:right-6 md:bottom-6 md:w-auto md:pt-0 pointer-events-none"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)', paddingLeft: '1rem', paddingRight: '1rem' }}

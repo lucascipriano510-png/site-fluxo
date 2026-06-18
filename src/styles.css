@@ -164,6 +164,28 @@
     overscroll-behavior-y: contain;
   }
 
+  /*
+   * Card de produto (mobile): troca o scroll do #root pelo scroll do DOCUMENTO.
+   * Só assim o navegador mobile recolhe a barra de URL (vira a "faixinha" branca).
+   * Ativa apenas com a classe .product-scroll no <html> e some no desktop.
+   * Reverte 100% ao fechar o card (classe removida).
+   */
+  @media (max-width: 1023px) {
+    html.product-scroll,
+    html.product-scroll body {
+      height: auto;
+      min-height: 100%;
+      overflow: visible;
+    }
+    html.product-scroll body { overflow-x: hidden; }
+    html.product-scroll #root {
+      height: auto;
+      min-height: 100%;
+      overflow-x: hidden;
+      overflow-y: visible;
+    }
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
