@@ -4928,7 +4928,7 @@ function App() {
       
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
-        <div className="py-2.5 flex items-center justify-center border-b" style={{ background: 'var(--bg-header)', borderColor: 'var(--border)', color: 'var(--text-secondary)', minHeight: '34px' }}>
+        <div className={`py-2.5 ${productPageOpen ? 'hidden lg:flex' : 'flex'} items-center justify-center border-b`} style={{ background: 'var(--bg-header)', borderColor: 'var(--border)', color: 'var(--text-secondary)', minHeight: '34px' }}>
           <AnimatePresence mode="wait">
             <motion.span
               key={marqueeIdx}
