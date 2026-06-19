@@ -21,7 +21,7 @@ import StarRatingInline from './components/StarRatingInline';
 import BannerImage from './components/BannerImage';
 import AdminHeader from './components/AdminHeader';
 import AdminDashboard from './components/AdminDashboard';
-import { optimizeImage, buildSrcSet, markWsrvFailed } from './lib/images';
+import { optimizeImage, buildSrcSet, markWsrvFailed, getCatImgData } from './lib/images';
 import { formatBRL } from './lib/format';
 import { isOfferLive, offerPrice, offerPercent, offerEndsAt, todayLocalISO, formatDayMonth, offerCampaign, OFFER_CAMPAIGNS, CAMPAIGN_LABELS, CAMPAIGN_SHORT } from './lib/offers';
 import { parseQueryIntent, productMatchesIntent, productHaystack, scoreProductForSearch, hasActiveQuery } from './lib/search';
@@ -29,7 +29,7 @@ import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
 import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, updateOrderValue, restoreOrderStock, getOrderPurchaseEventId, markOrderPurchaseSent } from './lib/orders';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
-import { dispatchCAPIPurchase, dispatchCAPIRefund } from './lib/capi';
+import { dispatchCAPIPurchase, dispatchCAPIRefund, createMetaEventId } from './lib/capi';
 import { initMetaPixel, trackEvent } from './lib/metaPixel';
 import { criarAtendimentoFromPedido } from './lib/crm';
 import { fetchRatingsBatch } from './lib/reviews';
@@ -41,11 +41,6 @@ const AdminGrowth = React.lazy(() => import('./components/AdminGrowth'));
 // ==========================================
 // 1. CONFIGURAÇÃO E DADOS INICIAIS
 // ==========================================
-const getCatImgData = (val) => {
-  if (!val) return { url: null, pos: '50% 50%' };
-  if (typeof val === 'string') return { url: val, pos: '50% 50%' };
-  return { url: val.url || null, pos: val.pos || '50% 50%' };
-};
 const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'fluxo-dark-ultimate';
 const LEAD_STORAGE_KEY = '@fluxo-outlet:lead-data-v3';
 const BANNERS_STORAGE_KEY = `@${APP_ID}:banners`;
@@ -379,12 +374,7 @@ const trackPixel = (eventName, payload = {}) => {
   catch (e) { console.warn('[trackPixel] falhou:', e); }
 };
 
-const createMetaEventId = () => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `evt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-};
+// createMetaEventId extraído p/ ./lib/capi.
 
 // ==========================================
 // 3. COMPONENTES ADMIN DESACOPLADOS

@@ -44,3 +44,10 @@ export const buildSrcSet = (src, widths = [400, 600, 900, 1200, 1600], quality =
   if (!src) return undefined;
   return widths.map((w) => `${optimizeImage(src, w, quality)} ${w}w`).join(', ');
 };
+
+// Normaliza o dado de imagem de categoria: aceita string (url) ou { url, pos }.
+export const getCatImgData = (val) => {
+  if (!val) return { url: null, pos: '50% 50%' };
+  if (typeof val === 'string') return { url: val, pos: '50% 50%' };
+  return { url: val.url || null, pos: val.pos || '50% 50%' };
+};

@@ -5,6 +5,14 @@
 // =====================================================================
 import { supabase } from './supabaseClient';
 
+// Gera um event_id para dedup Pixel↔CAPI (UUID quando disponível).
+export const createMetaEventId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `evt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+};
+
 // Senha compartilhada com a Edge Function (header x-webhook-secret).
 const WEBHOOK_SECRET =
   import.meta.env.VITE_META_WEBHOOK_SECRET || 'METODOFLUXO';
