@@ -18,6 +18,8 @@ import { fetchProducts, upsertProduct, deleteProduct as deleteProductRemote, fet
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
 import StarRatingInline from './components/StarRatingInline';
+import BannerImage from './components/BannerImage';
+import { optimizeImage, buildSrcSet, markWsrvFailed } from './lib/images';
 import { isOfferLive, offerPrice, offerPercent, offerEndsAt, todayLocalISO, formatDayMonth, offerCampaign, OFFER_CAMPAIGNS, CAMPAIGN_LABELS, CAMPAIGN_SHORT } from './lib/offers';
 import { parseQueryIntent, productMatchesIntent, productHaystack, scoreProductForSearch, hasActiveQuery } from './lib/search';
 import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
@@ -148,48 +150,7 @@ class AdminTabErrorBoundary extends React.Component {
 // 2. FUNÇÕES DE TRACKING E UTILITÁRIOS
 // ==========================================
 
-// Flag de sessão: se wsrv.nl falhou nessa sessão, pula o proxy em todas as imagens
-let wsrvFailed = sessionStorage.getItem('wsrv_failed') === '1';
-const markWsrvFailed = () => {
-  wsrvFailed = true;
-  try { sessionStorage.setItem('wsrv_failed', '1'); } catch {}
-};
-
-// Otimização de imagens via CDN (WebP + resize on-the-fly).
-const optimizeImage = (src, width = 600, quality = 90) => {
-  if (!src || typeof src !== 'string') return src;
-  if (src.startsWith('data:') || src.startsWith('blob:')) return src;
-  try {
-    const clean = src.split('?')[0];
-
-    // Unsplash: otimização via parâmetros nativos
-    if (clean.includes('images.unsplash.com')) {
-      const u = new URL(src);
-      u.searchParams.set('w', String(width));
-      u.searchParams.set('q', String(quality));
-      u.searchParams.set('fm', 'webp');
-      u.searchParams.set('fit', 'crop');
-      return u.toString();
-    }
-
-    // Se wsrv.nl já falhou nessa sessão, usa URL direta para qualquer origem
-    if (wsrvFailed) return src;
-
-    // Supabase Storage + demais URLs externas: wsrv.nl faz resize + WebP on-the-fly.
-    // CRÍTICO p/ performance: os uploads são salvos em ALTA RESOLUÇÃO (1–5 MB cada).
-    // Sem este proxy, um card de ~200px baixava a imagem original inteira (ex.: 1,66 MB
-    // → 27 KB em WebP 400px). O onError do <img> volta pra URL original do Supabase se
-    // o proxy falhar, então nunca quebra a imagem.
-    return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we`;
-  } catch {
-    return src;
-  }
-};
-
-const buildSrcSet = (src, widths = [400, 600, 900, 1200, 1600], quality = 90) => {
-  if (!src) return undefined;
-  return widths.map((w) => `${optimizeImage(src, w, quality)} ${w}w`).join(', ');
-};
+// Utilitários de imagem (otimização wsrv.nl) — extraídos p/ ./lib/images.
 
 // ──────────────────────────────────────────────────────────────
 // Fila de carregamento de imagens com concorrência limitada.
@@ -410,66 +371,6 @@ const AutoScrollGallery = ({ count = 1, children }) => {
     <div ref={ref} style={HOLD_SCROLL_STYLE}>
       {children}
     </div>
-  );
-};
-
-const BannerImage = ({ src, srcDesktop, alt, active }) => {
-  const [loaded, setLoaded] = React.useState(false);
-
-  React.useEffect(() => {
-    setLoaded(false);
-  }, [src, srcDesktop]);
-
-  if (!src && !srcDesktop) return <div className="absolute inset-0 bg-black" />;
-
-  // Mobile (4:5) — sempre otimizado (WebP+resize). O banner é o LCP: servir o
-  // original cru (vários MB) atrasava a primeira pintura. onError volta pro original.
-  const mobileBase = src || srcDesktop;
-  const imgSrc = optimizeImage(mobileBase, 1280, 82);
-  const imgSrcSet = buildSrcSet(mobileBase, [640, 900, 1280, 1920], 82);
-
-  // Desktop (16:9) — imagem própria quando existe; senão cai pra mobile
-  const deskBase = srcDesktop || src;
-  const deskSrc = optimizeImage(deskBase, 1920, 82);
-  const deskSrcSet = buildSrcSet(deskBase, [1280, 1920, 2560], 82);
-
-  return (
-    <>
-      {!loaded && (
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 50%, #1c1c1e 100%)',
-            backgroundSize: '200% 200%',
-            animation: 'bannerSkeleton 1.8s ease-in-out infinite',
-          }}
-        />
-      )}
-      <picture className="block w-full h-full">
-        {srcDesktop && <source media="(min-width: 1024px)" srcSet={deskSrcSet || deskSrc} sizes="100vw" />}
-        <img
-          src={imgSrc}
-          srcSet={imgSrcSet}
-          sizes="100vw"
-          className={`w-full h-full object-cover transition-opacity duration-500 banner-img ${loaded ? 'opacity-100' : 'opacity-0'}`}
-          style={{ objectPosition: 'center 55%' }}
-          alt={alt}
-          loading={active ? 'eager' : 'lazy'}
-          decoding="async"
-          fetchPriority={active ? 'high' : 'low'}
-          onLoad={() => setLoaded(true)}
-          onError={(e) => {
-            if (!e.target.dataset.fallback) {
-              e.target.dataset.fallback = '1';
-              markWsrvFailed();
-              e.target.src = mobileBase; // URL original sem proxy
-              e.target.srcset = '';
-            }
-          }}
-          draggable={false}
-        />
-      </picture>
-    </>
   );
 };
 
