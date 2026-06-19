@@ -4709,6 +4709,83 @@ function App() {
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
+  // ──────────────────────────────────────────────────────────────
+  // BOTÃO "VOLTAR" DO CELULAR FECHA O OVERLAY ABERTO — NUNCA SAI DO SITE.
+  // Loja é página única / primeiro contato: voltar com um card/menu/carrinho
+  // aberto (ou dentro de uma categoria) tem que FECHAR aquela camada, não o site.
+  //
+  // Estratégia: manter Nº de "entradas-guarda" no histórico == Nº de camadas
+  // abertas. Cada entrada-guarda é um pushState SEM mudar a URL (preserva o
+  // deep-link/paginação atuais), então este gerenciador NÃO briga com os syncs
+  // de URL que já existem acima — eles viram no-op nos "voltar" das guardas.
+  //   • Abriu uma camada  -> empurra 1 entrada-guarda.
+  //   • Voltar (popstate) -> fecha a camada do topo e consome 1 entrada.
+  //   • Fechou pela UI     -> remove a entrada-guarda excedente (history.go),
+  //                           ignorando o popstate resultante (skipPopRef).
+  // ──────────────────────────────────────────────────────────────
+  const filtersActive = (
+    selectedCategory !== 'TODOS' ||
+    (selectedSize && selectedSize !== 'TODOS') ||
+    selectedColor !== 'TODOS' ||
+    priceRange !== 'TODOS' ||
+    kitsOnly ||
+    !!activeCollectionFilter ||
+    !!(searchQuery || '').trim()
+  );
+  // Ordem = prioridade do topo p/ o fundo (camada mais "por cima" fecha primeiro).
+  const backLayers = [
+    showLeadModal     && (() => { setShowLeadModal(false); setCheckoutSuccess(false); }),
+    isCartModalOpen   && (() => setIsCartModalOpen(false)),
+    showCart          && (() => setShowCart(false)),
+    showUserDrawer    && (() => setShowUserDrawer(false)),
+    showQuickMenu     && (() => setShowQuickMenu(false)),
+    showAdminLogin    && (() => setShowAdminLogin(false)),
+    !!selectedProduct && (() => { setSelectedProduct(null); setSelectedSizes({}); }),
+    filtersActive     && (() => {
+      setSelectedCategory('TODOS'); setSelectedSubcategory('TODOS'); setSelectedSize('TODOS');
+      setSelectedColor('TODOS'); setPriceRange('TODOS'); setKitsOnly(false);
+      setActiveCollectionFilter(null); setSearchQuery('');
+    }),
+  ].filter(Boolean);
+  const backDepth = backLayers.length;
+  const closeTopRef = React.useRef(null);
+  closeTopRef.current = backLayers[0] || null; // sempre aponta pro topo atual
+
+  const backDepthRef = React.useRef(0);
+  const skipPopRef = React.useRef(false);
+
+  // Sincroniza as entradas-guarda com o nº de camadas abertas.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const prev = backDepthRef.current;
+    if (backDepth > prev) {
+      backDepthRef.current = backDepth;
+      for (let i = prev; i < backDepth; i++) {
+        try { window.history.pushState({ __overlayGuard: i + 1 }, ''); } catch {}
+      }
+    } else if (backDepth < prev) {
+      // Camada(s) fechada(s) pela UI: tira as guardas sobrando do histórico.
+      backDepthRef.current = backDepth;
+      skipPopRef.current = true;
+      try { window.history.go(-(prev - backDepth)); } catch { skipPopRef.current = false; }
+    }
+  }, [backDepth]);
+
+  // Intercepta o "voltar": com camada aberta, fecha o topo em vez de sair.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPop = () => {
+      if (skipPopRef.current) { skipPopRef.current = false; return; } // fechamento programático
+      if (backDepthRef.current > 0) {
+        backDepthRef.current -= 1; // o navegador já tirou esta entrada
+        const close = closeTopRef.current;
+        if (typeof close === 'function') close();
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   const availableSizes = useMemo(() => {
     const set = new Set();
     (products || []).forEach(p => {
