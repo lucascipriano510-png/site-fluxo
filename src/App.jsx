@@ -4572,23 +4572,9 @@ function App() {
     return () => clearTimeout(handle);
   }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery, kitsOnly, activeCollectionFilter]);
 
-  // Reage ao botão voltar/avançar do navegador para refletir os filtros da URL
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const onPop = () => {
-      const sp = new URLSearchParams(window.location.search);
-      setSelectedCategory((sp.get('categoria') || 'TODOS').toUpperCase());
-      setSelectedSubcategory((sp.get('sub') || 'TODOS').toUpperCase());
-      setSelectedSize((sp.get('tamanho') || 'TODOS').toUpperCase());
-      setSearchQuery(sp.get('busca') || '');
-      setKitsOnly(sp.get('kits') === '1');
-      setActiveCollectionFilter(sp.get('colecao') || null);
-      // Fecha modal de produto se o parâmetro sumiu da URL
-      if (!sp.get('produto')) { setSelectedProduct(null); setSelectedSizes({}); }
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, []);
+  // (O "voltar" agora é gerenciado pela ÂNCORA DE HISTÓRICO mais abaixo —
+  //  fecha a camada do topo / pede confirmação de saída. A URL continua
+  //  espelhada via replaceState acima só para deep-link/compartilhamento.)
 
   // Deep link de coleção (?colecao=X): rola direto pro catálogo já filtrado.
   const _scrolledToColecao = React.useRef(false);
@@ -4671,7 +4657,9 @@ function App() {
     if (!productsLoaded) return;
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [totalPages, currentPage, productsLoaded]);
-  // Espelha a página atual na URL como /paginaN (push para criar histórico).
+  // Espelha a página atual na URL como /paginaN — replaceState (NÃO cria
+  // entrada de histórico; o "voltar" é dono da âncora abaixo). Mantém a URL
+  // compartilhável/deep-linkável; os botões de paginação na tela seguem iguais.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     // Remove qualquer segmento /pagina(/)?N existente do path.
@@ -4685,43 +4673,19 @@ function App() {
     const newUrl = newPath + (qs ? `?${qs}` : '') + window.location.hash;
     const fullCurrent = window.location.pathname + window.location.search + window.location.hash;
     if (newUrl !== fullCurrent) {
-      window.history.pushState(null, '', newUrl);
+      window.history.replaceState(null, '', newUrl);
     }
     try { sessionStorage.setItem('catalog:page', String(currentPage)); } catch {}
   }, [currentPage]);
-  // Suporte ao botão voltar/avançar do navegador — sincroniza com a URL.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const onPop = () => {
-      const path = window.location.pathname;
-      let m = path.match(/\/pagina(\d+)(?:\/)?$/i);
-      if (!m) m = path.match(/\/pagina\/(\d+)(?:\/)?$/i);
-      if (m) {
-        const n = parseInt(m[1], 10);
-        setCurrentPage(Number.isFinite(n) && n > 0 ? n : 1);
-        return;
-      }
-      const sp = new URLSearchParams(window.location.search);
-      const n = parseInt(sp.get('page') || '1', 10);
-      setCurrentPage(Number.isFinite(n) && n > 0 ? n : 1);
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, []);
 
   // ──────────────────────────────────────────────────────────────
-  // BOTÃO "VOLTAR" DO CELULAR FECHA O OVERLAY ABERTO — NUNCA SAI DO SITE.
-  // Loja é página única / primeiro contato: voltar com um card/menu/carrinho
-  // aberto (ou dentro de uma categoria) tem que FECHAR aquela camada, não o site.
-  //
-  // Estratégia: manter Nº de "entradas-guarda" no histórico == Nº de camadas
-  // abertas. Cada entrada-guarda é um pushState SEM mudar a URL (preserva o
-  // deep-link/paginação atuais), então este gerenciador NÃO briga com os syncs
-  // de URL que já existem acima — eles viram no-op nos "voltar" das guardas.
-  //   • Abriu uma camada  -> empurra 1 entrada-guarda.
-  //   • Voltar (popstate) -> fecha a camada do topo e consome 1 entrada.
-  //   • Fechou pela UI     -> remove a entrada-guarda excedente (history.go),
-  //                           ignorando o popstate resultante (skipPopRef).
+  // BOTÃO/GESTO "VOLTAR" DO CELULAR — NUNCA SAI DO SITE SEM QUERER.
+  // Loja é página única / primeiro contato. O "voltar" do Android:
+  //   1) fecha a camada aberta do topo (card, carrinho, menu, filtro/categoria);
+  //   2) se NADA estiver aberto, pede confirmação ("toque de novo pra sair").
+  // 'backLayers' lista as camadas fecháveis, do topo (fecha 1º) pro fundo;
+  // 'closeTopRef' aponta sempre pra do topo. A âncora de histórico (abaixo)
+  // garante que o "voltar" caia sempre no nosso handler.
   // ──────────────────────────────────────────────────────────────
   const filtersActive = (
     selectedCategory !== 'TODOS' ||
@@ -4747,40 +4711,36 @@ function App() {
       setActiveCollectionFilter(null); setSearchQuery('');
     }),
   ].filter(Boolean);
-  const backDepth = backLayers.length;
   const closeTopRef = React.useRef(null);
-  closeTopRef.current = backLayers[0] || null; // sempre aponta pro topo atual
+  closeTopRef.current = backLayers[0] || null; // sempre aponta pra camada do topo atual
 
-  const backDepthRef = React.useRef(0);
-  const skipPopRef = React.useRef(false);
-
-  // Sincroniza as entradas-guarda com o nº de camadas abertas.
+  // ── ÂNCORA DE HISTÓRICO ────────────────────────────────────────
+  // Mantém SEMPRE 1 entrada-âncora no topo do histórico e a re-arma a cada
+  // "voltar". Assim o popstate dispara aqui em vez de descarregar a página —
+  // robusto no Android, sem contagem nem corrida com os syncs de URL.
+  const exitArmedRef = React.useRef(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const prev = backDepthRef.current;
-    if (backDepth > prev) {
-      backDepthRef.current = backDepth;
-      for (let i = prev; i < backDepth; i++) {
-        try { window.history.pushState({ __overlayGuard: i + 1 }, ''); } catch {}
-      }
-    } else if (backDepth < prev) {
-      // Camada(s) fechada(s) pela UI: tira as guardas sobrando do histórico.
-      backDepthRef.current = backDepth;
-      skipPopRef.current = true;
-      try { window.history.go(-(prev - backDepth)); } catch { skipPopRef.current = false; }
-    }
-  }, [backDepth]);
-
-  // Intercepta o "voltar": com camada aberta, fecha o topo em vez de sair.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+    try { window.history.pushState({ __anchor: true }, ''); } catch {}
     const onPop = () => {
-      if (skipPopRef.current) { skipPopRef.current = false; return; } // fechamento programático
-      if (backDepthRef.current > 0) {
-        backDepthRef.current -= 1; // o navegador já tirou esta entrada
-        const close = closeTopRef.current;
-        if (typeof close === 'function') close();
+      const close = closeTopRef.current;
+      if (typeof close === 'function') {
+        // Tem camada aberta -> fecha só o topo e continua no site.
+        close();
+        exitArmedRef.current = false;
+        try { window.history.pushState({ __anchor: true }, ''); } catch {}
+        return;
       }
+      // Nada aberto -> confirma a saída ("toque de novo pra sair").
+      if (exitArmedRef.current) {
+        exitArmedRef.current = false;
+        window.history.back(); // deixa sair de verdade
+        return;
+      }
+      exitArmedRef.current = true;
+      showToast('Toque em voltar de novo para sair', 'success');
+      setTimeout(() => { exitArmedRef.current = false; }, 2500);
+      try { window.history.pushState({ __anchor: true }, ''); } catch {}
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
