@@ -31,7 +31,7 @@ create table if not exists public.site_lead_signals (
 -- Consultas do Fluxo Command: por telefone, por visitante e por recência.
 create index if not exists idx_lead_signals_phone   on public.site_lead_signals (phone);
 create index if not exists idx_lead_signals_visitor on public.site_lead_signals (visitor_id);
-create index if not exists idx_lead_signals_created  on public.site_lead_signals (created_at desc);
+create index if not exists idx_lead_signals_created  on public.site_lead_signals (created_at);
 create index if not exists idx_lead_signals_event    on public.site_lead_signals (event);
 
 -- RLS: o site insere com a anon key (igual aos pedidos). Liberar só INSERT + SELECT.
