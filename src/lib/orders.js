@@ -146,6 +146,28 @@ export async function deleteOrder(orderId) {
   if (error) throw error;
 }
 
+// Idempotência do Purchase no nível do PEDIDO (P17).
+// Lê o event_id de Purchase já gravado para este pedido (ou null).
+export async function getOrderPurchaseEventId(orderId) {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('meta_purchase_event_id')
+    .eq('id', orderId)
+    .single();
+  if (error) throw error;
+  return data?.meta_purchase_event_id || null;
+}
+
+// Grava a trava: event_id + timestamp do Purchase. Chamar SOMENTE após a
+// Meta aceitar o evento (assim uma falha permite retry depois).
+export async function markOrderPurchaseSent(orderId, eventId) {
+  const { error } = await supabase
+    .from('orders')
+    .update({ meta_purchase_event_id: eventId, meta_purchase_sent_at: new Date().toISOString() })
+    .eq('id', orderId);
+  if (error) throw error;
+}
+
 // Atualiza o telefone de um pedido (correção de número errado para CAPI)
 export async function updateOrderPhone(orderId, phone) {
   const cleaned = String(phone || '').replace(/\D/g, '');

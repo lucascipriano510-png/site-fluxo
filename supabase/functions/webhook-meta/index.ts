@@ -61,9 +61,9 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 // 🔖 Version stamp — atualize a cada deploy para auditar o que está publicado.
-const FN_VERSION = '2026-05-16.1';
+const FN_VERSION = '2026-06-19.1';
 const FN_NAME    = 'webhook-meta';
-const FN_NOTES   = 'Advanced Matching: hash de ph + fn + ln no user_data';
+const FN_NOTES   = 'P17: event_id obrigatorio p/ Purchase; idempotencia por event_id; sem test_event_code em producao';
 
 console.log(`[${FN_NAME}] boot version=${FN_VERSION} notes="${FN_NOTES}"`);
 
@@ -153,6 +153,8 @@ Deno.serve(async (req) => {
 
   // Para Purchase manter validações fortes (registro de venda)
   if (eventName === 'Purchase') {
+    // P17: event_id é OBRIGATÓRIO p/ Purchase (dedup + idempotência). Sem fallback.
+    if (!body?.event_id) return json({ error: 'event_id is required for Purchase' }, 400);
     if (!phoneHash) return json({ error: 'phone is required for Purchase' }, 400);
     if (value < 0)  return json({ error: 'value must be non-negative' }, 400);
   }
@@ -164,6 +166,19 @@ Deno.serve(async (req) => {
 
   let rowId: string | null = null;
   if (eventName === 'Purchase') {
+    // P17: idempotência backend — se já existe Purchase 'enviado' com este
+    // event_id, NÃO reenvia (retorna sucesso deduplicado, sem chamar a Meta).
+    const { data: alreadySent } = await admin
+      .from('rastreio_conversoes')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('status', 'enviado')
+      .limit(1)
+      .maybeSingle();
+    if (alreadySent) {
+      return json({ ok: true, deduped: true, event_id: eventId, event_name: eventName }, 200);
+    }
+
     const { data: inserted, error: insertErr } = await admin
       .from('rastreio_conversoes')
       .insert({
@@ -171,6 +186,7 @@ Deno.serve(async (req) => {
         phone_hash: phoneHash,
         value,
         event_name: eventName,
+        event_id: eventId,                 // P17: grava o event_id (além do raw_payload)
         status: 'pendente',
         source: String(body?.source || (authMode === 'session' ? 'admin' : 'webhook')),
         raw_payload: body,
@@ -202,13 +218,11 @@ Deno.serve(async (req) => {
     baseCustom.currency = currency;
   }
 
-  // test_event_code: enviado em todas as chamadas para aparecer no painel
-  // "Testar eventos" do Meta Events Manager. Pode vir do body (override),
-  // do secret META_TEST_EVENT_CODE ou usar o default abaixo.
+  // P17: test_event_code SÓ quando vier EXPLICITAMENTE no body. Em produção
+  // não há mais fallback de env nem default — eventos contam como conversão
+  // real (e não caem em "Testar eventos" do Events Manager).
   const testEventCode =
-    (typeof body?.test_event_code === 'string' && body.test_event_code) ||
-    Deno.env.get('META_TEST_EVENT_CODE') ||
-    'TEST58091';
+    (typeof body?.test_event_code === 'string' && body.test_event_code) || null;
 
   const metaPayload: Record<string, unknown> = {
     data: [
@@ -222,8 +236,8 @@ Deno.serve(async (req) => {
         custom_data: baseCustom,
       },
     ],
-    test_event_code: testEventCode,
   };
+  if (testEventCode) metaPayload.test_event_code = testEventCode;
 
   let metaStatus = 0;
   let metaJson: any = null;
@@ -246,9 +260,19 @@ Deno.serve(async (req) => {
   // ---------- UPDATE rastreio (só p/ Purchase) ----------
   if (rowId) {
     if (ok) {
-      await admin.from('rastreio_conversoes')
+      const { error: upErr } = await admin.from('rastreio_conversoes')
         .update({ status: 'enviado', fb_trace_id: metaJson?.fbtrace_id || null, error_log: null })
         .eq('id', rowId);
+      // P17: violação do índice único parcial uq_rastreio_event_id_enviado (23505)
+      // significa que já existe um Purchase 'enviado' com este event_id ->
+      // idempotente: marca esta linha como duplicada e retorna sucesso.
+      if (upErr) {
+        if ((upErr as { code?: string }).code === '23505') {
+          await admin.from('rastreio_conversoes').update({ status: 'duplicado' }).eq('id', rowId);
+          return json({ ok: true, deduped: true, event_id: eventId, event_name: eventName }, 200);
+        }
+        console.warn(`[${FN_NAME}] update->enviado falhou:`, upErr.message);
+      }
     } else {
       await admin.from('rastreio_conversoes')
         .update({

@@ -19,7 +19,7 @@ import OfferCountdown from './components/OfferCountdown';
 import { isOfferLive, offerPrice, offerPercent, offerEndsAt, todayLocalISO, formatDayMonth, offerCampaign, OFFER_CAMPAIGNS, CAMPAIGN_LABELS, CAMPAIGN_SHORT } from './lib/offers';
 import { parseQueryIntent, productMatchesIntent, productHaystack, scoreProductForSearch, hasActiveQuery } from './lib/search';
 import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
-import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, updateOrderValue, restoreOrderStock } from './lib/orders';
+import { createOrder, fetchOrders, confirmOrderSale, cancelOrder, deleteOrder as deleteOrderRemote, updateOrderStatus, updateOrderPhone, updateOrderValue, restoreOrderStock, getOrderPurchaseEventId, markOrderPurchaseSent } from './lib/orders';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
 import { dispatchCAPIPurchase, dispatchCAPIRefund } from './lib/capi';
@@ -2063,6 +2063,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
 const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config }) => {
   const [expandedLead, setExpandedLead] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [updatingLeadId, setUpdatingLeadId] = useState(null); // P17: trava clique repetido por pedido
   const [editingPhoneId, setEditingPhoneId] = useState(null);
   const [editingPhoneValue, setEditingPhoneValue] = useState('');
   const [editingValueId, setEditingValueId] = useState(null);
@@ -2120,9 +2121,11 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
   };
 
   const updateLeadStatus = async (id, newStatus) => {
+    if (updatingLeadId === id) return; // P17: ignora clique repetido/rápido no mesmo pedido
     const leadToUpdate = leads.find(l => l.id === id);
     if (!leadToUpdate) return;
     const oldStatus = leadToUpdate.status || 'NOVO';
+    setUpdatingLeadId(id);
     try {
       // Sistema 3.0: estoque só baixa quando admin confirma a venda (CONCLUÍDO)
       if (oldStatus !== 'CONCLUÍDO' && newStatus === 'CONCLUÍDO') {
@@ -2153,12 +2156,25 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
         });
         setProducts(updatedProducts);
         showToast('Venda confirmada e estoque atualizado!');
-        // 🔴 CAPI — fire-and-forget: dispara Purchase para a Meta (com Advanced Matching)
-        dispatchCAPIPurchase({
-          phone: leadToUpdate.phone,
-          value: leadToUpdate.value,
-          name: leadToUpdate.name,
-        }).catch(() => {});
+        // 🔴 P17: Purchase idempotente — a trava vive no BANCO (orders.meta_purchase_event_id),
+        // não no status em memória. Relê o pedido: se já tem event_id, NÃO dispara de novo
+        // (cobre clique repetido e CANCELADO→CONCLUÍDO). Só grava a trava se a Meta aceitar.
+        const purchaseOrderId = leadToUpdate._raw?.id || leadToUpdate.id;
+        try {
+          const alreadySent = await getOrderPurchaseEventId(purchaseOrderId);
+          if (!alreadySent) {
+            const purchaseEventId = createMetaEventId();
+            const res = await dispatchCAPIPurchase({
+              phone: leadToUpdate.phone,
+              value: leadToUpdate.value,
+              name: leadToUpdate.name,
+              event_id: purchaseEventId,
+            });
+            if (res?.ok) await markOrderPurchaseSent(purchaseOrderId, purchaseEventId);
+          }
+        } catch (capiErr) {
+          console.warn('[CAPI_PURCHASE]', capiErr?.message || capiErr);
+        }
       } else if (newStatus === 'CANCELADO') {
         await cancelOrder(leadToUpdate._raw?.id || leadToUpdate.id);
 
@@ -2214,6 +2230,7 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
       showToast('Erro ao atualizar status.', 'error');
     } finally {
       setIsProcessing(false); // 6. FINALLY
+      setUpdatingLeadId(null);
     }
   };
 
@@ -2449,9 +2466,9 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
                 </div>
               ))}
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => updateLeadStatus(lead.id, 'EM ATENDIMENTO')} className="py-3 bg-zinc-800 rounded-xl text-[9px] font-black uppercase text-white">Atender</button>
-                <button onClick={() => updateLeadStatus(lead.id, 'CONCLUÍDO')} className="py-3 bg-emerald-500/10 rounded-xl text-[9px] font-black uppercase text-emerald-500">Concluir</button>
-                <button onClick={() => updateLeadStatus(lead.id, 'CANCELADO')} className="py-3 bg-red-500/10 rounded-xl text-[9px] font-black uppercase text-red-500">Cancelar</button>
+                <button onClick={() => updateLeadStatus(lead.id, 'EM ATENDIMENTO')} disabled={updatingLeadId === lead.id} className="py-3 bg-zinc-800 rounded-xl text-[9px] font-black uppercase text-white disabled:opacity-50 disabled:cursor-not-allowed">Atender</button>
+                <button onClick={() => updateLeadStatus(lead.id, 'CONCLUÍDO')} disabled={updatingLeadId === lead.id} className="py-3 bg-emerald-500/10 rounded-xl text-[9px] font-black uppercase text-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed">{updatingLeadId === lead.id ? 'Processando...' : 'Concluir'}</button>
+                <button onClick={() => updateLeadStatus(lead.id, 'CANCELADO')} disabled={updatingLeadId === lead.id} className="py-3 bg-red-500/10 rounded-xl text-[9px] font-black uppercase text-red-500 disabled:opacity-50 disabled:cursor-not-allowed">Cancelar</button>
                 <button onClick={() => window.open(`https://api.whatsapp.com/send?phone=${lead.phone}&text=Olá ${lead.name.split(' ')[0]}!`)} className="py-3 bg-emerald-500 rounded-xl text-[9px] font-black uppercase text-zinc-950 flex items-center justify-center gap-1"><MessageCircle size={10}/> Chamar</button>
               </div>
             </div>
@@ -4423,27 +4440,10 @@ function App() {
         contents: itensNormalizados.map(i => ({ id: String(i.sku || i.id), quantity: i.qty, item_price: i.price })),
       });
 
-      // 🟢 Purchase com Advanced Matching (fn, ph) — dispara ANTES do redirect
-      // Formata telefone: só dígitos, garante prefixo país 55 (Brasil)
-      const phoneDigits = customerPhone.replace(/\D/g, '');
-      const phoneAM = phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`;
-      const firstName = customerName.trim().split(/\s+/)[0] || customerName.trim();
-      const purchaseEventId = createMetaEventId();
-      try {
-        if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-          window.fbq(
-            'track',
-            'Purchase',
-            { value: totalPedido, currency: 'BRL' },
-            { eventID: purchaseEventId, fn: firstName, ph: phoneAM }
-          );
-        }
-      } catch (e) { console.warn('[pixel] Purchase AM falhou:', e); }
-
-      // CAPI Purchase (mesmo event_id → dedup) — fire-and-forget
-      try {
-        dispatchCAPIPurchase({ phone: phoneAM, value: totalPedido, event_id: purchaseEventId });
-      } catch (e) { /* ignora */ }
+      // ⚠️ P17: Purchase NÃO é mais disparado aqui (checkout do cliente).
+      // O Purchase real (deduplicável e idempotente) sai SOMENTE na confirmação
+      // da venda no admin (updateLeadStatus → CONCLUÍDO). Isso elimina a
+      // inflação de eventos na Meta. AddToCart e InitiateCheckout acima ficam.
 
       setWhatsappLink(whatsappUrl);
       setCheckoutOrderNumber(orderNum);

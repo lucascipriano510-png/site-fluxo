@@ -58,8 +58,13 @@ async function dispatchCAPI(eventName, { phone, value, name, currency = 'BRL', e
 
 /**
  * Dispara o evento Purchase para a Meta via Edge Function.
+ * event_id é OBRIGATÓRIO (dedup Pixel↔CAPI + idempotência). Sem ele, NÃO envia.
  */
 export async function dispatchCAPIPurchase({ phone, value, name, event_id } = {}) {
+  if (!event_id) {
+    console.warn('[capi] Purchase sem event_id — NÃO enviado (dedup obrigatório).');
+    return { ok: false, error: 'event_id is required for Purchase' };
+  }
   return dispatchCAPI('Purchase', { phone, value, name, event_id });
 }
 
