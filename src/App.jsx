@@ -3510,17 +3510,32 @@ function App() {
                 )}
               </div>
 
-              {/* Body — flui no documento (scroll único) */}
-              <div className="px-7 pt-5 pb-40 flex flex-col gap-6">
-                {/* Caminho até o produto (entre a imagem e as escritas) */}
-                {renderBreadcrumb()}
-                {/* Info */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest self-start">REF: {selectedProduct.sku}</span>
-                  <h2 className="text-2xl font-black text-white leading-tight uppercase mt-2 tracking-tight">{selectedProduct.name}</h2>
+              {/* Body — scroll único, com ritmo de seções generoso (cara de site grande) */}
+              <div className="px-6 pt-7 pb-44 flex flex-col gap-8">
+
+                {/* ── CABEÇALHO ── nome é o herói; ref/rating subordinados; preço com respiro */}
+                <div className="flex flex-col gap-5">
+                  {renderBreadcrumb()}
+                  <div className="flex flex-col gap-3">
+                    <h2 className="text-[30px] font-black text-white leading-[1.04] uppercase tracking-tight">{selectedProduct.name}</h2>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <StarRatingInline
+                        product={selectedProduct}
+                        ratingsMap={ratingsMap}
+                        userProfile={userProfile}
+                        setRatingsMap={setRatingsMap}
+                        setShowUserDrawer={setShowUserDrawer}
+                        setDrawerTab={setDrawerTab}
+                        showToast={showToast}
+                      />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--text-muted)' }}>Ref. {selectedProduct.sku}</span>
+                    </div>
+                  </div>
+
+                  {/* Preço */}
                   {isOfferLive(selectedProduct) ? (
-                    <div className="mt-3 p-[1.5px] rounded-3xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40">
-                      <div className="rounded-[22px] bg-zinc-950/80 p-4 space-y-3">
+                    <div className="p-[1.5px] rounded-3xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40">
+                      <div className="rounded-[22px] bg-zinc-950/80 p-5 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.25em]" style={{ color: '#fbbf24' }}>
                             <Flame size={11} className="fill-amber-400 text-amber-400"/> Oferta do Dia
@@ -3528,38 +3543,27 @@ function App() {
                           <span className="text-[10px] font-black text-zinc-950 px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-red-500">-{offerPercent(selectedProduct)}%</span>
                         </div>
                         <div className="flex items-baseline gap-3">
-                          <span className="text-3xl font-black tracking-tighter" style={{ color: '#fde68a' }}>{formatBRL(offerPrice(selectedProduct))}</span>
-                          <span className="text-base font-bold text-zinc-500 line-through">{formatBRL(selectedProduct.price || 0)}</span>
+                          <span className="text-[34px] font-black tracking-tighter tabular-nums" style={{ color: '#fde68a' }}>{formatBRL(offerPrice(selectedProduct))}</span>
+                          <span className="text-base font-bold text-zinc-500 line-through tabular-nums">{formatBRL(selectedProduct.price || 0)}</span>
                         </div>
                         <OfferCountdown target={offerEndsAt(selectedProduct)} variant="full" onExpire={bumpOffers} />
                         <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Acaba à meia-noite · não acumula 5% Pix</p>
                       </div>
                     </div>
                   ) : selectedProduct.promotional_price ? (
-                    <div className="flex items-baseline gap-3 mt-2">
-                      <span className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(selectedProduct.promotional_price)}</span>
-                      <span className="text-base font-bold text-zinc-500 line-through">{formatBRL(selectedProduct.price || 0)}</span>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-[34px] font-black text-emerald-500 tracking-tighter tabular-nums">{formatBRL(selectedProduct.promotional_price)}</span>
+                      <span className="text-base font-bold text-zinc-500 line-through tabular-nums">{formatBRL(selectedProduct.price || 0)}</span>
                     </div>
                   ) : (
-                    <p className="text-3xl font-black text-emerald-500 mt-2 tracking-tighter">{formatBRL(selectedProduct.price || 0)}</p>
+                    <p className="text-[34px] font-black text-emerald-500 tracking-tighter tabular-nums">{formatBRL(selectedProduct.price || 0)}</p>
                   )}
-                  <div className="mt-2">
-                    <StarRatingInline
-                      product={selectedProduct}
-                      ratingsMap={ratingsMap}
-                      userProfile={userProfile}
-                      setRatingsMap={setRatingsMap}
-                      setShowUserDrawer={setShowUserDrawer}
-                      setDrawerTab={setDrawerTab}
-                      showToast={showToast}
-                    />
-                  </div>
                 </div>
 
-                {/* Size selector — todos os tamanhos, esgotados visíveis como disabled */}
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Selecione o Tamanho</p>
-                  <div className="grid grid-cols-4 gap-2">
+                {/* ── TAMANHO ── seção própria, separada por divisor */}
+                <div className="flex flex-col gap-4 border-t border-white/5 pt-8">
+                  <p className="text-[11px] font-black text-white uppercase tracking-[0.22em]">Selecione o Tamanho</p>
+                  <div className="grid grid-cols-4 gap-2.5">
                     {(selectedProduct.sizes || []).map((s, idx) => {
                       const sz = typeof s === 'string' ? s : s.size;
                       const stock = typeof s === 'string' ? selectedProduct.stock : Number(s.stock || 0);
@@ -3567,12 +3571,12 @@ function App() {
                       const isLowStock = stock > 0 && stock <= 3;
                       const qty = selectedSizes[sz] || 0;
                       if (qty > 0) return (
-                        <div key={idx} className="py-2.5 rounded-lg border-2 border-white bg-zinc-900 flex flex-col items-center justify-center gap-1.5">
-                          <span className="text-xs font-black text-white">{sz}</span>
-                          <div className="flex items-center gap-2 bg-zinc-950 rounded-md px-1 py-1 border border-zinc-800">
-                            <button onClick={() => { const n = {...selectedSizes}; if(n[sz]>1) n[sz]--; else delete n[sz]; setSelectedSizes(n); }} className="text-zinc-400 touch-manipulation"><Minus size={10}/></button>
+                        <div key={idx} className="py-3 rounded-xl border-2 border-white bg-zinc-900 flex flex-col items-center justify-center gap-1.5">
+                          <span className="text-sm font-black text-white">{sz}</span>
+                          <div className="flex items-center gap-2 bg-zinc-950 rounded-md px-1.5 py-1 border border-zinc-800">
+                            <button onClick={() => { const n = {...selectedSizes}; if(n[sz]>1) n[sz]--; else delete n[sz]; setSelectedSizes(n); }} className="text-zinc-400 touch-manipulation"><Minus size={11}/></button>
                             <span className="text-[10px] font-black text-white w-3 text-center">{qty}</span>
-                            <button onClick={() => handleSizeSelect(sz, stock)} className="text-zinc-400 touch-manipulation"><Plus size={10}/></button>
+                            <button onClick={() => handleSizeSelect(sz, stock)} className="text-zinc-400 touch-manipulation"><Plus size={11}/></button>
                           </div>
                         </div>
                       );
@@ -3581,7 +3585,7 @@ function App() {
                           key={idx}
                           disabled={isEsgotado}
                           onClick={() => !isEsgotado && handleSizeSelect(sz, stock)}
-                          className={`py-3 rounded-lg border font-black text-sm transition-all touch-manipulation flex flex-col items-center justify-center gap-0.5 ${isEsgotado ? 'bg-zinc-900/40 border-zinc-800/50 cursor-not-allowed' : 'bg-zinc-900 border-zinc-800 text-zinc-300 active:scale-95'}`}
+                          className={`py-4 rounded-xl border font-black text-sm transition-all touch-manipulation flex flex-col items-center justify-center gap-0.5 ${isEsgotado ? 'bg-zinc-900/40 border-zinc-800/50 cursor-not-allowed' : 'bg-zinc-900 border-zinc-800 text-zinc-300 active:scale-95'}`}
                         >
                           <span className={isEsgotado ? 'text-zinc-700 line-through text-xs' : ''}>{sz}</span>
                           {isEsgotado && <span className="text-[7px] text-zinc-700 font-black uppercase">Esgotado</span>}
@@ -3593,18 +3597,18 @@ function App() {
                 </div>
 
                 {/* Trust signals */}
-                <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/5">
-                  <div className="flex flex-col items-center gap-1.5 text-center">
-                    <div className="w-9 h-9 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><ShieldCheck size={14} className="text-emerald-500"/></div>
-                    <span className="text-[8px] font-black text-zinc-500 uppercase tracking-wide leading-tight">Compra Segura</span>
+                <div className="grid grid-cols-3 gap-3 pt-8 border-t border-white/5">
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><ShieldCheck size={16} className="text-emerald-500"/></div>
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wide leading-tight">Compra Segura</span>
                   </div>
-                  <div className="flex flex-col items-center gap-1.5 text-center">
-                    <div className="w-9 h-9 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={14} className="text-emerald-500"/></div>
-                    <span className="text-[8px] font-black text-zinc-500 uppercase tracking-wide leading-tight">Envio Rápido</span>
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={16} className="text-emerald-500"/></div>
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wide leading-tight">Envio Rápido</span>
                   </div>
-                  <div className="flex flex-col items-center gap-1.5 text-center">
-                    <div className="w-9 h-9 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={14} className="text-emerald-500"/></div>
-                    <span className="text-[8px] font-black text-zinc-500 uppercase tracking-wide leading-tight">Suporte WA</span>
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={16} className="text-emerald-500"/></div>
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wide leading-tight">Suporte WA</span>
                   </div>
                 </div>
 
@@ -3659,7 +3663,7 @@ function App() {
             <div className="h-20 lg:h-[68px]" />
 
             {/* CONTEÚDO — container centralizado e limitado */}
-            <div className="max-w-[1320px] mx-auto px-10 py-10 flex gap-12 items-start">
+            <div className="max-w-[1280px] mx-auto px-8 py-12 flex gap-14 items-start">
 
               {/* COLUNA ESQUERDA — galeria controlada */}
               <div className="flex-1 min-w-0">
@@ -3702,89 +3706,111 @@ function App() {
                 )}
               </div>
 
-              {/* COLUNA DIREITA — painel de compra fixo em largura */}
-              <div className="w-[420px] shrink-0 flex flex-col">
-                {/* X fechar */}
-                <div className="flex justify-end mb-4">
-                  <button
-                    onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }}
-                    className="flex items-center gap-2 text-zinc-400 hover:text-white bg-zinc-900 border border-white/10 rounded-full px-4 py-2 text-[11px] font-black uppercase tracking-widest transition-colors hover:bg-zinc-800"
-                  >
-                    <X size={14}/> Fechar
-                  </button>
-                </div>
-              {/* Caminho até o produto */}
-              {renderBreadcrumb('mb-4')}
-              <h1 className="text-4xl font-black text-white leading-tight uppercase tracking-tight mb-1">{selectedProduct.name}</h1>
-              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-6">REF: {selectedProduct.sku}</p>
-              {isOfferLive(selectedProduct) ? (
-                <div className="mb-10 p-[1.5px] rounded-3xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40 inline-block">
-                  <div className="rounded-[22px] bg-zinc-950/80 p-5 space-y-4">
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#fbbf24' }}>
-                        <Flame size={13} className="fill-amber-400 text-amber-400"/> Oferta do Dia
-                      </span>
-                      <span className="text-[11px] font-black text-zinc-950 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-red-500 shadow-[0_4px_14px_rgba(245,158,11,0.4)]">-{offerPercent(selectedProduct)}% OFF</span>
-                    </div>
-                    <div className="flex items-baseline gap-4">
-                      <span className="text-5xl font-black tracking-tighter" style={{ color: '#fde68a' }}>{formatBRL(offerPrice(selectedProduct))}</span>
-                      <span className="text-xl font-bold text-zinc-500 line-through">{formatBRL(selectedProduct.price || 0)}</span>
-                    </div>
-                    <OfferCountdown target={offerEndsAt(selectedProduct)} variant="full" onExpire={bumpOffers} />
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Acaba à meia-noite · itens em oferta não acumulam os 5% do Pix</p>
+              {/* COLUNA DIREITA — painel de compra sticky, em superfície (cara de site grande) */}
+              <div className="w-[440px] shrink-0">
+                <div className="sticky top-[92px] rounded-3xl border border-white/10 bg-zinc-900/30 p-9">
+
+                  {/* Topo: caminho + fechar na mesma linha */}
+                  <div className="flex items-start justify-between gap-4 mb-8">
+                    {renderBreadcrumb()}
+                    <button
+                      onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }}
+                      aria-label="Fechar"
+                      className="shrink-0 w-9 h-9 -mt-1.5 -mr-1.5 flex items-center justify-center rounded-full text-zinc-400 hover:text-white bg-zinc-900 border border-white/10 transition-colors hover:bg-zinc-800"
+                    >
+                      <X size={16}/>
+                    </button>
                   </div>
-                </div>
-              ) : selectedProduct.promotional_price ? (
-                <div className="flex items-baseline gap-4 mb-10">
-                  <span className="text-5xl font-black text-emerald-400 tracking-tighter">{formatBRL(selectedProduct.promotional_price)}</span>
-                  <span className="text-xl font-bold text-zinc-500 line-through">{formatBRL(selectedProduct.price || 0)}</span>
-                </div>
-              ) : (
-                <p className="text-5xl font-black text-emerald-400 tracking-tighter mb-10">{formatBRL(selectedProduct.price || 0)}</p>
-              )}
 
-              <div className="mb-8">
-                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-3">Selecione o Tamanho</p>
-                <div className="grid grid-cols-5 gap-2">
-                  {(selectedProduct.sizes || []).filter(s => { const stock = typeof s === 'string' ? selectedProduct.stock : s.stock; return Number(stock || 0) > 0; }).map((s, idx) => {
-                    const sz = typeof s === 'string' ? s : s.size;
-                    const stock = typeof s === 'string' ? selectedProduct.stock : s.stock;
-                    const qty = selectedSizes[sz] || 0;
-                    if (qty > 0) return (
-                      <div key={idx} className="py-3 rounded-xl border-2 border-white bg-zinc-900 flex flex-col items-center justify-center gap-1.5">
-                        <span className="text-sm font-black text-white">{sz}</span>
-                        <div className="flex items-center gap-2 bg-zinc-950 rounded-md px-1.5 py-1 border border-zinc-800">
-                          <button onClick={() => { const n = {...selectedSizes}; if(n[sz]>1) n[sz]--; else delete n[sz]; setSelectedSizes(n); }} className="text-zinc-400 hover:text-white transition-colors"><Minus size={11}/></button>
-                          <span className="text-[11px] font-black text-white w-4 text-center">{qty}</span>
-                          <button onClick={() => handleSizeSelect(sz, stock)} className="text-zinc-400 hover:text-white transition-colors"><Plus size={11}/></button>
+                  {/* Cabeçalho do produto — nome herói, rating/ref subordinados */}
+                  <h1 className="text-[40px] font-black text-white leading-[1.03] uppercase tracking-tight mb-4">{selectedProduct.name}</h1>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-8">
+                    <StarRatingInline
+                      product={selectedProduct}
+                      ratingsMap={ratingsMap}
+                      userProfile={userProfile}
+                      setRatingsMap={setRatingsMap}
+                      setShowUserDrawer={setShowUserDrawer}
+                      setDrawerTab={setDrawerTab}
+                      showToast={showToast}
+                    />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--text-muted)' }}>Ref. {selectedProduct.sku}</span>
+                  </div>
+
+                  {/* Preço */}
+                  {isOfferLive(selectedProduct) ? (
+                    <div className="mb-8 p-[1.5px] rounded-3xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40">
+                      <div className="rounded-[22px] bg-zinc-950/80 p-5 space-y-4">
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#fbbf24' }}>
+                            <Flame size={13} className="fill-amber-400 text-amber-400"/> Oferta do Dia
+                          </span>
+                          <span className="text-[11px] font-black text-zinc-950 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-red-500 shadow-[0_4px_14px_rgba(245,158,11,0.4)]">-{offerPercent(selectedProduct)}% OFF</span>
                         </div>
+                        <div className="flex items-baseline gap-4">
+                          <span className="text-5xl font-black tracking-tighter tabular-nums" style={{ color: '#fde68a' }}>{formatBRL(offerPrice(selectedProduct))}</span>
+                          <span className="text-xl font-bold text-zinc-500 line-through tabular-nums">{formatBRL(selectedProduct.price || 0)}</span>
+                        </div>
+                        <OfferCountdown target={offerEndsAt(selectedProduct)} variant="full" onExpire={bumpOffers} />
+                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Acaba à meia-noite · itens em oferta não acumulam os 5% do Pix</p>
                       </div>
-                    );
-                    return <button key={idx} disabled={stock <= 0} onClick={() => handleSizeSelect(sz, stock)} className={`py-4 rounded-xl border font-black text-sm transition-all ${stock > 0 ? 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-white hover:text-white hover:bg-zinc-800' : 'bg-zinc-900/50 border-zinc-800 text-zinc-600 opacity-40 cursor-not-allowed'}`}>{sz}</button>;
-                  })}
-                </div>
-              </div>
+                    </div>
+                  ) : selectedProduct.promotional_price ? (
+                    <div className="flex items-baseline gap-4 mb-8">
+                      <span className="text-5xl font-black text-emerald-400 tracking-tighter tabular-nums">{formatBRL(selectedProduct.promotional_price)}</span>
+                      <span className="text-xl font-bold text-zinc-500 line-through tabular-nums">{formatBRL(selectedProduct.price || 0)}</span>
+                    </div>
+                  ) : (
+                    <p className="text-5xl font-black text-emerald-400 tracking-tighter tabular-nums mb-8">{formatBRL(selectedProduct.price || 0)}</p>
+                  )}
 
-              <button onClick={handleCommitToCart} disabled={Object.keys(selectedSizes).length === 0} className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed' : 'bg-emerald-500 text-zinc-950 shadow-[0_10px_40px_rgba(16,185,129,0.35)] hover:bg-emerald-400 hover:shadow-[0_10px_50px_rgba(16,185,129,0.5)]'}`}>
-                {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola — ${Object.values(selectedSizes).reduce((a,b)=>a+b,0)} ${Object.values(selectedSizes).reduce((a,b)=>a+b,0) === 1 ? 'peça' : 'peças'}`}
-                <ShoppingBag size={16}/>
-              </button>
+                  {/* Tamanho — seção com divisor */}
+                  <div className="border-t border-white/10 pt-8 mb-8">
+                    <p className="text-[11px] font-black text-white uppercase tracking-[0.22em] mb-4">Selecione o Tamanho</p>
+                    <div className="grid grid-cols-5 gap-2.5">
+                      {(selectedProduct.sizes || []).filter(s => { const stock = typeof s === 'string' ? selectedProduct.stock : s.stock; return Number(stock || 0) > 0; }).map((s, idx) => {
+                        const sz = typeof s === 'string' ? s : s.size;
+                        const stock = typeof s === 'string' ? selectedProduct.stock : s.stock;
+                        const qty = selectedSizes[sz] || 0;
+                        if (qty > 0) return (
+                          <div key={idx} className="py-3 rounded-xl border-2 border-white bg-zinc-900 flex flex-col items-center justify-center gap-1.5">
+                            <span className="text-sm font-black text-white">{sz}</span>
+                            <div className="flex items-center gap-2 bg-zinc-950 rounded-md px-1.5 py-1 border border-zinc-800">
+                              <button onClick={() => { const n = {...selectedSizes}; if(n[sz]>1) n[sz]--; else delete n[sz]; setSelectedSizes(n); }} className="text-zinc-400 hover:text-white transition-colors"><Minus size={11}/></button>
+                              <span className="text-[11px] font-black text-white w-4 text-center">{qty}</span>
+                              <button onClick={() => handleSizeSelect(sz, stock)} className="text-zinc-400 hover:text-white transition-colors"><Plus size={11}/></button>
+                            </div>
+                          </div>
+                        );
+                        return <button key={idx} disabled={stock <= 0} onClick={() => handleSizeSelect(sz, stock)} className={`py-4 rounded-xl border font-black text-sm transition-all ${stock > 0 ? 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-white hover:text-white hover:bg-zinc-800' : 'bg-zinc-900/50 border-zinc-800 text-zinc-600 opacity-40 cursor-not-allowed'}`}>{sz}</button>;
+                      })}
+                    </div>
+                  </div>
 
-              <div className="mt-10 pt-8 border-t border-white/5 grid grid-cols-3 gap-4">
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <div className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><ShieldCheck size={16} className="text-emerald-500"/></div>
-                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Compra Segura</span>
-                </div>
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <div className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={16} className="text-emerald-500"/></div>
-                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Envio Rápido</span>
-                </div>
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <div className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={16} className="text-emerald-500"/></div>
-                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Suporte WhatsApp</span>
-                </div>
-              </div>
-            </div>{/* fim coluna direita */}
+                  {/* CTA */}
+                  <button onClick={handleCommitToCart} disabled={Object.keys(selectedSizes).length === 0} className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed' : 'bg-emerald-500 text-zinc-950 shadow-[0_10px_40px_rgba(16,185,129,0.35)] hover:bg-emerald-400 hover:shadow-[0_10px_50px_rgba(16,185,129,0.5)]'}`}>
+                    {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola — ${Object.values(selectedSizes).reduce((a,b)=>a+b,0)} ${Object.values(selectedSizes).reduce((a,b)=>a+b,0) === 1 ? 'peça' : 'peças'}`}
+                    <ShoppingBag size={16}/>
+                  </button>
+
+                  {/* Trust signals */}
+                  <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-3 gap-4">
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><ShieldCheck size={17} className="text-emerald-500"/></div>
+                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Compra Segura</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={17} className="text-emerald-500"/></div>
+                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Envio Rápido</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={17} className="text-emerald-500"/></div>
+                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Suporte WhatsApp</span>
+                    </div>
+                  </div>
+
+                </div>{/* fim painel sticky */}
+              </div>{/* fim coluna direita */}
           </div>{/* fim container max-w */}
 
           {/* Related products — desktop */}
