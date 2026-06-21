@@ -3411,6 +3411,36 @@ function App() {
           p.id !== selectedProduct.id && !p.is_kit && p.stock > 0 &&
           (p.category === selectedProduct.category || p.featured)
         ).slice(0, 4);
+        // Caminho até o produto: início.categoria.subcategoria.produto (clicável p/ navegar).
+        const goHome = () => { setSelectedProduct(null); setSelectedSizes({}); };
+        const goCategory = (cat, sub) => {
+          setSelectedProduct(null); setSelectedSizes({});
+          setActiveCollectionFilter(null);
+          setSelectedCategory((cat || 'TODOS').toUpperCase());
+          setSelectedSubcategory(sub ? sub.toUpperCase() : 'TODOS');
+          setTimeout(() => document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+        };
+        const crumbs = [
+          { label: 'início', onClick: goHome },
+          selectedProduct.category && selectedProduct.category !== 'TODOS'
+            ? { label: selectedProduct.category, onClick: () => goCategory(selectedProduct.category) } : null,
+          selectedProduct.subcategory
+            ? { label: selectedProduct.subcategory, onClick: () => goCategory(selectedProduct.category, selectedProduct.subcategory) } : null,
+          { label: selectedProduct.name, current: true },
+        ].filter(Boolean);
+        const crumbText = (s) => String(s).toLowerCase().replace(/\s+/g, '');
+        const renderBreadcrumb = (className) => (
+          <nav aria-label="Caminho do produto" className={`flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[10px] font-black tracking-tight lowercase ${className || ''}`}>
+            {crumbs.map((c, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span className="text-zinc-700 select-none">.</span>}
+                {c.current
+                  ? <span className="text-emerald-400/90 max-w-[160px] truncate">{crumbText(c.label)}</span>
+                  : <button onClick={c.onClick} className="text-zinc-500 hover:text-white active:text-white transition-colors touch-manipulation">{crumbText(c.label)}</button>}
+              </React.Fragment>
+            ))}
+          </nav>
+        );
         return (
         <React.Fragment key={`product-modal-${selectedProduct.id}`}>
           {/* ── MOBILE: página de produto em fluxo no documento (oculto no desktop) ── */}
@@ -3473,6 +3503,8 @@ function App() {
 
               {/* Body — flui no documento (scroll único) */}
               <div className="px-7 pt-5 pb-40 flex flex-col gap-6">
+                {/* Caminho até o produto (entre a imagem e as escritas) */}
+                {renderBreadcrumb()}
                 {/* Info */}
                 <div className="flex flex-col gap-1">
                   <span className="text-[8px] font-black text-zinc-500 uppercase bg-zinc-900 px-2 py-1 rounded-md tracking-widest self-start">REF: {selectedProduct.sku}</span>
@@ -3672,11 +3704,8 @@ function App() {
                     <X size={14}/> Fechar
                   </button>
                 </div>
-              {selectedProduct.category && (
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4">
-                  {selectedProduct.category}{selectedProduct.collection_name ? ` / ${selectedProduct.collection_name}` : ''}
-                </p>
-              )}
+              {/* Caminho até o produto */}
+              {renderBreadcrumb('mb-4')}
               <h1 className="text-4xl font-black text-white leading-tight uppercase tracking-tight mb-1">{selectedProduct.name}</h1>
               <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-6">REF: {selectedProduct.sku}</p>
               {isOfferLive(selectedProduct) ? (
