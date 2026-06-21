@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Barcode, Camera, Check, Clock, Edit3, Flame, Home, Image, ImagePlus, Layers, Minus, Plus, RefreshCcw, Scan, ScanLine, Search, Tag, Trash2, Upload, X, Zap } from 'lucide-react';
+import { Barcode, Camera, Check, Clock, Edit3, Flame, Home, Image as ImageIcon, ImagePlus, Layers, Minus, Plus, RefreshCcw, Scan, ScanLine, Search, Tag, Trash2, Upload, X, Zap } from 'lucide-react';
 import { formatBRL } from '../lib/format';
 import { CAMPAIGN_LABELS, CAMPAIGN_SHORT, OFFER_CAMPAIGNS, formatDayMonth, todayLocalISO } from '../lib/offers';
 import { fetchKitItems, saveKitItems, upsertProduct } from '../lib/supabase';
