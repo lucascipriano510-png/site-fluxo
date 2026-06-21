@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, Tag, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu } from 'lucide-react';
-import { fetchProducts, upsertProduct, fetchBanners, upsertBanner, uploadImage, fetchAllKitItems } from './lib/supabase';
+import { fetchProducts, upsertProduct, deleteProduct, fetchBanners, upsertBanner, deleteBanner, uploadImage, fetchAllKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
 import StarRatingInline from './components/StarRatingInline';
@@ -821,7 +821,7 @@ function App() {
           }
         });
         // deletes
-        (prev || []).forEach(p => { if (!nextIds.has(p.id)) deleteProductRemote(p.id).catch(err => console.warn('[products] delete falhou:', err?.message)); });
+        (prev || []).forEach(p => { if (!nextIds.has(p.id)) deleteProduct(p.id).catch(err => console.warn('[products] delete falhou:', err?.message)); });
       } catch (e) { console.warn('[products] sync falhou:', e?.message); }
       return next;
     });
@@ -875,7 +875,7 @@ function App() {
           }
         });
         // deletes
-        (prev || []).forEach(b => { if (!nextIds.has(b.id)) deleteBannerRemote(b.id).catch(err => console.warn('[banners] delete falhou:', err?.message)); });
+        (prev || []).forEach(b => { if (!nextIds.has(b.id)) deleteBanner(b.id).catch(err => console.warn('[banners] delete falhou:', err?.message)); });
       } catch (e) { console.warn('[banners] sync falhou:', e?.message); }
       return next;
     });
