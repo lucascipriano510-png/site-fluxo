@@ -1734,7 +1734,8 @@ function App() {
         const newSearch = sp.toString();
         const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '') + url.hash;
         const current = window.location.pathname + window.location.search + window.location.hash;
-        if (newUrl !== current) window.history.replaceState(null, '', newUrl);
+        // Preserva o state (mantém o marcador __anchor da navegação) ao espelhar a URL.
+        if (newUrl !== current) window.history.replaceState(window.history.state, '', newUrl);
       } catch {}
     }, 200);
     return () => clearTimeout(handle);
@@ -1766,7 +1767,7 @@ function App() {
       }
       const newUrl = url.pathname + (url.search ? url.search : '') + url.hash;
       const current = window.location.pathname + window.location.search + window.location.hash;
-      if (newUrl !== current) window.history.replaceState(null, '', newUrl);
+      if (newUrl !== current) window.history.replaceState(window.history.state, '', newUrl);
     } catch {}
   }, [selectedProduct, productsLoaded]);
 
@@ -1841,7 +1842,7 @@ function App() {
     const newUrl = newPath + (qs ? `?${qs}` : '') + window.location.hash;
     const fullCurrent = window.location.pathname + window.location.search + window.location.hash;
     if (newUrl !== fullCurrent) {
-      window.history.replaceState(null, '', newUrl);
+      window.history.replaceState(window.history.state, '', newUrl);
     }
     try { sessionStorage.setItem('catalog:page', String(currentPage)); } catch {}
   }, [currentPage]);
@@ -1889,29 +1890,50 @@ function App() {
   const exitArmedRef = React.useRef(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    try { window.history.pushState({ __anchor: true }, ''); } catch {}
+    let leaving = false;
+    const hasAnchor = () => !!(window.history.state && window.history.state.__anchor);
+    const pushAnchor = () => { try { window.history.pushState({ __anchor: true }, ''); } catch {} };
+    // Garante a âncora no topo SEM empilhar várias: os syncs de URL usam
+    // replaceState preservando o state, então o marcador __anchor sobrevive e
+    // este guard sabe se a âncora já existe.
+    const ensureAnchor = () => { if (!hasAnchor()) pushAnchor(); };
+    ensureAnchor();
     const onPop = () => {
+      if (leaving) return;
       const close = closeTopRef.current;
       if (typeof close === 'function') {
         // Tem camada aberta -> fecha só o topo e continua no site.
         close();
         exitArmedRef.current = false;
-        try { window.history.pushState({ __anchor: true }, ''); } catch {}
+        pushAnchor();
         return;
       }
       // Nada aberto -> confirma a saída ("toque de novo pra sair").
       if (exitArmedRef.current) {
         exitArmedRef.current = false;
+        leaving = true;
         window.history.back(); // deixa sair de verdade
         return;
       }
       exitArmedRef.current = true;
       showToast('Toque em voltar de novo para sair', 'success');
       setTimeout(() => { exitArmedRef.current = false; }, 2500);
-      try { window.history.pushState({ __anchor: true }, ''); } catch {}
+      pushAnchor();
     };
+    // Em muitos browsers mobile / webview (WhatsApp) o pushState disparado no
+    // load — sem gesto do usuário — é IGNORADO, e o 1º "voltar" fecha o site.
+    // Re-garantir a âncora no 1º toque (já com gesto) e ao voltar do bfcache
+    // resolve, sem empilhar entradas.
+    const onGesture = () => ensureAnchor();
+    const onPageShow = (e) => { if (e.persisted) { leaving = false; ensureAnchor(); } };
     window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
+    window.addEventListener('pointerdown', onGesture, { passive: true });
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      window.removeEventListener('pointerdown', onGesture);
+      window.removeEventListener('pageshow', onPageShow);
+    };
   }, []);
 
   const availableSizes = useMemo(() => {
