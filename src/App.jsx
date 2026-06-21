@@ -3552,11 +3552,11 @@ function App() {
                     </div>
                   ) : selectedProduct.promotional_price ? (
                     <div className="flex items-baseline gap-3">
-                      <span className="text-[34px] font-black text-emerald-500 tracking-tighter tabular-nums">{formatBRL(selectedProduct.promotional_price)}</span>
+                      <span className="text-[34px] font-black tracking-tighter tabular-nums" style={{ color: 'var(--text-primary)' }}>{formatBRL(selectedProduct.promotional_price)}</span>
                       <span className="text-base font-bold text-zinc-500 line-through tabular-nums">{formatBRL(selectedProduct.price || 0)}</span>
                     </div>
                   ) : (
-                    <p className="text-[34px] font-black text-emerald-500 tracking-tighter tabular-nums">{formatBRL(selectedProduct.price || 0)}</p>
+                    <p className="text-[34px] font-black tracking-tighter tabular-nums" style={{ color: 'var(--text-primary)' }}>{formatBRL(selectedProduct.price || 0)}</p>
                   )}
                 </div>
 
@@ -3757,11 +3757,11 @@ function App() {
                     </div>
                   ) : selectedProduct.promotional_price ? (
                     <div className="flex items-baseline gap-4 mb-8">
-                      <span className="text-5xl font-black text-emerald-400 tracking-tighter tabular-nums">{formatBRL(selectedProduct.promotional_price)}</span>
+                      <span className="text-5xl font-black tracking-tighter tabular-nums" style={{ color: 'var(--text-primary)' }}>{formatBRL(selectedProduct.promotional_price)}</span>
                       <span className="text-xl font-bold text-zinc-500 line-through tabular-nums">{formatBRL(selectedProduct.price || 0)}</span>
                     </div>
                   ) : (
-                    <p className="text-5xl font-black text-emerald-400 tracking-tighter tabular-nums mb-8">{formatBRL(selectedProduct.price || 0)}</p>
+                    <p className="text-5xl font-black tracking-tighter tabular-nums mb-8" style={{ color: 'var(--text-primary)' }}>{formatBRL(selectedProduct.price || 0)}</p>
                   )}
 
                   {/* Tamanho — seção com divisor */}
