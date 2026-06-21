@@ -3428,15 +3428,24 @@ function App() {
             ? { label: selectedProduct.subcategory, onClick: () => goCategory(selectedProduct.category, selectedProduct.subcategory) } : null,
           { label: selectedProduct.name, current: true },
         ].filter(Boolean);
-        const crumbText = (s) => String(s).toLowerCase().replace(/\s+/g, '');
         const renderBreadcrumb = (className) => (
-          <nav aria-label="Caminho do produto" className={`flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[10px] font-black tracking-tight lowercase ${className || ''}`}>
+          <nav
+            aria-label="Caminho do produto"
+            className={`flex flex-wrap items-center gap-x-2 gap-y-1 ${className || ''}`}
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
             {crumbs.map((c, i) => (
               <React.Fragment key={i}>
-                {i > 0 && <span className="text-zinc-700 select-none">.</span>}
+                {i > 0 && (
+                  <span className="text-[13px] font-black select-none leading-none" style={{ color: 'var(--text-muted)' }}>.</span>
+                )}
                 {c.current
-                  ? <span className="text-emerald-400/90 max-w-[160px] truncate">{crumbText(c.label)}</span>
-                  : <button onClick={c.onClick} className="text-zinc-500 hover:text-white active:text-white transition-colors touch-manipulation">{crumbText(c.label)}</button>}
+                  ? <span className="text-[13px] font-black uppercase tracking-[0.18em] max-w-[200px] truncate leading-none" style={{ color: 'var(--text-secondary)' }}>{c.label}</span>
+                  : <button
+                      onClick={c.onClick}
+                      className="text-[13px] font-black uppercase tracking-[0.18em] leading-none transition-colors hover:text-white active:text-white touch-manipulation"
+                      style={{ color: 'var(--text-muted)' }}
+                    >{c.label}</button>}
               </React.Fragment>
             ))}
           </nav>
