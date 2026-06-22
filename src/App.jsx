@@ -2533,7 +2533,6 @@ function App() {
               >
                 {featured.map((product, idx) => {
                   const imgs = [product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean);
-                  const low = (product.stock || 0) > 0 && product.stock <= 3;
                   return (
                     <div
                       key={product.id}
@@ -2571,7 +2570,7 @@ function App() {
                           <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5">
                             <div className="rounded-[27px] bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
                               <div className="aspect-[4/5] relative">
-                                <AutoScrollGallery count={imgs.length}>
+                                <AutoScrollGallery auto startDelay={2000} count={imgs.length}>
                                   {imgs.map((imgSrc, i) => (
                                     <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                                       <ProductImage src={imgSrc} alt={product.name} priority={idx === 0 && i === 0} order={i === 0 ? 20 + idx : 1500 + idx * 10 + i} sizes="88vw" />
@@ -2582,11 +2581,6 @@ function App() {
                                 <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(120% 80% at 50% 35%, transparent 50%, rgba(0,0,0,0.45) 100%)' }} />
                                 {/* Gradient inferior */}
                                 <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />
-                                {low && (
-                                  <div className="absolute top-4 right-4 z-20 bg-zinc-950/80 backdrop-blur-md border border-red-400/40 rounded-full px-3 py-1">
-                                    <span className="text-[8px] font-black uppercase tracking-[0.25em] text-red-300">Últimas {product.stock}</span>
-                                  </div>
-                                )}
                                 {/* Conteúdo sobre a imagem */}
                                 <div className="absolute inset-x-0 bottom-0 p-5 z-10" onClick={() => handleProductClick(product)} style={{ cursor: 'pointer' }}>
                                   <div className="flex items-center gap-2 mb-2.5">
@@ -2710,8 +2704,8 @@ function App() {
                            );
                          })()}
 
-                         {/* Galeria do destaque — passa as fotos sozinha (após 2s), sem toque */}
-                         <AutoScrollGallery auto startDelay={2000} count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
+                         {/* Galeria do card (catálogo) — passa as fotos ao TOQUE (dedo parado) */}
+                         <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                                <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} />
