@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Flame, Image, Layers, Megaphone, Minus, Settings, Star, Trash2, Upload } from 'lucide-react';
+import { ChevronDown, ChevronUp, Flame, Image as ImageIcon, Layers, Megaphone, Minus, Settings, Star, Trash2, Upload } from 'lucide-react';
 import { getCatImgData } from '../lib/images';
 import { CAMPAIGN_LABELS, CAMPAIGN_SHORT, OFFER_CAMPAIGNS, isOfferLive, offerCampaign, offerEndsAt } from '../lib/offers';
 import { upsertProduct } from '../lib/supabase';
