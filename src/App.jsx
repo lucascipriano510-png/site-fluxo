@@ -267,7 +267,11 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
 // Como o touchmove fica "preso" no alvo inicial, um rastreador global usa
 // elementFromPoint p/ saber sobre qual card o dedo está a cada momento.
 // ──────────────────────────────────────────────────────────────
-const HOLD_SCROLL_STYLE = { position: 'absolute', inset: 0, display: 'flex', overflowX: 'scroll', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-x pan-y' };
+// overflowX 'hidden' (não 'scroll') = o card NÃO é arrastável na horizontal; o
+// swipe lateral passa pro carrossel pai. O auto-avanço usa scrollTo programático,
+// que segue funcionando com overflow hidden. touchAction 'pan-y' libera só a
+// rolagem vertical da página.
+const HOLD_SCROLL_STYLE = { position: 'absolute', inset: 0, display: 'flex', overflowX: 'hidden', overflowY: 'hidden', scrollSnapType: 'x mandatory', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-y' };
 const AUTOPLAY_MS = 1400; // ritmo entre as fotos enquanto o dedo está sobre o card
 
 // Registro de galerias + rastreador global de toque (inicializado uma vez).
