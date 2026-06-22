@@ -279,6 +279,9 @@ const galleryRegistry = new Map(); // element -> { activate, deactivate }
 let activeGalleryEl = null;
 let galleryListenersOn = false;
 let lastPointCheck = 0;
+let galleryTouchStartX = 0;
+let galleryTouchStartY = 0;
+let galleryDragDecided = false; // gesto já virou arrasto do carrossel / rolagem?
 
 const setActiveGalleryAt = (x, y) => {
   let el = null;
@@ -297,12 +300,32 @@ const ensureGalleryListeners = () => {
   // Importante: NÃO paramos no touchend. O card que começou a passar continua
   // sozinho até que OUTRA ÁREA seja tocada — aí ou outro card assume (sobre um
   // card) ou para (toque fora de qualquer card). Por isso só ouvimos start/move.
-  const onStart = (e) => { const t = e.touches && e.touches[0]; if (t) setActiveGalleryAt(t.clientX, t.clientY); };
+  const onStart = (e) => {
+    const t = e.touches && e.touches[0]; if (!t) return;
+    galleryTouchStartX = t.clientX;
+    galleryTouchStartY = t.clientY;
+    galleryDragDecided = false;
+    setActiveGalleryAt(t.clientX, t.clientY); // toque parado já começa a passar as fotos
+  };
   const onMove = (e) => {
+    const t = e.touches && e.touches[0]; if (!t) return;
+    // Decide cedo: arrasto HORIZONTAL = intenção de mover o carrossel (não trocar foto);
+    // rolagem VERTICAL = sair do card. Em qualquer um, SOLTA a galeria pra não atrapalhar.
+    if (!galleryDragDecided) {
+      const dx = Math.abs(t.clientX - galleryTouchStartX);
+      const dy = Math.abs(t.clientY - galleryTouchStartY);
+      if ((dx > 10 && dx > dy) || dy > 10) {
+        galleryDragDecided = true;
+        if (activeGalleryEl && galleryRegistry.has(activeGalleryEl)) galleryRegistry.get(activeGalleryEl).deactivate();
+        activeGalleryEl = null;
+        return;
+      }
+    }
+    if (galleryDragDecided) return; // já é arrasto/rolagem → não reativa a galeria
     const now = Date.now();
     if (now - lastPointCheck < 90) return; // throttle leve
     lastPointCheck = now;
-    const t = e.touches && e.touches[0]; if (t) setActiveGalleryAt(t.clientX, t.clientY);
+    setActiveGalleryAt(t.clientX, t.clientY);
   };
   window.addEventListener('touchstart', onStart, { passive: true });
   window.addEventListener('touchmove', onMove, { passive: true });
