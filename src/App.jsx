@@ -1111,8 +1111,6 @@ function App() {
   const [whatsappLink, setWhatsappLink] = useState('');
   const [checkoutOrderNumber, setCheckoutOrderNumber] = useState('');
   const featuredRailRef = useRef(null);
-  const mobileGalleryRef = useRef(null);
-  const desktopGalleryRef = useRef(null);
   const featuredPeekedRef = useRef(false);
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(_initialUrlFilters.colecao || null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
@@ -3202,25 +3200,21 @@ function App() {
                 {/* Voltar — flutua sobre a imagem, logo abaixo da barra Fluxo */}
                 <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="absolute top-3 left-3 z-20 flex items-center gap-1 text-white bg-black/50 backdrop-blur-md rounded-full pl-2 pr-3 py-2 touch-manipulation border border-white/10 active:scale-90 transition-transform text-[10px] font-black uppercase tracking-widest"><ChevronLeft size={16}/> Voltar</button>
                 <div className="relative w-full aspect-[4/5] overflow-hidden">
-                  <div
-                    ref={mobileGalleryRef}
-                    className="flex h-full overflow-x-auto snap-x snap-mandatory no-scrollbar carousel-scroll"
-                    onScroll={(e) => {
-                      const idx = Math.round(e.currentTarget.scrollLeft / (e.currentTarget.clientWidth || 1));
-                      if (productGallery[idx] && productGallery[idx] !== activeProductImage) setActiveProductImage(productGallery[idx]);
-                    }}
-                  >
-                    {productGallery.map((g, i) => (
-                      <div key={i} className="snap-start snap-always flex-shrink-0 w-full h-full relative">
-                        <img src={optimizeImage(g, 1200, 90)} className="w-full h-full object-cover" alt={selectedProduct.name} fetchPriority={i === 0 ? 'high' : 'low'} loading={i === 0 ? 'eager' : 'lazy'} draggable={false} />
-                      </div>
-                    ))}
-                  </div>
+                  {/* Imagem única — troca só por TOQUE nas miniaturas/pontos (sem arrastar) */}
+                  <img
+                    src={optimizeImage(heroImg, 1200, 90)}
+                    className="w-full h-full object-cover"
+                    alt={selectedProduct.name}
+                    fetchPriority="high"
+                    draggable={false}
+                  />
                   {/* Dot indicators */}
                   {productGallery.length > 1 && (
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 pointer-events-none">
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 z-10">
                       {productGallery.map((g, i) => (
-                        <div key={i} className={`rounded-full transition-all duration-300 ${heroImg === g ? 'w-5 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'}`} />
+                        <button key={i} type="button" onClick={() => setActiveProductImage(g)} aria-label={`Foto ${i + 1}`} className="p-2 -m-1 touch-manipulation">
+                          <span className={`block rounded-full transition-all duration-300 ${heroImg === g ? 'w-5 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'}`} />
+                        </button>
                       ))}
                     </div>
                   )}
@@ -3229,16 +3223,7 @@ function App() {
                 {productGallery.length > 1 && (
                   <div className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar bg-zinc-950 border-b border-white/5" style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
                     {productGallery.map((g, i) => (
-                      <button key={i} onClick={() => {
-                          setActiveProductImage(g);
-                          const idx = productGallery.indexOf(g);
-                          if (mobileGalleryRef.current && idx !== -1) {
-                            mobileGalleryRef.current.scrollTo({
-                              left: idx * mobileGalleryRef.current.clientWidth,
-                              behavior: 'smooth'
-                            });
-                          }
-                        }} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}>
+                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all touch-manipulation ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}>
                         <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
                       </button>
                     ))}
@@ -3425,16 +3410,7 @@ function App() {
                 {productGallery.length > 1 && (
                   <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar" style={{ touchAction: 'pan-x pan-y' }}>
                     {productGallery.map((g, i) => (
-                      <button key={i} onClick={() => {
-                          setActiveProductImage(g);
-                          const idx = productGallery.indexOf(g);
-                          if (desktopGalleryRef.current && idx !== -1) {
-                            desktopGalleryRef.current.scrollTo({
-                              left: idx * desktopGalleryRef.current.clientWidth,
-                              behavior: 'smooth'
-                            });
-                          }
-                        }} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
+                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
                         <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
                       </button>
                     ))}
