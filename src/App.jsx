@@ -2344,7 +2344,7 @@ function App() {
               const isActive = idx === currentBannerSlide;
               return (
                 <div key={idx} className="w-full h-full shrink-0 relative overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
-                  <div className="absolute inset-0" style={{ transform: isActive ? 'scale(1.09)' : 'scale(1)', transition: isActive ? 'transform 10s ease-out' : 'transform 0.6s ease', transformOrigin: '55% 45%' }}>
+                  <div className="absolute inset-0" style={{ transform: 'scale(1)', transformOrigin: '55% 45%' }}>
                     <BannerImage src={banner.image} srcDesktop={banner.image_desktop} alt={banner.title || 'Banner'} active={isActive} />
                   </div>
                   <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-zinc-950/75 to-transparent pointer-events-none" />
