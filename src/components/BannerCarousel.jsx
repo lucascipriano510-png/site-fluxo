@@ -14,9 +14,15 @@ import BannerImage from './BannerImage';
  */
 export default function BannerCarousel({ activeBanners, bannersLoaded, isAdmin, onCollectionFilter }) {
   const [currentBannerSlide, setCurrentBannerSlide] = useState(0);
+  const [isHeld, setIsHeld] = useState(false); // cliente segurando o banner → pausa
   const bannerRef = useRef(null);
   const bannerTrackRef = useRef(null);
   const currentBannerSlideRef = useRef(0);
+  const holdRef = useRef(false);
+
+  // "Travar ao segurar": pausa o auto-avanço enquanto o dedo/cursor está pressionado.
+  // Também impede o timer de brigar com o swipe manual (causa do indicador defasado).
+  const setHold = (v) => { holdRef.current = v; setIsHeld(v); };
 
   useEffect(() => { currentBannerSlideRef.current = currentBannerSlide; }, [currentBannerSlide]);
   // Mantém o slide dentro do range quando a lista muda (ex.: troca mobile<->desktop)
@@ -35,6 +41,7 @@ export default function BannerCarousel({ activeBanners, bannersLoaded, isAdmin, 
   useEffect(() => {
     if (isAdmin || activeBanners.length <= 1) return;
     const timer = setInterval(() => {
+      if (holdRef.current) return; // cliente segurando → não avança
       const track = bannerTrackRef.current;
       if (!track) return;
       const w = track.clientWidth || 1;
@@ -56,13 +63,22 @@ export default function BannerCarousel({ activeBanners, bannersLoaded, isAdmin, 
 
     // Detecta slide atual pelo scrollLeft do track (scroll snap nativo).
     // Fonte ÚNICA de verdade do indicador: o que o cliente está realmente vendo.
-    const onTrackScroll = () => {
+    const syncIndex = () => {
       const newSlide = Math.round(track.scrollLeft / (track.clientWidth || 1));
       if (newSlide !== currentBannerSlideRef.current) {
         setCurrentBannerSlide(newSlide);
       }
     };
-    onTrackScroll(); // sincroniza o índice assim que os slides existem
+    // Settle: reconfirma a posição FINAL ~120ms depois do último evento de scroll.
+    // (No iOS o snap pode terminar sem disparar um evento na posição exata.)
+    let settleId = 0;
+    const onTrackScroll = () => {
+      syncIndex();
+      clearTimeout(settleId);
+      settleId = setTimeout(syncIndex, 120);
+    };
+    syncIndex(); // sincroniza o índice assim que os slides existem
+    track.addEventListener('scrollend', syncIndex); // onde houver suporte nativo
 
     // Scroll-driven: parallax + scale + dim + fade de texto via RAF
     let rafId = 0;
@@ -87,7 +103,9 @@ export default function BannerCarousel({ activeBanners, bannersLoaded, isAdmin, 
     scroller.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       track.removeEventListener('scroll', onTrackScroll);
+      track.removeEventListener('scrollend', syncIndex);
       scroller.removeEventListener('scroll', onScroll);
+      clearTimeout(settleId);
       if (rafId) cancelAnimationFrame(rafId);
     };
     // Re-anexa quando os banners carregam (no mount o trilho pode estar vazio).
@@ -101,6 +119,10 @@ export default function BannerCarousel({ activeBanners, bannersLoaded, isAdmin, 
       ref={bannerRef}
       className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-auto lg:h-[520px] overflow-hidden select-none"
       style={{ touchAction: 'pan-y' }}
+      onPointerDown={() => setHold(true)}
+      onPointerUp={() => setHold(false)}
+      onPointerCancel={() => setHold(false)}
+      onPointerLeave={() => setHold(false)}
     >
       {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
 
@@ -182,7 +204,7 @@ export default function BannerCarousel({ activeBanners, bannersLoaded, isAdmin, 
           <div
             key={currentBannerSlide}
             className="h-full bg-white/45"
-            style={{ animation: 'bannerProgress 5s linear forwards' }}
+            style={{ animation: 'bannerProgress 5s linear forwards', animationPlayState: isHeld ? 'paused' : 'running' }}
           />
         </div>
       )}
