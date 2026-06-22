@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, Tag, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu } from 'lucide-react';
-import { fetchProducts, upsertProduct, deleteProduct, fetchBanners, upsertBanner, deleteBanner, uploadImage, fetchAllKitItems } from './lib/supabase';
+import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
 import StarRatingInline from './components/StarRatingInline';
-import BannerImage from './components/BannerImage';
+import BannerCarousel from './components/BannerCarousel';
+import { useBanners } from './hooks/useBanners';
 import AdminHeader from './components/AdminHeader';
 import AdminInventory from './components/AdminInventory';
 import AdminLeads from './components/AdminLeads';
@@ -42,19 +43,6 @@ const DEFAULT_PRODUCTS = [
   { id: 3, sku: 'TEN-RUN-002', name: 'Tênis Running Fluxo', price: 299.90, category: 'CALÇADOS', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800', stock: 2, sales: 45, sizes: [{size: '39', stock: 1}, {size: '41', stock: 1}], featured: true },
   { id: 4, sku: 'BON-PRE-003', name: 'Boné Archer Black', price: 79.90, category: 'ACESSÓRIOS', image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800', stock: 0, sales: 120, sizes: [{size: 'U', stock: 0}], featured: false }, 
   { id: 5, sku: '9059', name: 'Calça Super Skinny Malibu Rasgada', price: 189.90, category: 'VESTUÁRIO', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800', stock: 10, sales: 5, sizes: [{size: '38', stock: 5}, {size: '40', stock: 5}], featured: true }
-];
-
-const DEFAULT_BANNERS = [
-  {
-    id: 'fallback-1',
-    title: 'Seleção',
-    subtitle: '',
-    image: 'https://tapgnlrjhrhewqlpahvg.supabase.co/storage/v1/object/public/product-images/uploads/1780603307357-c93uqo1ylij.png',
-    active: true,
-    banner_order: 1,
-    buttonText: 'VER PEÇAS',
-    collection_name: null,
-  },
 ];
 
 const DEFAULT_CONFIG = {
@@ -828,58 +816,6 @@ function App() {
   };
   const products = productsRaw;
 
-  const BANNERS_CACHE_KEY2 = '@fluxo:banners-cache-v1';
-  const BANNERS_CACHE_TTL = 120_000; // 2 min
-
-  const [banners, setBannersRaw] = useState(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem(BANNERS_CACHE_KEY2) || 'null');
-      if (cached && Date.now() - cached.ts < BANNERS_CACHE_TTL && Array.isArray(cached.data) && cached.data.length > 0) return cached.data;
-    } catch {}
-    return DEFAULT_BANNERS;
-  });
-  const [bannersLoaded, setBannersLoaded] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    const load = async () => {
-      try {
-        const remote = await fetchBanners();
-        if (alive && Array.isArray(remote) && remote.length > 0) {
-          // Normaliza button_text -> buttonText para o UI (vazio = botão oculto)
-          const normalized = remote.map(b => ({
-            ...b,
-            buttonText: b.button_text || b.buttonText || ''
-          }));
-          setBannersRaw(normalized);
-          try { localStorage.setItem(BANNERS_CACHE_KEY2, JSON.stringify({ ts: Date.now(), data: normalized })); } catch {}
-        }
-      } catch (e) { console.warn('[banners] fetch falhou:', e?.message); }
-      finally { if (alive) setBannersLoaded(true); }
-    };
-    load();
-    const t = setInterval(load, 120_000); // era 10s → 2 min
-    return () => { alive = false; clearInterval(t); };
-  }, []);
-
-  const setBanners = (updater) => {
-    setBannersRaw((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      try {
-        const prevIds = new Set((prev || []).map(b => b.id));
-        const nextIds = new Set((next || []).map(b => b.id));
-        // upserts
-        (next || []).forEach(b => {
-          const old = (prev || []).find(o => o.id === b.id);
-          if (!old || JSON.stringify(old) !== JSON.stringify(b)) {
-            upsertBanner(b).catch(err => console.warn('[banners] upsert falhou:', err?.message));
-          }
-        });
-        // deletes
-        (prev || []).forEach(b => { if (!nextIds.has(b.id)) deleteBanner(b.id).catch(err => console.warn('[banners] delete falhou:', err?.message)); });
-      } catch (e) { console.warn('[banners] sync falhou:', e?.message); }
-      return next;
-    });
-  };
   const CONFIG_CACHE_KEY = '@fluxo:config-cache-v1';
   const CONFIG_CACHE_TTL = 300_000; // 5 min
 
@@ -1173,12 +1109,6 @@ function App() {
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [whatsappLink, setWhatsappLink] = useState('');
   const [checkoutOrderNumber, setCheckoutOrderNumber] = useState('');
-  const [currentBannerSlide, setCurrentBannerSlide] = useState(0);
-  const bannerRef = useRef(null);
-  const bannerTrackRef = useRef(null);
-  const bannerDragStateRef = useRef({ startX: 0, startY: 0, dx: 0, decided: false, horizontal: false, active: false, pointerId: -1 });
-  const currentBannerSlideRef = useRef(0);
-  const activeBannersLengthRef = useRef(0);
   const featuredRailRef = useRef(null);
   const mobileGalleryRef = useRef(null);
   const desktopGalleryRef = useRef(null);
@@ -1244,95 +1174,10 @@ function App() {
     return () => mq.removeEventListener?.('change', onChange);
   }, []);
 
-  // Banner é exclusivo por dispositivo: desktop só mostra quem tem imagem desktop;
-  // mobile só quem tem imagem mobile. Um nunca puxa o do outro.
-  const activeBanners = useMemo(
-    () => (banners || []).filter(b => b.active && (isDesktopViewport ? b.image_desktop : b.image)),
-    [banners, isDesktopViewport]
-  );
-  useEffect(() => { currentBannerSlideRef.current = currentBannerSlide; }, [currentBannerSlide]);
-  useEffect(() => { activeBannersLengthRef.current = activeBanners.length; }, [activeBanners.length]);
-  // Mantém o slide dentro do range quando a lista muda (ex.: troca mobile<->desktop)
-  useEffect(() => { setCurrentBannerSlide(s => (s >= activeBanners.length ? 0 : s)); }, [activeBanners.length]);
-  const availableCollections = useMemo(() => {
-    const set = new Set();
-    (banners || []).forEach(b => { if (b.collection_name) set.add(b.collection_name); });
-    return Array.from(set).sort();
-  }, [banners]);
-
-  // Navega para slide via scrollTo nativo (scroll snap cuida da animação)
-  const goToBannerSlide = (idx) => {
-    if (!activeBanners.length) return;
-    const total = activeBanners.length;
-    const newIdx = ((idx % total) + total) % total;
-    const track = bannerTrackRef.current;
-    if (track) track.scrollTo({ left: newIdx * track.clientWidth, behavior: 'smooth' });
-    setCurrentBannerSlide(newIdx);
-  };
-  const nextBannerSlide = () => goToBannerSlide(currentBannerSlideRef.current + 1);
-  const prevBannerSlide = () => goToBannerSlide(currentBannerSlideRef.current - 1);
-
-  useEffect(() => {
-    if (isAdmin || activeBanners.length <= 1) return;
-    const timer = setInterval(() => {
-      const track = bannerTrackRef.current;
-      if (!track) return;
-      const w = track.clientWidth || 1;
-      // Avança a partir de ONDE O CLIENTE REALMENTE ESTÁ (posição do scroll),
-      // não de um índice em memória que pode ter ficado defasado.
-      const current = Math.round(track.scrollLeft / w);
-      const next = (current + 1) % activeBanners.length;
-      track.scrollTo({ left: next * w, behavior: 'smooth' });
-      setCurrentBannerSlide(next);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [activeBanners.length, isAdmin]);
-
-  // Banner: swipe via CSS scroll snap nativo (sem drag JS) + parallax no scroll vertical
-  useEffect(() => {
-    const section = bannerRef.current;
-    const track = bannerTrackRef.current;
-    if (!section || !track) return;
-
-    // Detecta slide atual pelo scrollLeft do track (scroll snap nativo).
-    // Fonte ÚNICA de verdade do indicador: o que o cliente está realmente vendo.
-    const onTrackScroll = () => {
-      const newSlide = Math.round(track.scrollLeft / (track.clientWidth || 1));
-      if (newSlide !== currentBannerSlideRef.current) {
-        setCurrentBannerSlide(newSlide);
-      }
-    };
-    onTrackScroll(); // sincroniza o índice assim que os slides existem
-
-    // Scroll-driven: parallax + scale + dim + fade de texto via RAF
-    let rafId = 0;
-    const onScroll = () => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = 0;
-        const rect = section.getBoundingClientRect();
-        const h = rect.height || 1;
-        const scrolled = Math.max(0, -rect.top);
-        const progress = Math.max(0, Math.min(1, scrolled / h));
-        section.style.setProperty('--banner-text-op', Math.max(0, 1 - progress * 2.5).toFixed(3));
-        section.style.setProperty('--banner-parallax', `${(scrolled * 0.35).toFixed(1)}px`);
-        section.style.setProperty('--banner-scale', (1 - progress * 0.08).toFixed(3));
-        section.style.setProperty('--banner-dim', (progress * 0.55).toFixed(3));
-      });
-    };
-    onScroll();
-
-    const scroller = document.getElementById('root') || window;
-    track.addEventListener('scroll', onTrackScroll, { passive: true });
-    scroller.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      track.removeEventListener('scroll', onTrackScroll);
-      scroller.removeEventListener('scroll', onScroll);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-    // Re-anexa quando os banners carregam (no mount o trilho pode estar vazio).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeBanners.length, bannersLoaded]);
+  // Banners: dados + sync com Supabase + derivados (activeBanners por dispositivo,
+  // availableCollections) no hook. O carrossel e seu comportamento (slide, scroll,
+  // auto-avanço, indicador) vivem no componente <BannerCarousel/>.
+  const { banners, setBanners, bannersLoaded, activeBanners, availableCollections } = useBanners(isDesktopViewport);
 
 
   // Auto-peek na vitrine de destaques: quando a seção entra no viewport, revela levemente os próximos cards
@@ -2335,98 +2180,12 @@ function App() {
         </div>
       </div>
 
-      {(activeBanners.length > 0 || !bannersLoaded) && (
-        <section
-          ref={bannerRef}
-          className="relative w-full max-w-[640px] lg:max-w-none mx-auto aspect-[4/5] lg:aspect-auto lg:h-[520px] overflow-hidden select-none"
-          style={{ touchAction: 'pan-y' }}
-        >
-          {activeBanners.length === 0 && <div className="absolute inset-0 bg-zinc-950" />}
-
-          {/* Trilho com scroll snap nativo + parallax vertical */}
-          <div
-            ref={bannerTrackRef}
-            className="flex h-full overflow-x-auto no-scrollbar native-x-scroll"
-            style={{ scrollSnapType: 'x mandatory', willChange: 'transform', transform: 'translate3d(0, var(--banner-parallax, 0px), 0) scale(var(--banner-scale, 1))', transformOrigin: '50% 0%' }}
-          >
-            {activeBanners.map((banner, idx) => {
-              const isActive = idx === currentBannerSlide;
-              // Só escurece se houver texto sobreposto (legibilidade). Sem texto = imagem limpa.
-              const hasOverlay = !!(banner.collection_name || banner.title || banner.subtitle || banner.buttonText);
-              return (
-                <div key={idx} className="w-full h-full shrink-0 relative overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
-                  <div className="absolute inset-0" style={{ transform: 'scale(1)', transformOrigin: '55% 45%' }}>
-                    <BannerImage src={banner.image} srcDesktop={banner.image_desktop} alt={banner.title || 'Banner'} active={isActive} />
-                  </div>
-                  {hasOverlay && <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-zinc-950/75 to-transparent pointer-events-none" />}
-                  {hasOverlay && <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />}
-                  {/* Texto com fade proporcional ao scroll */}
-                  <div className="absolute inset-x-0 bottom-0 px-7 lg:px-16 pb-12 lg:pb-20 flex flex-col lg:max-w-3xl" style={{ opacity: 'var(--banner-text-op, 1)', transform: 'translate3d(0, calc(var(--banner-parallax, 0px) * -0.4), 0)', transition: 'opacity 0.08s linear', willChange: 'opacity, transform' }}>
-                    {banner.collection_name && (
-                      <div className="flex items-center gap-2.5 mb-4">
-                        <div className="h-px w-8 bg-white/40" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.28em] text-white/55">{banner.collection_name}</span>
-                      </div>
-                    )}
-                    {banner.title && <h2 className="text-[2.6rem] lg:text-[5rem] font-black uppercase leading-[0.92] tracking-tight text-white mb-2.5 drop-shadow-2xl">{banner.title}</h2>}
-                    {banner.subtitle && <p className="text-[10px] lg:text-[13px] font-semibold uppercase tracking-[0.18em] text-white/60 mb-7">{banner.subtitle}</p>}
-                    {banner.buttonText && (
-                      <button
-                        onClick={() => {
-                          if (banner.external_link) {
-                            window.open(banner.external_link, '_blank', 'noopener');
-                          } else if (banner.collection_name) {
-                            setActiveCollectionFilter(banner.collection_name);
-                            document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
-                          } else {
-                            document.getElementById('search-input')?.focus();
-                          }
-                        }}
-                        className="self-start flex items-center gap-2 bg-white text-zinc-950 px-7 lg:px-10 py-3.5 lg:py-4 rounded-full font-black text-[10px] lg:text-[12px] uppercase tracking-widest active:scale-95 transition-transform shadow-[0_8px_30px_rgba(255,255,255,0.18)] touch-manipulation"
-                      >
-                        {banner.buttonText} <ArrowRight size={11} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Dimmer que escurece conforme banner sai da viewport */}
-          <div className="absolute inset-0 bg-zinc-950 pointer-events-none" style={{ opacity: 'var(--banner-dim, 0)', willChange: 'opacity' }} aria-hidden="true" />
-
-          {/* Contador + linhas de progresso — canto superior direito */}
-          {activeBanners.length > 1 && (
-            <div className="absolute top-5 right-5 z-20 flex items-center gap-2.5 pointer-events-none">
-              <span className="text-[10px] font-black text-white/70 tabular-nums">{String(currentBannerSlide + 1).padStart(2, '0')}</span>
-              <div className="flex gap-1 items-center pointer-events-auto">
-                {activeBanners.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => goToBannerSlide(idx)}
-                    aria-label={`Slide ${idx + 1}`}
-                    className={`h-0.5 rounded-full transition-all duration-500 ${idx === currentBannerSlide ? 'w-8 bg-white' : 'w-2 bg-white/30'}`}
-                  />
-                ))}
-              </div>
-              <span className="text-[10px] font-black text-white/30 tabular-nums">{String(activeBanners.length).padStart(2, '0')}</span>
-            </div>
-          )}
-
-          {/* Barra de progresso animada */}
-          {activeBanners.length > 1 && !isAdmin && (
-            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/10 z-20 overflow-hidden">
-              <div
-                key={currentBannerSlide}
-                className="h-full bg-white/45"
-                style={{ animation: 'bannerProgress 5s linear forwards' }}
-              />
-            </div>
-          )}
-        </section>
-      )}
+      <BannerCarousel
+        activeBanners={activeBanners}
+        bannersLoaded={bannersLoaded}
+        isAdmin={isAdmin}
+        onCollectionFilter={setActiveCollectionFilter}
+      />
 
       <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-screen lg:max-w-[1280px] lg:mx-auto" data-testid="catalog-main">
         <div className="relative group">
