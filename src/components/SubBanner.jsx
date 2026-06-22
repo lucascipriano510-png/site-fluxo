@@ -59,17 +59,20 @@ export default function SubBanner({ banner, whatsapp }) {
           }}
         />
 
-        {/* CTA de WhatsApp (só quando há mensagem pronta configurada) */}
+        {/* CTA de WhatsApp — ícone na quina superior direita, com pulso leve */}
         {waUrl && (
           <a
             href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Falar no WhatsApp"
-            className="absolute bottom-3 right-3 z-10 flex items-center gap-2 rounded-full bg-[#25D366] text-white pl-3 pr-4 py-2.5 font-black text-[11px] uppercase tracking-wide shadow-[0_8px_24px_rgba(37,211,102,0.45)] active:scale-95 transition-transform touch-manipulation"
+            className="absolute top-3 right-3 z-10 grid place-items-center touch-manipulation"
           >
-            <WhatsAppIcon size={16} />
-            WhatsApp
+            {/* anel pulsando (piscadinha) atrás do ícone */}
+            <span className="absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-60 animate-ping motion-reduce:hidden" aria-hidden="true" />
+            <span className="relative grid place-items-center h-10 w-10 rounded-full bg-[#25D366] text-white shadow-[0_6px_18px_rgba(37,211,102,0.5)] ring-2 ring-white/25 active:scale-95 transition-transform">
+              <WhatsAppIcon size={20} />
+            </span>
           </a>
         )}
       </div>
