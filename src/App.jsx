@@ -272,7 +272,8 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
 // que segue funcionando com overflow hidden. touchAction 'pan-y' libera só a
 // rolagem vertical da página.
 const HOLD_SCROLL_STYLE = { position: 'absolute', inset: 0, display: 'flex', overflowX: 'hidden', overflowY: 'hidden', scrollSnapType: 'x mandatory', overscrollBehaviorX: 'contain', msOverflowStyle: 'none', scrollbarWidth: 'none', touchAction: 'pan-y' };
-const AUTOPLAY_MS = 1400; // ritmo entre as fotos enquanto o dedo está sobre o card
+const AUTOPLAY_MS = 1400; // ritmo entre as fotos enquanto o dedo está sobre o card (modo toque)
+const AUTO_CYCLE_MS = 2800; // ritmo do modo AUTO (destaque), sozinho — mais lento/ambiente
 
 // Registro de galerias + rastreador global de toque (inicializado uma vez).
 const galleryRegistry = new Map(); // element -> { activate, deactivate }
@@ -331,17 +332,15 @@ const ensureGalleryListeners = () => {
   window.addEventListener('touchmove', onMove, { passive: true });
 };
 
-const AutoScrollGallery = ({ count = 1, children }) => {
+const AutoScrollGallery = ({ count = 1, children, auto = false, startDelay = 0 }) => {
   const ref = React.useRef(null);
   const timerRef = React.useRef(null);
   const multi = count > 1;
 
   React.useEffect(() => {
     if (!multi) return;
-    ensureGalleryListeners();
     const el = ref.current;
     if (!el) return;
-    el.setAttribute('data-autogallery', '1');
 
     const advance = () => {
       const node = ref.current; if (!node) return;
@@ -351,6 +350,21 @@ const AutoScrollGallery = ({ count = 1, children }) => {
       if (next > maxLeft + 1) next = 0; // chegou no fim → volta ao início (loop)
       node.scrollTo({ left: next, behavior: 'smooth' });
     };
+
+    // MODO AUTO (destaque): passa as fotos SOZINHO, sem depender do toque — o
+    // dedo fica livre pra arrastar o carrossel. Começa após `startDelay`.
+    if (auto) {
+      let intervalId = null;
+      const startId = setTimeout(() => {
+        advance();
+        intervalId = setInterval(advance, AUTO_CYCLE_MS);
+      }, startDelay);
+      return () => { clearTimeout(startId); if (intervalId) clearInterval(intervalId); };
+    }
+
+    // MODO TOQUE (catálogo): passa enquanto o dedo está parado sobre o card.
+    ensureGalleryListeners();
+    el.setAttribute('data-autogallery', '1');
     const controller = {
       activate: () => {
         if (timerRef.current) return;
@@ -366,7 +380,7 @@ const AutoScrollGallery = ({ count = 1, children }) => {
       galleryRegistry.delete(el);
       if (activeGalleryEl === el) activeGalleryEl = null;
     };
-  }, [multi]);
+  }, [multi, auto, startDelay]);
 
   return (
     <div ref={ref} style={HOLD_SCROLL_STYLE}>
@@ -2659,51 +2673,6 @@ function App() {
                          onClick={!hasMultipleImages ? () => !isOutOfStock && handleProductClick(product) : undefined}
                          style={!hasMultipleImages && !isOutOfStock ? { cursor: 'pointer' } : undefined}
                        >
-                         {!isOutOfStock && !product.is_kit && product.stock <= 3 && (
-                           <div
-                             data-testid={`badge-last-pieces-${product.id}`}
-                             style={{
-                               position: 'absolute',
-                               top: '0',
-                               left: '0',
-                               background: 'rgba(0, 0, 0, 0.52)',
-                               backdropFilter: 'blur(20px) saturate(1.6)',
-                               WebkitBackdropFilter: 'blur(20px) saturate(1.6)',
-                               borderBottom: '0.5px solid rgba(255,255,255,0.1)',
-                               borderRight: '0.5px solid rgba(255,255,255,0.1)',
-                               borderTopLeftRadius: 'inherit',
-                               borderBottomRightRadius: '10px',
-                               color: 'rgba(255,255,255,0.55)',
-                               fontFamily: "'Anton', Impact, sans-serif",
-                               fontSize: '9.5px',
-                               fontWeight: '400',
-                               letterSpacing: '0.18em',
-                               textTransform: 'uppercase',
-                               padding: '7px 12px 6px',
-                               zIndex: 10,
-                               transform: 'translateZ(0)',
-                               display: 'flex',
-                               alignItems: 'center',
-                               gap: '7px',
-                               lineHeight: 1,
-                             }}
-                           >
-                             {(() => {
-                               const realUnits = (product.sizes && product.sizes.length > 0)
-                                 ? product.sizes.reduce((sum, s) => sum + (typeof s === 'string' ? product.stock : Number(s.stock || 0)), 0)
-                                 : product.stock;
-                               const isAlmostGone = realUnits <= 1;
-                               return (
-                                 <span style={{
-                                   width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0,
-                                   background: isAlmostGone ? 'rgba(255,80,80,0.95)' : 'rgba(180,180,178,0.7)',
-                                   boxShadow: isAlmostGone ? '0 0 6px rgba(255,80,80,0.5)' : 'none',
-                                 }} />
-                               );
-                             })()}
-                             Restam {product.stock}
-                           </div>
-                         )}
                          {/* Badge de desconto % — oferta tem prioridade sobre a promo */}
                          {!isOutOfStock && (() => {
                            const live = isOfferLive(product);
@@ -2712,11 +2681,9 @@ function App() {
                              ? offerPercent(product)
                              : (promo && promo < product.price ? Math.round((1 - promo / product.price) * 100) : 0);
                            if (pct <= 0) return null;
-                           const hasRestam = !product.is_kit && (product.stock || 0) <= 3;
                            return (
                              <div style={{
-                               position: 'absolute', top: '8px',
-                               ...(hasRestam ? { right: '8px' } : { left: '8px' }),
+                               position: 'absolute', top: '8px', left: '8px',
                                zIndex: 20, color: '#fff',
                                fontWeight: 800, fontSize: '11px', borderRadius: '5px',
                                padding: '3px 7px', lineHeight: 1.2,
@@ -2730,8 +2697,8 @@ function App() {
                            );
                          })()}
 
-                         {/* Carrossel nativo — deslize para ver fotos adicionais */}
-                         <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
+                         {/* Galeria do destaque — passa as fotos sozinha (após 2s), sem toque */}
+                         <AutoScrollGallery auto startDelay={2000} count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
                                <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} />
