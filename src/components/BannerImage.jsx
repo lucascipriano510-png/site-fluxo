@@ -15,13 +15,13 @@ const BannerImage = ({ src, srcDesktop, alt, active }) => {
   // Mobile (4:5) — sempre otimizado (WebP+resize). O banner é o LCP: servir o
   // original cru (vários MB) atrasava a primeira pintura. onError volta pro original.
   const mobileBase = src || srcDesktop;
-  const imgSrc = optimizeImage(mobileBase, 1280, 82);
-  const imgSrcSet = buildSrcSet(mobileBase, [640, 900, 1280, 1920], 82);
+  const imgSrc = optimizeImage(mobileBase, 1280, 90);
+  const imgSrcSet = buildSrcSet(mobileBase, [640, 900, 1280, 1920], 90);
 
   // Desktop (16:9) — imagem própria quando existe; senão cai pra mobile
   const deskBase = srcDesktop || src;
-  const deskSrc = optimizeImage(deskBase, 1920, 82);
-  const deskSrcSet = buildSrcSet(deskBase, [1280, 1920, 2560], 82);
+  const deskSrc = optimizeImage(deskBase, 1920, 90);
+  const deskSrcSet = buildSrcSet(deskBase, [1280, 1920, 2560], 90);
 
   return (
     <>
