@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Flame, Image, Layers, Megaphone, Minus, Settings, Star, Trash2, Upload } from 'lucide-react';
 import { getCatImgData } from '../lib/images';
-import { CAMPAIGN_LABELS, OFFER_CAMPAIGNS, isOfferLive, offerCampaign } from '../lib/offers';
+import { CAMPAIGN_LABELS, CAMPAIGN_SHORT, OFFER_CAMPAIGNS, isOfferLive, offerCampaign, offerEndsAt } from '../lib/offers';
 import { upsertProduct } from '../lib/supabase';
 
 const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uploadImage }) => {
@@ -26,6 +26,46 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uplo
     const list = [...campaignOrder];
     [list[i], list[j]] = [list[j], list[i]];
     setCampaignOrder(list);
+  };
+  // Ordem dos PRODUTOS dentro dos carrosséis de oferta (qual aparece primeiro).
+  const [offerList, setOfferList] = useState(() =>
+    (products || [])
+      .filter(p => isOfferLive(p) && (p.is_kit || (p.stock || 0) > 0))
+      .sort((a, b) =>
+        ((a.offer_order ?? 999) - (b.offer_order ?? 999)) ||
+        ((offerEndsAt(a)?.getTime() || 0) - (offerEndsAt(b)?.getTime() || 0))
+      )
+  );
+  const [isSavingOfferOrder, setIsSavingOfferOrder] = useState(false);
+  const moveOfferUp = (i) => {
+    if (i === 0) return;
+    const list = [...offerList];
+    [list[i - 1], list[i]] = [list[i], list[i - 1]];
+    setOfferList(list);
+  };
+  const moveOfferDown = (i) => {
+    if (i === offerList.length - 1) return;
+    const list = [...offerList];
+    [list[i], list[i + 1]] = [list[i + 1], list[i]];
+    setOfferList(list);
+  };
+  const handleSaveOfferOrder = async () => {
+    setIsSavingOfferOrder(true);
+    try {
+      const updated = offerList.map((p, idx) => ({ ...p, offer_order: idx + 1 }));
+      for (const p of updated) {
+        await upsertProduct(p);
+      }
+      setProducts(prev => prev.map(p => {
+        const u = updated.find(u => u.id === p.id);
+        return u || p;
+      }));
+      showToast('Ordem das ofertas atualizada!', 'success');
+    } catch {
+      showToast('Erro ao salvar ordem.', 'error');
+    } finally {
+      setIsSavingOfferOrder(false);
+    }
   };
   const [categoryImages, setCategoryImages] = useState(config.category_images || {});
   const [uploadingCategory, setUploadingCategory] = useState(null);
@@ -257,6 +297,32 @@ const AdminConfig = ({ config, setConfig, showToast, products, setProducts, uplo
               })}
             </div>
             <p className="text-[9px] font-bold text-zinc-600">Salva junto com o botão "Salvar Sistema" abaixo.</p>
+
+            {/* Ordem dos PRODUTOS dentro dos carrosséis de oferta */}
+            <div className="pt-4 border-t border-white/5 space-y-3">
+              <h5 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2" style={{ color: '#fbbf24' }}><Flame size={13} className="fill-amber-400 text-amber-400"/> Ordem das Ofertas</h5>
+              <p className="text-[10px] font-bold text-zinc-500 leading-snug">Qual produto aparece primeiro dentro de cada carrossel. O de cima vem antes. (A expiração é o desempate quando ficam empatados.)</p>
+              {offerList.length === 0 ? (
+                <p className="text-[11px] text-zinc-600 text-center py-4">Nenhuma oferta ativa no momento.</p>
+              ) : (
+                <div>
+                  {offerList.map((p, i) => (
+                    <div key={p.id} className="flex items-center gap-3 py-2.5 border-b border-white/5">
+                      <img src={p.image} alt={p.name} className="w-10 h-10 rounded-lg object-cover shrink-0 bg-zinc-800" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-bold text-white truncate">{p.name}</p>
+                        <p className="text-[9px] font-black uppercase tracking-wide" style={{ color: '#fbbf24' }}>{CAMPAIGN_SHORT[offerCampaign(p)] || 'Dia'}</p>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button type="button" onClick={() => moveOfferUp(i)} disabled={i === 0} className="w-7 h-7 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all touch-manipulation flex items-center justify-center disabled:opacity-30"><ChevronUp size={13}/></button>
+                        <button type="button" onClick={() => moveOfferDown(i)} disabled={i === offerList.length - 1} className="w-7 h-7 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all touch-manipulation flex items-center justify-center disabled:opacity-30"><ChevronDown size={13}/></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button type="button" onClick={handleSaveOfferOrder} disabled={isSavingOfferOrder || offerList.length === 0} className="font-black text-[11px] uppercase tracking-widest rounded-2xl py-4 w-full active:scale-95 transition-transform disabled:opacity-50 text-zinc-950 bg-gradient-to-r from-amber-400 to-red-500">{isSavingOfferOrder ? 'Salvando...' : 'Salvar Ordem das Ofertas'}</button>
+            </div>
           </div>
         </div>
 

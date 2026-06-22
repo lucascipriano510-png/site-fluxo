@@ -1425,8 +1425,27 @@ function App() {
 
   // Oferta do Dia: ao expirar um relógio, este state muda e re-renderiza a loja toda,
   // recalculando preço/visibilidade (isOfferLive) de cada produto na hora certa.
-  const [, setOfferExpiryBump] = useState(0);
+  const [offerExpiryBump, setOfferExpiryBump] = useState(0);
   const bumpOffers = () => setOfferExpiryBump(v => v + 1);
+
+  // Garantia CENTRAL de expiração: agenda um re-render no instante EXATO em que a
+  // próxima oferta viva morre — não depende do timer de cada card (que pode não
+  // disparar com aba em 2º plano ou card fora da tela). Reagenda a cada expiração.
+  useEffect(() => {
+    const live = (products || []).filter(p => isOfferLive(p));
+    if (live.length === 0) return;
+    const now = Date.now();
+    const nextEnd = live
+      .map(p => offerEndsAt(p)?.getTime())
+      .filter(t => typeof t === 'number' && t > now)
+      .sort((a, b) => a - b)[0];
+    if (!nextEnd) return;
+    // +250ms de folga; teto de 1h (offers distantes só precisam de precisão perto do fim).
+    const delay = Math.min(nextEnd - now + 250, 60 * 60 * 1000);
+    const id = setTimeout(bumpOffers, delay);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, offerExpiryBump]);
 
   // Pix 5% NÃO incide sobre itens em oferta. Calcula só a base elegível.
   const pixBaseSubtotal = useMemo(
@@ -2569,7 +2588,10 @@ function App() {
             camp,
             list: (products || [])
               .filter(p => isOfferLive(p) && offerCampaign(p) === camp && (p.is_kit || (p.stock || 0) > 0))
-              .sort((a, b) => (offerEndsAt(a)?.getTime() || 0) - (offerEndsAt(b)?.getTime() || 0)),
+              .sort((a, b) =>
+                ((a.offer_order ?? 999) - (b.offer_order ?? 999)) ||
+                ((offerEndsAt(a)?.getTime() || 0) - (offerEndsAt(b)?.getTime() || 0))
+              ),
           })).filter(s => s.list.length > 0);
           if (sections.length === 0) return null;
 

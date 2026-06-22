@@ -339,6 +339,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
         offer_discount_percent: offerDiscount !== '' ? parseFloat(offerDiscount) : null,
         offer_ends_at: offerEndDate || null,
         offer_campaign: offerCampaignSel || 'dia',
+        offer_order: editMode !== 'new' && typeof editMode.offer_order === 'number' ? editMode.offer_order : 999,
       };
       const updatedProducts = editMode === 'new' ? [data, ...products] : products.map(p => p.id === data.id ? data : p);
       setProducts(updatedProducts);
