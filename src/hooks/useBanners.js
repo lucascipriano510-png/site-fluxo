@@ -74,11 +74,20 @@ export function useBanners(isDesktopViewport) {
     });
   };
 
-  // Banner é exclusivo por dispositivo: desktop só mostra quem tem imagem desktop;
-  // mobile só quem tem imagem mobile. Um nunca puxa o do outro.
+  // Hero (topo): exclusivo por dispositivo — desktop só mostra quem tem imagem
+  // desktop; mobile só quem tem imagem mobile. Um nunca puxa o do outro.
+  // (placement ausente = 'hero', p/ compatibilidade com banners antigos.)
+  const isHero = (b) => (b.placement || 'hero') === 'hero';
   const activeBanners = useMemo(
-    () => (banners || []).filter(b => b.active && (isDesktopViewport ? b.image_desktop : b.image)),
+    () => (banners || []).filter(b => b.active && isHero(b) && (isDesktopViewport ? b.image_desktop : b.image)),
     [banners, isDesktopViewport]
+  );
+
+  // Sub-banner do meio (2:1, decorativo): 1 imagem fixa — pega o 1º ativo da posição.
+  const midBanner = useMemo(
+    () => (banners || []).filter(b => b.active && b.placement === 'mid' && b.image)
+      .sort((a, b) => (a.banner_order ?? 999) - (b.banner_order ?? 999))[0] || null,
+    [banners]
   );
 
   const availableCollections = useMemo(() => {
@@ -87,5 +96,5 @@ export function useBanners(isDesktopViewport) {
     return Array.from(set).sort();
   }, [banners]);
 
-  return { banners, setBanners, bannersLoaded, activeBanners, availableCollections };
+  return { banners, setBanners, bannersLoaded, activeBanners, midBanner, availableCollections };
 }

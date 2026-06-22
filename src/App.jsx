@@ -6,6 +6,7 @@ import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
 import StarRatingInline from './components/StarRatingInline';
 import BannerCarousel from './components/BannerCarousel';
+import SubBanner from './components/SubBanner';
 import { useBanners } from './hooks/useBanners';
 import AdminHeader from './components/AdminHeader';
 import AdminInventory from './components/AdminInventory';
@@ -1177,7 +1178,7 @@ function App() {
   // Banners: dados + sync com Supabase + derivados (activeBanners por dispositivo,
   // availableCollections) no hook. O carrossel e seu comportamento (slide, scroll,
   // auto-avanço, indicador) vivem no componente <BannerCarousel/>.
-  const { banners, setBanners, bannersLoaded, activeBanners, availableCollections } = useBanners(isDesktopViewport);
+  const { banners, setBanners, bannersLoaded, activeBanners, midBanner, availableCollections } = useBanners(isDesktopViewport);
 
 
   // Auto-peek na vitrine de destaques: quando a seção entra no viewport, revela levemente os próximos cards
@@ -2570,7 +2571,12 @@ function App() {
           );
         })()}
 
-
+        {/* SUB-BANNER (meio) — faixa decorativa 2:1 entre Destaques e Peças */}
+        {(() => {
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
+          if (!isDefaultView || !midBanner) return null;
+          return <SubBanner banner={midBanner} />;
+        })()}
 
         {filteredProducts.length > 0 && (
           <div className="flex items-center justify-between pt-1 animate-in">
