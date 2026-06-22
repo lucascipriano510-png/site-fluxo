@@ -68,6 +68,7 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
         banner_order: parseInt(fd.get('banner_order') || '999', 10),
         external_link: isMid ? null : (fd.get('external_link') || null),
         placement,
+        wa_message: isMid ? (fd.get('wa_message')?.trim() || null) : null,
       };
       setBanners(editBannerMode === 'new' ? [...banners, data] : (banners || []).map(b => b.id === data.id ? data : b));
       showToast('Banner salvo!'); 
@@ -135,6 +136,20 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
             <span className="relative z-10 text-[9px] font-black uppercase text-white text-center px-4">{isMid ? '🖼️ Sub-banner · 2:1 (ex: 1600×800px)' : '📱 Banner Mobile · 4:5 (ideal 1600×2000px)'}</span>
             <input type="file" accept="image/*" onChange={handleBannerFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
           </div>
+
+          {isMid && (
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-emerald-400 uppercase px-2">💬 Mensagem pronta do WhatsApp (opcional)</label>
+              <textarea
+                name="wa_message"
+                defaultValue={editBannerMode?.wa_message || ''}
+                rows={3}
+                placeholder="Ex: Olá! Vi o anúncio no site e quero saber mais 👇"
+                className="w-full p-4 bg-zinc-950 border border-emerald-500/20 rounded-2xl text-sm text-white outline-none focus:border-emerald-400/60 resize-none"
+              />
+              <p className="text-[9px] font-bold text-zinc-600 px-2">Preenchido → aparece um botão do WhatsApp no sub-banner com essa mensagem pronta. Vazio → sem botão.</p>
+            </div>
+          )}
 
           {!isMid && (
             <>

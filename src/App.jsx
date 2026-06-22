@@ -2575,7 +2575,7 @@ function App() {
         {(() => {
           const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
           if (!isDefaultView || !midBanner) return null;
-          return <SubBanner banner={midBanner} />;
+          return <SubBanner banner={midBanner} whatsapp={config?.whatsapp} />;
         })()}
 
         {filteredProducts.length > 0 && (

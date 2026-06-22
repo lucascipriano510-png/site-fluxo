@@ -8,3 +8,8 @@
 
 ALTER TABLE banners
   ADD COLUMN IF NOT EXISTS placement text NOT NULL DEFAULT 'hero';
+
+-- Mensagem pronta de WhatsApp do sub-banner: ao clicar no ícone, abre a conversa
+-- com a loja (config.whatsapp) já com esse texto preenchido. Vazio = sem botão.
+ALTER TABLE banners
+  ADD COLUMN IF NOT EXISTS wa_message text;

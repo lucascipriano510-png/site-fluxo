@@ -137,6 +137,7 @@ export async function upsertBanner(banner) {
     banner_order: typeof banner.banner_order === 'number' ? banner.banner_order : 999,
     external_link: banner.external_link || null,
     placement: banner.placement === 'mid' ? 'mid' : 'hero',
+    wa_message: banner.wa_message || null,
     updated_at: new Date().toISOString(),
   };
   const { data, error } = await supabase
