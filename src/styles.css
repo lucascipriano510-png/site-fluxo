@@ -209,6 +209,16 @@
   100% { background-position: 0% 50%; }
 }
 
+/* Pulsação interna lenta do ícone do sub-banner (respira, sem anel/luz pra fora) */
+@keyframes waSubtlePulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+.wa-pulse { animation: waSubtlePulse 3.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .wa-pulse { animation: none; }
+}
+
 /* Scrollbar visível apenas no desktop */
 @media (pointer: fine) {
   #root {

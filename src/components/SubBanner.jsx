@@ -59,7 +59,7 @@ export default function SubBanner({ banner, whatsapp }) {
           }}
         />
 
-        {/* CTA de WhatsApp — ícone na quina superior direita, com pulso leve */}
+        {/* CTA de WhatsApp — ícone na quina superior direita, pulsação interna lenta */}
         {waUrl && (
           <a
             href={waUrl}
@@ -68,9 +68,7 @@ export default function SubBanner({ banner, whatsapp }) {
             aria-label="Falar no WhatsApp"
             className="absolute top-3 right-3 z-10 grid place-items-center touch-manipulation"
           >
-            {/* anel pulsando (piscadinha) atrás do ícone */}
-            <span className="absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-60 animate-ping motion-reduce:hidden" aria-hidden="true" />
-            <span className="relative grid place-items-center h-10 w-10 rounded-full bg-[#25D366] text-white shadow-[0_6px_18px_rgba(37,211,102,0.5)] ring-2 ring-white/25 active:scale-95 transition-transform">
+            <span className="wa-pulse grid place-items-center h-10 w-10 rounded-full bg-[#25D366] text-white shadow-[0_6px_18px_rgba(37,211,102,0.45)]">
               <WhatsAppIcon size={20} />
             </span>
           </a>
