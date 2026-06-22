@@ -336,52 +336,65 @@ const AutoScrollGallery = ({ count = 1, children, auto = false, startDelay = 0 }
   const ref = React.useRef(null);
   const timerRef = React.useRef(null);
   const multi = count > 1;
+  const [autoIdx, setAutoIdx] = React.useState(0);
 
+  // ===== MODO AUTO (destaque) =====
+  // Cicla as fotos SOZINHO via transform (translateX) — sem container de scroll,
+  // então NÃO captura toque: o dedo fica 100% livre pra arrastar o carrossel.
   React.useEffect(() => {
-    if (!multi) return;
+    if (!auto || !multi) return;
+    let intervalId = null;
+    const startId = setTimeout(() => {
+      setAutoIdx((i) => (i + 1) % count);
+      intervalId = setInterval(() => setAutoIdx((i) => (i + 1) % count), AUTO_CYCLE_MS);
+    }, startDelay);
+    return () => { clearTimeout(startId); if (intervalId) clearInterval(intervalId); };
+  }, [auto, multi, count, startDelay]);
+
+  // ===== MODO TOQUE (catálogo) =====
+  // Passa as fotos enquanto o dedo está parado sobre o card (scroll nativo).
+  React.useEffect(() => {
+    if (auto || !multi) return;
+    ensureGalleryListeners();
     const el = ref.current;
     if (!el) return;
-
+    el.setAttribute('data-autogallery', '1');
     const advance = () => {
       const node = ref.current; if (!node) return;
       const w = node.clientWidth || 1;
       const maxLeft = node.scrollWidth - w;
       let next = Math.round(node.scrollLeft / w) * w + w;
-      if (next > maxLeft + 1) next = 0; // chegou no fim → volta ao início (loop)
+      if (next > maxLeft + 1) next = 0;
       node.scrollTo({ left: next, behavior: 'smooth' });
     };
-
-    // MODO AUTO (destaque): passa as fotos SOZINHO, sem depender do toque — o
-    // dedo fica livre pra arrastar o carrossel. Começa após `startDelay`.
-    if (auto) {
-      let intervalId = null;
-      const startId = setTimeout(() => {
-        advance();
-        intervalId = setInterval(advance, AUTO_CYCLE_MS);
-      }, startDelay);
-      return () => { clearTimeout(startId); if (intervalId) clearInterval(intervalId); };
-    }
-
-    // MODO TOQUE (catálogo): passa enquanto o dedo está parado sobre o card.
-    ensureGalleryListeners();
-    el.setAttribute('data-autogallery', '1');
     const controller = {
       activate: () => {
         if (timerRef.current) return;
-        advance();                                   // já troca ao passar o dedo
+        advance();
         timerRef.current = setInterval(advance, AUTOPLAY_MS);
       },
       deactivate: () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } },
     };
     galleryRegistry.set(el, controller);
-
     return () => {
       controller.deactivate();
       galleryRegistry.delete(el);
       if (activeGalleryEl === el) activeGalleryEl = null;
     };
-  }, [multi, auto, startDelay]);
+  }, [auto, multi]);
 
+  // Render AUTO: trilho flex transladado, sem scroll (toque atravessa pro carrossel).
+  if (auto) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', width: '100%', height: '100%', transform: `translateX(-${autoIdx * 100}%)`, transition: 'transform 0.55s cubic-bezier(0.4,0,0.2,1)' }}>
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  // Render TOQUE: container de scroll nativo.
   return (
     <div ref={ref} style={HOLD_SCROLL_STYLE}>
       {children}
