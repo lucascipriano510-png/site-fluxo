@@ -332,6 +332,13 @@ const ensureGalleryListeners = () => {
   window.addEventListener('touchmove', onMove, { passive: true });
 };
 
+// Ícone do Pix (lucide não tem ícone de marca). Cor herda de `color`.
+const PixIcon = ({ size = 12 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}>
+    <path d="M5.283 18.36a3.505 3.505 0 0 0 2.493-1.032l3.6-3.6a.684.684 0 0 1 .946 0l3.613 3.613a3.504 3.504 0 0 0 2.493 1.032h.71l-4.56 4.56a3.647 3.647 0 0 1-5.156 0L4.85 18.36ZM18.428 5.627a3.505 3.505 0 0 0-2.493 1.032l-3.613 3.614a.67.67 0 0 1-.946 0l-3.6-3.6A3.505 3.505 0 0 0 5.283 5.64h-.434l4.573-4.572a3.646 3.646 0 0 1 5.156 0l4.559 4.559ZM1.068 9.422 3.79 6.699h1.492a2.483 2.483 0 0 1 1.744.722l3.6 3.6a1.73 1.73 0 0 0 2.443 0l3.614-3.613a2.482 2.482 0 0 1 1.744-.723h1.767l2.737 2.737a3.646 3.646 0 0 1 0 5.156l-2.736 2.736h-1.768a2.482 2.482 0 0 1-1.744-.722l-3.613-3.613a1.77 1.77 0 0 0-2.444 0l-3.6 3.6a2.483 2.483 0 0 1-1.744.722H3.791l-2.723-2.723a3.646 3.646 0 0 1 0-5.156"/>
+  </svg>
+);
+
 const AutoScrollGallery = ({ count = 1, children, auto = false, startDelay = 0 }) => {
   const ref = React.useRef(null);
   const timerRef = React.useRef(null);
@@ -2807,8 +2814,9 @@ function App() {
                                       style={{ marginTop: '4px' }}
                                     />
                                   ) : !isOutOfStock ? (
-                                    <span style={{ color: '#A1A1AA', fontSize: '9.5px', fontWeight: 600, letterSpacing: '0.02em', marginTop: '3px' }}>
-                                      5% OFF no Pix · {formatBRL((mainPrice || 0) * 0.95)}
+                                    <span style={{ color: '#A1A1AA', fontSize: '9.5px', fontWeight: 600, letterSpacing: '0.02em', marginTop: '3px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                      <span style={{ color: '#32BCAD', display: 'inline-flex' }}><PixIcon size={11} /></span>
+                                      {formatBRL((mainPrice || 0) * 0.95)} no Pix
                                     </span>
                                   ) : null}
                                 </div>
