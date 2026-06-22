@@ -845,10 +845,10 @@ function App() {
       try {
         const remote = await fetchBanners();
         if (alive && Array.isArray(remote) && remote.length > 0) {
-          // Normaliza button_text -> buttonText para o UI
+          // Normaliza button_text -> buttonText para o UI (vazio = botão oculto)
           const normalized = remote.map(b => ({
             ...b,
-            buttonText: b.button_text || b.buttonText || 'VER PEÇAS'
+            buttonText: b.button_text || b.buttonText || ''
           }));
           setBannersRaw(normalized);
           try { localStorage.setItem(BANNERS_CACHE_KEY2, JSON.stringify({ ts: Date.now(), data: normalized })); } catch {}
@@ -1275,9 +1275,14 @@ function App() {
   useEffect(() => {
     if (isAdmin || activeBanners.length <= 1) return;
     const timer = setInterval(() => {
-      const next = (currentBannerSlideRef.current + 1) % activeBanners.length;
       const track = bannerTrackRef.current;
-      if (track) track.scrollTo({ left: next * track.clientWidth, behavior: 'smooth' });
+      if (!track) return;
+      const w = track.clientWidth || 1;
+      // Avança a partir de ONDE O CLIENTE REALMENTE ESTÁ (posição do scroll),
+      // não de um índice em memória que pode ter ficado defasado.
+      const current = Math.round(track.scrollLeft / w);
+      const next = (current + 1) % activeBanners.length;
+      track.scrollTo({ left: next * w, behavior: 'smooth' });
       setCurrentBannerSlide(next);
     }, 5000);
     return () => clearInterval(timer);
@@ -1289,13 +1294,15 @@ function App() {
     const track = bannerTrackRef.current;
     if (!section || !track) return;
 
-    // Detecta slide atual pelo scrollLeft do track (scroll snap nativo)
+    // Detecta slide atual pelo scrollLeft do track (scroll snap nativo).
+    // Fonte ÚNICA de verdade do indicador: o que o cliente está realmente vendo.
     const onTrackScroll = () => {
       const newSlide = Math.round(track.scrollLeft / (track.clientWidth || 1));
       if (newSlide !== currentBannerSlideRef.current) {
         setCurrentBannerSlide(newSlide);
       }
     };
+    onTrackScroll(); // sincroniza o índice assim que os slides existem
 
     // Scroll-driven: parallax + scale + dim + fade de texto via RAF
     let rafId = 0;
@@ -1323,7 +1330,9 @@ function App() {
       scroller.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, []);
+    // Re-anexa quando os banners carregam (no mount o trilho pode estar vazio).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBanners.length, bannersLoaded]);
 
 
   // Auto-peek na vitrine de destaques: quando a seção entra no viewport, revela levemente os próximos cards
@@ -2342,13 +2351,15 @@ function App() {
           >
             {activeBanners.map((banner, idx) => {
               const isActive = idx === currentBannerSlide;
+              // Só escurece se houver texto sobreposto (legibilidade). Sem texto = imagem limpa.
+              const hasOverlay = !!(banner.collection_name || banner.title || banner.subtitle || banner.buttonText);
               return (
                 <div key={idx} className="w-full h-full shrink-0 relative overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
                   <div className="absolute inset-0" style={{ transform: 'scale(1)', transformOrigin: '55% 45%' }}>
                     <BannerImage src={banner.image} srcDesktop={banner.image_desktop} alt={banner.title || 'Banner'} active={isActive} />
                   </div>
-                  <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-zinc-950/75 to-transparent pointer-events-none" />
-                  <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />
+                  {hasOverlay && <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-zinc-950/75 to-transparent pointer-events-none" />}
+                  {hasOverlay && <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-zinc-950 via-zinc-950/55 to-transparent pointer-events-none" />}
                   {/* Texto com fade proporcional ao scroll */}
                   <div className="absolute inset-x-0 bottom-0 px-7 lg:px-16 pb-12 lg:pb-20 flex flex-col lg:max-w-3xl" style={{ opacity: 'var(--banner-text-op, 1)', transform: 'translate3d(0, calc(var(--banner-parallax, 0px) * -0.4), 0)', transition: 'opacity 0.08s linear', willChange: 'opacity, transform' }}>
                     {banner.collection_name && (

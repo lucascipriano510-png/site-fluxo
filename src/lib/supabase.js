@@ -129,7 +129,7 @@ export async function upsertBanner(banner) {
     id: banner.id,
     title: banner.title || '',
     subtitle: banner.subtitle || '',
-    button_text: banner.buttonText || banner.button_text || 'VER PEÇAS',
+    button_text: banner.buttonText ?? banner.button_text ?? '',
     collection_name: banner.collection_name || null,
     image: banner.image || '',
     image_desktop: banner.image_desktop || null,

@@ -115,7 +115,10 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
           <span style={{ fontSize: 9, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Suba as duas versões: 4:5 aparece no celular, 16:9 no computador. Se faltar a do desktop, ele usa a do celular.</span>
           <input name="title" defaultValue={editBannerMode?.title} placeholder="Título (opcional)" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none" />
           <input name="subtitle" defaultValue={editBannerMode?.subtitle} placeholder="Subtítulo" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none" />
-	          <input name="buttonText" defaultValue={editBannerMode?.buttonText || 'VER PEÇAS'} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase" required />
+	          <div className="space-y-1">
+	            <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Texto do botão (opcional — deixe vazio para ocultar)</label>
+	            <input name="buttonText" defaultValue={editBannerMode?.buttonText || ''} placeholder="Ex: VER PEÇAS (vazio = sem botão)" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase" />
+	          </div>
 	          <div className="space-y-1">
 	            <label className="text-[9px] font-black text-zinc-500 uppercase px-2">Nome da Coleção (Ex: Lacoste)</label>
 	            <input name="collection_name" defaultValue={editBannerMode?.collection_name} placeholder="Digite o nome da coleção..." className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase" />
