@@ -66,7 +66,7 @@ export default function SubBanner({ banner, whatsapp }) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Falar no WhatsApp"
-            className="absolute top-3 right-3 z-10 grid place-items-center touch-manipulation"
+            className="absolute top-1 right-1 z-10 grid place-items-center touch-manipulation"
           >
             <span className="wa-pulse grid place-items-center h-10 w-10 rounded-full bg-[#25D366] text-white shadow-[0_6px_18px_rgba(37,211,102,0.45)]">
               <WhatsAppIcon size={20} />
