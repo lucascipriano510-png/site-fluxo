@@ -9,11 +9,6 @@ import BannerCarousel from './components/BannerCarousel';
 import SubBanner from './components/SubBanner';
 import { useBanners } from './hooks/useBanners';
 import AdminHeader from './components/AdminHeader';
-import AdminInventory from './components/AdminInventory';
-import AdminLeads from './components/AdminLeads';
-import AdminConfig from './components/AdminConfig';
-import AdminBanners from './components/AdminBanners';
-import AdminDashboard from './components/AdminDashboard';
 import { optimizeImage, buildSrcSet, markWsrvFailed, getCatImgData } from './lib/images';
 import { formatBRL } from './lib/format';
 import { isOfferLive, offerPrice, offerPercent, offerEndsAt, offerCampaign, OFFER_CAMPAIGNS, CAMPAIGN_LABELS } from './lib/offers';
@@ -27,6 +22,11 @@ import { initMetaPixel, trackEvent, getMetaBrowserParams } from './lib/metaPixel
 import { criarAtendimentoFromPedido } from './lib/crm';
 import { fetchRatingsBatch } from './lib/reviews';
 // Admin + recharts: code-split. Só baixam quando o painel abre — fora do bundle do cliente.
+const AdminInventory = React.lazy(() => import('./components/AdminInventory'));
+const AdminLeads = React.lazy(() => import('./components/AdminLeads'));
+const AdminConfig = React.lazy(() => import('./components/AdminConfig'));
+const AdminBanners = React.lazy(() => import('./components/AdminBanners'));
+const AdminDashboard = React.lazy(() => import('./components/AdminDashboard'));
 const AdminRastreio = React.lazy(() => import('./components/AdminRastreio'));
 const AdminCRM = React.lazy(() => import('./components/AdminCRM'));
 const AdminGrowth = React.lazy(() => import('./components/AdminGrowth'));
@@ -126,41 +126,6 @@ class AdminTabErrorBoundary extends React.Component {
 
 // Utilitários de imagem (otimização wsrv.nl) — extraídos p/ ./lib/images.
 
-// ──────────────────────────────────────────────────────────────
-// Fila de carregamento de imagens com concorrência limitada.
-// Garante ORDEM: imagens com menor `priority` (topo da página) baixam
-// antes das de baixo. Uma imagem no fim da lista nunca começa antes das
-// primeiras — só ganha um "slot" quando chega a sua vez.
-// ──────────────────────────────────────────────────────────────
-const IMG_CONCURRENCY = 3; // quantas imagens podem baixar ao mesmo tempo
-let imgActive = 0;
-let imgQueue = [];
-
-const pumpImgQueue = () => {
-  imgQueue.sort((a, b) => a.priority - b.priority);
-  while (imgActive < IMG_CONCURRENCY && imgQueue.length > 0) {
-    const job = imgQueue.shift();
-    job.started = true;
-    imgActive++;
-    try { job.onStart(); } catch { imgActive--; }
-  }
-};
-
-// Pede permissão para carregar. `onStart` é chamado quando for a vez.
-// Retorna um handle com done()/cancel() para liberar o slot.
-const acquireImgSlot = (priority, onStart) => {
-  const job = { priority, onStart, started: false, finished: false };
-  imgQueue.push(job);
-  pumpImgQueue();
-  const release = () => {
-    if (job.finished) return;
-    job.finished = true;
-    if (job.started) { imgActive = Math.max(0, imgActive - 1); pumpImgQueue(); }
-    else { imgQueue = imgQueue.filter(j => j !== job); }
-  };
-  return { done: release, cancel: release };
-};
-
 // Faixas de preço (chips de filtro). max=null => sem teto.
 const PRICE_RANGES = [
   { key: 'ate100', label: 'Até R$ 100', min: null, max: 100 },
@@ -181,15 +146,15 @@ const colorDot = (name) => COLOR_HEX[String(name || '').toLowerCase()] || null;
 const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, sizes: sizesProp, fixedWidth, fullRes = false }) => {
   const [loaded, setLoaded] = React.useState(false);
   const [inView, setInView] = React.useState(priority);
-  const [canLoad, setCanLoad] = React.useState(false); // a fila liberou o slot
   const wrapperRef = React.useRef(null);
-  const slotRef = React.useRef(null);
 
-  // 1) Detecta proximidade da viewport (não carrega o que está longe pra baixo).
+  // Carrega assim que a imagem entra PERTO do viewport (segue o scroll).
+  // rootMargin generoso pré-carrega à frente da rolagem -> o cliente não se
+  // depara com imagem carregando. SEM fila: o navegador (HTTP/2 + lazy nativo)
+  // cuida da concorrência e já prioriza o que está na tela.
   React.useEffect(() => {
     if (!src) return;
     setLoaded(false);
-    setCanLoad(false);
     if (priority) { setInView(true); return; }
     setInView(false);
     const el = wrapperRef.current;
@@ -198,29 +163,11 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
       (entries) => entries.forEach((entry) => {
         if (entry.isIntersecting) { setInView(true); io.disconnect(); }
       }),
-      { rootMargin: '400px 0px', threshold: 0.01 }
+      { rootMargin: '1400px 0px', threshold: 0.01 }
     );
     io.observe(el);
     return () => io.disconnect();
   }, [src, priority]);
-
-  // 2) Estando por perto, entra na fila ORDENADA e só carrega quando for a vez.
-  React.useEffect(() => {
-    if (!src || !(priority || inView)) return;
-    const slot = acquireImgSlot(priority ? 0 : order, () => setCanLoad(true));
-    slotRef.current = slot;
-    return () => { slot.cancel(); slotRef.current = null; };
-  }, [src, inView, priority, order]);
-
-  const finishSlot = () => { if (slotRef.current) { slotRef.current.done(); slotRef.current = null; } };
-
-  // Watchdog: se uma imagem demorar demais, libera o slot pra não travar a fila
-  // (a imagem continua carregando em paralelo, só deixa de bloquear as próximas).
-  React.useEffect(() => {
-    if (!canLoad) return;
-    const t = setTimeout(finishSlot, 7000);
-    return () => clearTimeout(t);
-  }, [canLoad]);
 
   // fullRes: serve a imagem ORIGINAL (sem wsrv/WebP) — teste de nitidez máxima no desktop.
   // fixedWidth: 1 imagem em alta via wsrv (sem srcset). Sem nenhum: modo responsivo.
@@ -231,24 +178,22 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
       {!loaded && (
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%)', backgroundSize: '200% 100%', animation: 'skeleton-shine 1.4s ease-in-out infinite', zIndex: 1 }} />
       )}
-      {canLoad && (
+      {(priority || inView) && (
         <img
           src={fullRes ? src : optimizeImage(src, fixedWidth || 1000, fixedWidth ? 90 : 86)}
           srcSet={srcSet}
           sizes={(fullRes || fixedWidth) ? undefined : (sizesProp || "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw")}
           alt={alt}
-          loading={priority ? 'eager' : 'lazy'}
+          loading="eager"
           decoding="async"
           fetchPriority={priority ? 'high' : 'auto'}
-          onLoad={() => { setLoaded(true); finishSlot(); }}
+          onLoad={() => setLoaded(true)}
           onError={(e) => {
             if (!e.target.dataset.fallback) {
               e.target.dataset.fallback = '1';
               markWsrvFailed();
               e.target.src = src; // URL original do Supabase sem proxy
               e.target.srcset = '';
-            } else {
-              finishSlot(); // libera o slot mesmo se o fallback falhar
             }
           }}
           draggable={false}
