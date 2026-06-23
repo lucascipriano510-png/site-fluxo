@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Edit3, ImagePlus, Trash2, X } from 'lucide-react';
+import BulkOffers from './BulkOffers';
 
-const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBannerImageFile, uploadImage }) => {
+const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBannerImageFile, uploadImage, products, setProducts }) => {
+  const [promoTab, setPromoTab] = useState('banners'); // 'banners' | 'ofertas'
   const [editBannerMode, setEditBannerMode] = useState(null);
   const [previewBannerImage, setPreviewBannerImage] = useState('');
   const [bannerDesktopFile, setBannerDesktopFile] = useState(null);
@@ -83,7 +85,15 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
   };
   return (
     <div className="p-6 animate-in space-y-6 pb-32">
-      {!editBannerMode ? (
+      {!editBannerMode && (
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => setPromoTab('banners')} className={`py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${promoTab === 'banners' ? 'text-zinc-950 border-transparent bg-emerald-500' : 'text-zinc-400 border-white/10 bg-zinc-950'}`}>Banners</button>
+          <button type="button" onClick={() => setPromoTab('ofertas')} className={`py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${promoTab === 'ofertas' ? 'text-zinc-950 border-transparent bg-gradient-to-r from-amber-400 to-red-500' : 'text-zinc-400 border-white/10 bg-zinc-950'}`}>Ofertas</button>
+        </div>
+      )}
+      {promoTab === 'ofertas' && !editBannerMode ? (
+        <BulkOffers products={products} setProducts={setProducts} showToast={showToast} />
+      ) : !editBannerMode ? (
         <div className="space-y-4">
           <div className="flex justify-between items-center"><h3 className="font-black italic uppercase text-white tracking-widest text-lg">Banners</h3><button onClick={() => setEditBannerMode('new')} className="bg-emerald-500 text-zinc-950 px-4 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg">+ Novo</button></div>
           {(banners || []).map(b => (
