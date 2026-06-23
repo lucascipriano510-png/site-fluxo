@@ -3236,7 +3236,8 @@ function App() {
           {/* ── MOBILE: página de produto em fluxo no documento (oculto no desktop) ── */}
           {/* A barra real (hambúrguer/logo/perfil/sacola) fica sticky logo acima — barra compartilhada com o home. */}
           <motion.div
-            className="lg:hidden bg-zinc-950 min-h-screen"
+            className="lg:hidden min-h-screen"
+            style={{ background: '#171717' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -3421,7 +3422,8 @@ function App() {
 
           {/* ── DESKTOP: página de produto real (oculto no mobile) ── */}
           <motion.div
-            className="hidden lg:block fixed inset-0 z-30 overflow-y-auto bg-zinc-950"
+            className="hidden lg:block fixed inset-0 z-30 overflow-y-auto"
+            style={{ background: '#171717' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
