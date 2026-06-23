@@ -341,41 +341,34 @@ const PixIcon = ({ size = 12 }) => (
   </svg>
 );
 
+// Galeria do card por CROSSFADE de opacidade — SEM scroll e SEM transform, logo
+// SEM camada de GPU em repouso. A imagem visível renderiza direta = nitidez máxima
+// no desktop (o Chrome usa downscale de alta qualidade só fora de camadas GPU).
 const AutoScrollGallery = ({ count = 1, children, auto = false, startDelay = 0 }) => {
   const ref = React.useRef(null);
   const timerRef = React.useRef(null);
   const multi = count > 1;
-  const [autoIdx, setAutoIdx] = React.useState(0);
+  const [idx, setIdx] = React.useState(0);
+  const advance = React.useCallback(() => setIdx((i) => (i + 1) % count), [count]);
 
-  // ===== MODO AUTO (destaque) =====
-  // Cicla as fotos SOZINHO via transform (translateX) — sem container de scroll,
-  // então NÃO captura toque: o dedo fica 100% livre pra arrastar o carrossel.
+  // MODO AUTO (destaque): cicla sozinho após startDelay.
   React.useEffect(() => {
     if (!auto || !multi) return;
     let intervalId = null;
     const startId = setTimeout(() => {
-      setAutoIdx((i) => (i + 1) % count);
-      intervalId = setInterval(() => setAutoIdx((i) => (i + 1) % count), AUTO_CYCLE_MS);
+      advance();
+      intervalId = setInterval(advance, AUTO_CYCLE_MS);
     }, startDelay);
     return () => { clearTimeout(startId); if (intervalId) clearInterval(intervalId); };
-  }, [auto, multi, count, startDelay]);
+  }, [auto, multi, startDelay, advance]);
 
-  // ===== MODO TOQUE (catálogo) =====
-  // Passa as fotos enquanto o dedo está parado sobre o card (scroll nativo).
+  // MODO TOQUE (catálogo): cicla enquanto o dedo está parado sobre o card.
   React.useEffect(() => {
     if (auto || !multi) return;
     ensureGalleryListeners();
     const el = ref.current;
     if (!el) return;
     el.setAttribute('data-autogallery', '1');
-    const advance = () => {
-      const node = ref.current; if (!node) return;
-      const w = node.clientWidth || 1;
-      const maxLeft = node.scrollWidth - w;
-      let next = Math.round(node.scrollLeft / w) * w + w;
-      if (next > maxLeft + 1) next = 0;
-      node.scrollTo({ left: next, behavior: 'smooth' });
-    };
     const controller = {
       activate: () => {
         if (timerRef.current) return;
@@ -390,23 +383,25 @@ const AutoScrollGallery = ({ count = 1, children, auto = false, startDelay = 0 }
       galleryRegistry.delete(el);
       if (activeGalleryEl === el) activeGalleryEl = null;
     };
-  }, [auto, multi]);
+  }, [auto, multi, advance]);
 
-  // Render AUTO: trilho flex transladado, sem scroll (toque atravessa pro carrossel).
-  if (auto) {
-    return (
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', width: '100%', height: '100%', transform: `translateX(-${autoIdx * 100}%)`, transition: 'transform 0.55s cubic-bezier(0.4,0,0.2,1)' }}>
-          {children}
-        </div>
-      </div>
-    );
-  }
-
-  // Render TOQUE: container de scroll nativo.
+  const arr = React.Children.toArray(children);
+  // touchAction pan-y: arrasto horizontal passa pro carrossel pai (não trava).
   return (
-    <div ref={ref} style={HOLD_SCROLL_STYLE}>
-      {children}
+    <div ref={ref} style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }}>
+      {arr.map((child, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute', inset: 0,
+            opacity: i === idx ? 1 : 0,
+            transition: 'opacity 0.45s ease',
+            pointerEvents: i === idx ? 'auto' : 'none',
+          }}
+        >
+          {child}
+        </div>
+      ))}
     </div>
   );
 };
@@ -2691,19 +2686,12 @@ function App() {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                const hasMultipleImages = [product.image, ...(Array.isArray(product.gallery) ? product.gallery : [])].filter(Boolean).length > 1;
                 return (
-                  <motion.div
+                  // div puro + hover via CSS: transform só existe ao passar o mouse →
+                  // em repouso NÃO há camada GPU → imagem nítida (framer mantinha
+                  // will-change:transform sempre ligado = downscale ruim do Chrome).
+                  <div
                     key={product.id}
-                    initial={{ opacity: 0, y: 28 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "80px" }}
-                    transition={{ type: 'spring', damping: 22, stiffness: 180, delay: Math.min(idx, 5) * 0.07 }}
-                    whileHover={!isOutOfStock && !prefersReducedMotion ? {
-                      y: -6,
-                      boxShadow: '0 32px 64px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.14)',
-                      transition: { type: 'spring', damping: 18, stiffness: 280 }
-                    } : {}}
-                    whileTap={!isOutOfStock ? { scale: 0.975, transition: { type: 'spring', damping: 25, stiffness: 400 } } : {}}
-                    className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
+                    className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-transform duration-300 ease-out ${!isOutOfStock ? 'hover:-translate-y-1.5 active:scale-[0.98]' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
                   >
@@ -2950,7 +2938,7 @@ function App() {
                           </div>
                         </div>
                       </motion.div>
-                  </motion.div>
+                  </div>
                 )
              })}
            </div>
