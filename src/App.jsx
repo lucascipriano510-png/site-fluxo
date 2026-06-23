@@ -1371,6 +1371,31 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products, offerExpiryBump]);
 
+  // Revalida o carrinho contra os produtos atuais: se um item entrou com preço de
+  // Oferta do Dia e a oferta JÁ EXPIROU (ao recarregar/voltar, ou ao virar a hora),
+  // volta pro preço normal e tira a flag de oferta. Roda quando os produtos carregam
+  // e a cada expiração (bumpOffers).
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+    setCart(prev => {
+      if (!prev || prev.length === 0) return prev;
+      let changed = false;
+      const next = prev.map(item => {
+        const product = products.find(p => p.id === item.id);
+        if (!product) return item; // produto sumiu do catálogo: mantém como está
+        const live = isOfferLive(product);
+        const correctPrice = live ? offerPrice(product) : (product.price || 0);
+        if (item.price !== correctPrice || !!item.offer_applied !== live) {
+          changed = true;
+          return { ...item, price: correctPrice, offer_applied: live };
+        }
+        return item;
+      });
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, offerExpiryBump]);
+
   // Pix 5% NÃO incide sobre itens em oferta. Calcula só a base elegível.
   const pixBaseSubtotal = useMemo(
     () => (cart || []).filter(i => !i.offer_applied).reduce((acc, i) => acc + (i.price * i.quantity), 0),
