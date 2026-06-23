@@ -222,7 +222,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
     return () => clearTimeout(t);
   }, [canLoad]);
 
-  const srcSet = buildSrcSet(src, [320, 480, 640, 900, 1200], 80);
+  const srcSet = buildSrcSet(src, [320, 480, 640, 900, 1200, 1600], 86);
 
   return (
     <div ref={wrapperRef} className="absolute inset-0">
@@ -231,7 +231,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
       )}
       {canLoad && (
         <img
-          src={optimizeImage(src, 1000, 80)}
+          src={optimizeImage(src, 1000, 86)}
           srcSet={srcSet}
           sizes={sizesProp || "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw"}
           alt={alt}
@@ -611,7 +611,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
               aria-label="Foto do kit — toque para ampliar, segure para zoom"
             >
               <img
-                src={optimizeImage(activeImage, 1200, 85)}
+                src={optimizeImage(activeImage, 1600, 90)}
                 className={`w-full h-full object-cover transition-opacity duration-200 ${zoomActive ? 'opacity-0' : 'opacity-100'}`}
                 alt={kit.sku}
                 draggable={false}
@@ -3250,7 +3250,7 @@ function App() {
                 <div className="relative w-full aspect-[4/5] overflow-hidden">
                   {/* Imagem única — troca só por TOQUE nas miniaturas/pontos (sem arrastar) */}
                   <img
-                    src={optimizeImage(heroImg, 1200, 90)}
+                    src={optimizeImage(heroImg, 1600, 90)}
                     className="w-full h-full object-cover"
                     alt={selectedProduct.name}
                     fetchPriority="high"
@@ -3445,7 +3445,7 @@ function App() {
                   aria-label="Ampliar foto"
                 >
                   <img
-                    src={optimizeImage(heroImg, 1200, 90)}
+                    src={optimizeImage(heroImg, 1600, 90)}
                     className="w-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
                     style={{ maxHeight: '640px' }}
                     alt={selectedProduct.name}
