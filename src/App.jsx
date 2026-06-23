@@ -178,7 +178,7 @@ const COLOR_HEX = {
 };
 const colorDot = (name) => COLOR_HEX[String(name || '').toLowerCase()] || null;
 
-const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, sizes: sizesProp }) => {
+const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, sizes: sizesProp, fixedWidth }) => {
   const [loaded, setLoaded] = React.useState(false);
   const [inView, setInView] = React.useState(priority);
   const [canLoad, setCanLoad] = React.useState(false); // a fila liberou o slot
@@ -222,7 +222,9 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
     return () => clearTimeout(t);
   }, [canLoad]);
 
-  const srcSet = buildSrcSet(src, [320, 480, 640, 900, 1200, 1600], 88);
+  // fixedWidth: pede 1 imagem em alta (sem srcset) e deixa o navegador encolher —
+  // garante nitidez no desktop independente de DPR/layout. Sem ela, modo responsivo.
+  const srcSet = fixedWidth ? undefined : buildSrcSet(src, [320, 480, 640, 900, 1200, 1600], 88);
 
   return (
     <div ref={wrapperRef} className="absolute inset-0">
@@ -231,9 +233,9 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
       )}
       {canLoad && (
         <img
-          src={optimizeImage(src, 1000, 86)}
+          src={optimizeImage(src, fixedWidth || 1000, fixedWidth ? 90 : 86)}
           srcSet={srcSet}
-          sizes={sizesProp || "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw"}
+          sizes={fixedWidth ? undefined : (sizesProp || "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw")}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
@@ -2750,7 +2752,7 @@ function App() {
                          <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1024px) 46vw, (min-width: 768px) 50vw, 48vw" />
+                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 768px) 50vw, 48vw" fixedWidth={isDesktopViewport ? 1080 : undefined} />
                              </div>
                            ))}
                          </AutoScrollGallery>
