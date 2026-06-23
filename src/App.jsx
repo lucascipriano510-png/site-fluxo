@@ -2533,7 +2533,7 @@ function App() {
                                 <span style={{ color: '#fde68a', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: 800, letterSpacing: '-0.01em' }}>{formatBRL(novo)}</span>
                                 <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>{formatBRL(product.price || 0)}</span>
                               </div>
-                              <div className="flex items-center gap-1.5 mt-1.5" style={{ color: '#C6FF34' }}>
+                              <div className="flex items-center gap-1.5 mt-1.5" style={{ color: '#4ADE80' }}>
                                 <Truck size={10} strokeWidth={2.4} className="shrink-0" />
                                 <span style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Frete grátis · {(config?.location || 'Uberaba').split(',')[0].trim()}</span>
                               </div>
@@ -2903,7 +2903,7 @@ function App() {
 
                           {/* Selo de frete / entrega local */}
                           {!isOutOfStock && (
-                            <div className="flex items-center gap-1.5 mb-1.5" style={{ color: '#C6FF34' }}>
+                            <div className="flex items-center gap-1.5 mb-1.5" style={{ color: '#4ADE80' }}>
                               <Truck size={11} strokeWidth={2.4} className="shrink-0" />
                               <span style={{ fontSize: '8.5px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                                 Frete grátis · {(config?.location || 'Uberaba').split(',')[0].trim()}
