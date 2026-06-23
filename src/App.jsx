@@ -2691,18 +2691,8 @@ function App() {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                const hasMultipleImages = [product.image, ...(Array.isArray(product.gallery) ? product.gallery : [])].filter(Boolean).length > 1;
                 return (
-                  <motion.div
+                  <div
                     key={product.id}
-                    initial={{ opacity: 0, y: 28 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "80px" }}
-                    transition={{ type: 'spring', damping: 22, stiffness: 180, delay: Math.min(idx, 5) * 0.07 }}
-                    whileHover={!isOutOfStock && !prefersReducedMotion ? {
-                      y: -6,
-                      boxShadow: '0 32px 64px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.14)',
-                      transition: { type: 'spring', damping: 18, stiffness: 280 }
-                    } : {}}
-                    whileTap={!isOutOfStock ? { scale: 0.975, transition: { type: 'spring', damping: 25, stiffness: 400 } } : {}}
                     className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
@@ -2950,7 +2940,7 @@ function App() {
                           </div>
                         </div>
                       </motion.div>
-                  </motion.div>
+                  </div>
                 )
              })}
            </div>
