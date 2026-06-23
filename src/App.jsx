@@ -2070,7 +2070,7 @@ function App() {
               <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-zinc-600 text-[11px] font-black uppercase tracking-widest">Carregando…</div>}>
               {adminTab === 'dashboard' && <AdminDashboard leads={leads} products={products} loading={!leadsLoaded} setAdminTab={setAdminTab} />}
               {adminTab === 'inventory' && <AdminInventory products={products} setProducts={setProducts} showToast={showToast} availableCollections={availableCollections} productImageFile={productImageFile} setProductImageFile={setProductImageFile} uploadImage={uploadImage} />}
-              {adminTab === 'leads' && <AdminLeads leads={leads} setLeads={setLeads} products={products} setProducts={setProducts} showToast={showToast} config={config} />}
+              {adminTab === 'leads' && <AdminLeads leads={leads} setLeads={setLeads} products={products} setProducts={setProducts} showToast={showToast} config={config} mapOrderRow={mapOrderRow} />}
               {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} products={products} setProducts={setProducts} />}
               {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} products={products} setProducts={setProducts} uploadImage={uploadImage} />}
               {adminTab === 'rastreio' && <AdminRastreio />}

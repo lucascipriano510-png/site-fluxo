@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Barcode, Box, Clock, Database, Edit3, MessageCircle, X } from 'lucide-react';
+import { Barcode, Box, Clock, Database, Edit3, MessageCircle, X, Plus } from 'lucide-react';
 import { createMetaEventId, dispatchCAPIPurchase, dispatchCAPIRefund } from '../lib/capi';
 import { formatBRL } from '../lib/format';
 import { cancelOrder, confirmOrderSale, getOrderPurchaseEventId, markOrderPurchaseSent, restoreOrderStock, updateOrderPhone, updateOrderStatus, updateOrderValue } from '../lib/orders';
+import ManualSale from './ManualSale';
 
-const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config }) => {
+const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config, mapOrderRow }) => {
+  const [showManualSale, setShowManualSale] = useState(false);
   const [expandedLead, setExpandedLead] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [updatingLeadId, setUpdatingLeadId] = useState(null); // P17: trava clique repetido por pedido
@@ -258,10 +260,25 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config 
     <div className="p-6 animate-in space-y-4 pb-32">
       <div className="flex justify-between items-center mb-2">
         <h3 className="font-black italic uppercase text-white tracking-widest text-lg">CRM / Clientes</h3>
-        <button onClick={exportCSV} data-testid="btn-export-csv" className="px-4 py-2.5 bg-zinc-800 border border-white/5 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 active:scale-95 hover:border-emerald-500/30">
-          <Database size={12} className="text-emerald-500"/> CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowManualSale(true)} className="px-4 py-2.5 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5 active:scale-95 shadow-lg">
+            <Plus size={13}/> Venda manual
+          </button>
+          <button onClick={exportCSV} data-testid="btn-export-csv" className="px-4 py-2.5 bg-zinc-800 border border-white/5 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 active:scale-95 hover:border-emerald-500/30">
+            <Database size={12} className="text-emerald-500"/> CSV
+          </button>
+        </div>
       </div>
+      {showManualSale && (
+        <ManualSale
+          products={products}
+          setProducts={setProducts}
+          setLeads={setLeads}
+          mapOrderRow={mapOrderRow}
+          showToast={showToast}
+          onClose={() => setShowManualSale(false)}
+        />
+      )}
       <div className="grid grid-cols-3 gap-1 p-1 bg-zinc-900 rounded-2xl border border-white/5">
         <button
           type="button"
