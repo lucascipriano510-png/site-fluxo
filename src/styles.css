@@ -287,15 +287,10 @@
  * `contain-intrinsic-size: auto Xpx` reserva a altura dos cards ainda não
  * pintados (evita pulo de scroll) e o `auto` faz o navegador lembrar o
  * tamanho real após a primeira pintura. */
+/* content-visibility REMOVIDO: estava rasterizando o card em baixa resolução e
+   borrando a imagem no desktop (pior quanto maior o card/source). */
 .cv-card {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 420px; /* 2 colunas (mobile) */
-}
-@media (min-width: 768px) {
-  .cv-card { contain-intrinsic-size: auto 400px; } /* 4 colunas */
-}
-@media (min-width: 1280px) {
-  .cv-card { contain-intrinsic-size: auto 470px; } /* 5 colunas */
+  /* sem content-visibility */
 }
 
 @keyframes skeleton-shine {
