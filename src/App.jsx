@@ -2519,7 +2519,7 @@ function App() {
                             className="block w-full text-left rounded-[15px] overflow-hidden bg-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.7)]"
                           >
                             <div className="aspect-[4/5] relative overflow-hidden">
-                              <ProductImage src={product.image} alt={product.name} order={10 + secIdx * 40 + idx} sizes="55vw" />
+                              <ProductImage src={product.image} alt={product.name} order={10 + secIdx * 40 + idx} sizes="(min-width: 385px) 200px, 52vw" />
                               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/10 to-transparent pointer-events-none" />
                               <div className="absolute top-2 left-2 z-10 flex items-center gap-1 text-white text-[10px] font-black px-2 py-1 rounded-md"
                                 style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', boxShadow: '0 2px 10px rgba(245,158,11,0.45)' }}>
@@ -2617,7 +2617,7 @@ function App() {
                                 <AutoScrollGallery auto startDelay={2000} count={imgs.length}>
                                   {imgs.map((imgSrc, i) => (
                                     <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                                      <ProductImage src={imgSrc} alt={product.name} priority={idx === 0 && i === 0} order={i === 0 ? 20 + idx : 1500 + idx * 10 + i} sizes="88vw" />
+                                      <ProductImage src={imgSrc} alt={product.name} priority={idx === 0 && i === 0} order={i === 0 ? 20 + idx : 1500 + idx * 10 + i} sizes="(min-width: 1024px) 600px, (min-width: 545px) 480px, 88vw" />
                                     </div>
                                   ))}
                                 </AutoScrollGallery>
@@ -2752,7 +2752,7 @@ function App() {
                          <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw" fixedWidth={isDesktopViewport ? 800 : undefined} />
+                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1536px) 380px, (min-width: 1024px) 25vw, (min-width: 768px) 32vw, 48vw" />
                              </div>
                            ))}
                          </AutoScrollGallery>
