@@ -48,6 +48,7 @@ export default function BulkOffers({ products, setProducts, showToast }) {
       .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [products, search, catFilter, colorFilter]);
 
+  const hasFilter = !!search.trim() || catFilter !== 'TODOS' || colorFilter !== 'TODOS';
   const allFilteredSelected = list.length > 0 && list.every((p) => selected.has(p.id));
   const toggle = (id) => setSelected((prev) => {
     const n = new Set(prev);
@@ -152,7 +153,7 @@ export default function BulkOffers({ products, setProducts, showToast }) {
           </select>
         </div>
         <div className="flex items-center justify-between px-1">
-          <button type="button" onClick={toggleAll} className="text-[10px] font-black uppercase tracking-wide text-emerald-400">{allFilteredSelected ? 'Limpar seleção' : `Selecionar todos (${list.length})`}</button>
+          <button type="button" onClick={toggleAll} className="text-[10px] font-black uppercase tracking-wide text-emerald-400">{allFilteredSelected ? 'Limpar seleção' : (hasFilter ? `Selecionar os ${list.length} filtrados` : `Selecionar todos (${list.length})`)}</button>
           <span className="text-[10px] font-black text-zinc-500 uppercase">{selected.size} selecionado(s)</span>
         </div>
       </div>
