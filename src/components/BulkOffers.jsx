@@ -15,16 +15,38 @@ export default function BulkOffers({ products, setProducts, showToast }) {
   const [endDate, setEndDate] = useState('');
   const [campaign, setCampaign] = useState('dia');
   const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState('TODOS');
+  const [colorFilter, setColorFilter] = useState('TODOS');
   const [selected, setSelected] = useState(() => new Set());
   const [saving, setSaving] = useState(false);
+
+  // Opções de filtro derivadas dos produtos ativos.
+  const categories = useMemo(() => {
+    const set = new Set();
+    (products || []).forEach((p) => { if (p.is_active !== false && p.category) set.add(p.category); });
+    return Array.from(set).sort();
+  }, [products]);
+  const colors = useMemo(() => {
+    const set = new Set();
+    (products || []).forEach((p) => {
+      if (p.is_active === false) return;
+      if (p.color) set.add(String(p.color).toLowerCase());
+      if (Array.isArray(p.secondary_colors)) p.secondary_colors.forEach((c) => { if (c) set.add(String(c).toLowerCase()); });
+    });
+    return Array.from(set).sort();
+  }, [products]);
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (products || [])
       .filter((p) => p.is_active !== false)
+      .filter((p) => catFilter === 'TODOS' || (p.category || '') === catFilter)
+      .filter((p) => colorFilter === 'TODOS'
+        || String(p.color || '').toLowerCase() === colorFilter
+        || (Array.isArray(p.secondary_colors) && p.secondary_colors.some((c) => String(c || '').toLowerCase() === colorFilter)))
       .filter((p) => !q || `${p.name || ''} ${p.sku || ''} ${p.category || ''}`.toLowerCase().includes(q))
       .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [products, search]);
+  }, [products, search, catFilter, colorFilter]);
 
   const allFilteredSelected = list.length > 0 && list.every((p) => selected.has(p.id));
   const toggle = (id) => setSelected((prev) => {
@@ -118,6 +140,16 @@ export default function BulkOffers({ products, setProducts, showToast }) {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome, SKU ou categoria..." className="w-full pl-11 pr-10 py-3 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none focus:border-emerald-500/40" />
           {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500"><X size={14} /></button>}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className="w-full py-2.5 px-3 bg-zinc-950 border border-white/5 rounded-2xl text-[11px] font-bold text-white outline-none focus:border-emerald-500/40 [color-scheme:dark]">
+            <option value="TODOS">Toda categoria</option>
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={colorFilter} onChange={(e) => setColorFilter(e.target.value)} className="w-full py-2.5 px-3 bg-zinc-950 border border-white/5 rounded-2xl text-[11px] font-bold text-white outline-none focus:border-emerald-500/40 [color-scheme:dark] capitalize">
+            <option value="TODOS">Toda cor</option>
+            {colors.map((c) => <option key={c} value={c} className="capitalize">{c}</option>)}
+          </select>
         </div>
         <div className="flex items-center justify-between px-1">
           <button type="button" onClick={toggleAll} className="text-[10px] font-black uppercase tracking-wide text-emerald-400">{allFilteredSelected ? 'Limpar seleção' : `Selecionar todos (${list.length})`}</button>
