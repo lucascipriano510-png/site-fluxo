@@ -1025,8 +1025,18 @@ function App() {
     const t = setInterval(load, 30_000);
     return () => { alive = false; clearInterval(t); };
   }, []);
-  const [cart, setCart] = useState([]);
-  
+  // Carrinho persistido no localStorage (sobrevive a recarregar/voltar a página).
+  const CART_STORAGE_KEY = '@fluxo:cart-v1';
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || 'null');
+      return Array.isArray(saved) ? saved : [];
+    } catch { return []; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart || [])); } catch {}
+  }, [cart]);
+
   const [cartBounce, setCartBounce] = useState(false);
 
   // --- AUTH Supabase ---
