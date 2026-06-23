@@ -6,11 +6,15 @@
 // =====================================================================
 
 // Flag de sessão: se wsrv.nl falhou nessa sessão, pula o proxy em todas as imagens.
-let wsrvFailed = sessionStorage.getItem('wsrv_failed') === '1';
+// Chave _v2: reseta qualquer trava antiga que tenha ficado presa no navegador
+// (uma falha transitória do wsrv desligava o proxy e servia o original cru,
+// ignorando largura/qualidade/sharpen — causa de "não muda nada faça o que fizer").
+const WSRV_FAILED_KEY = 'wsrv_failed_v2';
+let wsrvFailed = sessionStorage.getItem(WSRV_FAILED_KEY) === '1';
 
 export const markWsrvFailed = () => {
   wsrvFailed = true;
-  try { sessionStorage.setItem('wsrv_failed', '1'); } catch {}
+  try { sessionStorage.setItem(WSRV_FAILED_KEY, '1'); } catch {}
 };
 
 // Otimização de imagens via CDN (WebP + resize on-the-fly).
