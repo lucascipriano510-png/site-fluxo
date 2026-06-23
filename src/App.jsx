@@ -331,7 +331,11 @@ const AutoScrollGallery = ({ count = 1, children, auto = false, startDelay = 0 }
   }, [auto, multi, advance]);
 
   const arr = React.Children.toArray(children);
-  // touchAction pan-y: arrasto horizontal passa pro carrossel pai (não trava).
+  // Imagem ÚNICA (a maioria): renderiza DIRETA, sem nenhum wrapper de opacidade
+  // -> nenhuma camada de GPU -> a foto renderiza direto = nitidez maxima.
+  if (arr.length <= 1) return arr[0] || null;
+  // Múltiplas: crossfade por opacidade. touchAction pan-y deixa o arrasto
+  // horizontal passar pro carrossel pai.
   return (
     <div ref={ref} style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }}>
       {arr.map((child, i) => (
@@ -2708,7 +2712,7 @@ function App() {
                          <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1536px) 380px, (min-width: 1024px) 25vw, (min-width: 768px) 32vw, 48vw" fixedWidth={isDesktopViewport ? 1200 : undefined} />
+                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1536px) 380px, (min-width: 1024px) 25vw, (min-width: 768px) 32vw, 48vw" />
                              </div>
                            ))}
                          </AutoScrollGallery>
