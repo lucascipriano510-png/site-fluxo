@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, Tag, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
@@ -2229,7 +2229,7 @@ function App() {
             { icon: <MapPin size={13} />, label: 'Retire na loja' },
             { icon: <Truck size={13} />, label: 'Frete grátis em Uberaba' },
             { icon: <CreditCard size={13} />, label: 'Até 4x sem juros' },
-            { icon: <Tag size={13} />, label: '5% OFF no Pix' },
+            { icon: <PixIcon size={13} />, label: '5% OFF no Pix' },
             { icon: <ShieldCheck size={13} />, label: 'Enviamos pra todo Brasil' },
           ].map(({ icon, label }) => (
             <div key={label} className="flex items-center gap-1.5 shrink-0">
@@ -3080,7 +3080,10 @@ function App() {
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em] text-center mb-3">Formas de Pagamento</p>
               <div className="flex items-center justify-center gap-3 flex-wrap">
                 {['Pix', 'Cartão', 'Dinheiro'].map(m => (
-                  <span key={m} className="text-[8px] font-black uppercase text-zinc-600 bg-zinc-900 border border-white/5 px-3 py-1.5 rounded-lg">{m}</span>
+                  <span key={m} className="text-[8px] font-black uppercase text-zinc-600 bg-zinc-900 border border-white/5 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">
+                    {m === 'Pix' && <span style={{ color: '#32BCAD', display: 'inline-flex' }}><PixIcon size={11} /></span>}
+                    {m}
+                  </span>
                 ))}
               </div>
             </div>
@@ -3704,7 +3707,7 @@ function App() {
               <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 px-6 py-6 max-w-md mx-auto z-50 shadow-2xl">
                 <div className="space-y-2 mb-4">
                    <div className="flex justify-between items-center text-[11px] font-bold uppercase text-zinc-400"><span>Subtotal</span><span>{formatBRL(subtotal)}</span></div>
-                   <div className="flex justify-between items-center text-[11px] font-bold uppercase"><span className="text-zinc-400">Desconto Pix (5%)</span><span className="text-emerald-500">- {formatBRL(pixDiscount)}</span></div>
+                   <div className="flex justify-between items-center text-[11px] font-bold uppercase"><span className="text-zinc-400 inline-flex items-center gap-1.5"><span style={{ color: '#32BCAD', display: 'inline-flex' }}><PixIcon size={12} /></span>Desconto Pix (5%)</span><span className="text-emerald-500">- {formatBRL(pixDiscount)}</span></div>
                    {hasOfferInCart && (
                      <div className="flex items-start gap-1.5 text-[9px] font-bold text-amber-400/90 uppercase tracking-wide leading-snug">
                        <Flame size={11} className="shrink-0 mt-px fill-amber-400 text-amber-400" />
@@ -3713,7 +3716,7 @@ function App() {
                    )}
                    <div className="flex justify-between items-end pt-3 border-t border-white/10">
                      <div className="flex flex-col">
-                       <p className="text-[12px] font-black text-white uppercase tracking-widest">Total no Pix</p>
+                       <p className="text-[12px] font-black text-white uppercase tracking-widest inline-flex items-center gap-1.5"><span style={{ color: '#32BCAD', display: 'inline-flex' }}><PixIcon size={13} /></span>Total no Pix</p>
                        <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">ou {formatBRL(subtotal)} em até 4x sem juros</span>
                      </div>
                      <h3 className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(totalComPix)}</h3>
