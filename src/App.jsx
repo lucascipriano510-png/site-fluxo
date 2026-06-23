@@ -1133,16 +1133,30 @@ function App() {
 
   // Card de produto (não-kit) aberto: vira página em fluxo no mobile.
   const productPageOpen = !!(selectedProduct && !selectedProduct.is_kit);
+  // Volta ao topo de forma robusta: zera TODOS os scrollers possíveis (window,
+  // documento, body e #root). Roda agora E após o layout assentar (rAF), senão
+  // a página de produto abre na posição em que o catálogo estava (parte de baixo).
+  const scrollProductTop = () => {
+    const reset = () => {
+      try { window.scrollTo(0, 0); } catch {}
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+      const root = document.getElementById('root');
+      if (root) root.scrollTop = 0;
+    };
+    reset();
+    requestAnimationFrame(reset);
+  };
   // Enquanto aberto, o DOCUMENTO passa a rolar (URL recolhe) e a loja some no mobile.
   useEffect(() => {
     if (!productPageOpen) return;
     document.documentElement.classList.add('product-scroll');
-    window.scrollTo(0, 0);
+    scrollProductTop();
     return () => document.documentElement.classList.remove('product-scroll');
   }, [productPageOpen]);
   // Troca de produto (relacionados) com a página aberta: volta ao topo.
   useEffect(() => {
-    if (productPageOpen) window.scrollTo(0, 0);
+    if (productPageOpen) scrollProductTop();
   }, [selectedProduct?.id, productPageOpen]);
 
   // Announcement bar: rotate phrases with fade
