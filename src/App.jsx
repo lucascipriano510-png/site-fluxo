@@ -2752,7 +2752,7 @@ function App() {
                          <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw" />
+                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw" fixedWidth={isDesktopViewport ? 1280 : undefined} />
                              </div>
                            ))}
                          </AutoScrollGallery>
