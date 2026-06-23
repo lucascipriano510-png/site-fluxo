@@ -32,7 +32,7 @@ function normalizePhoneBR(raw) {
  * Dispara um evento para a Meta via Edge Function.
  * Não lança erros — apenas loga no console.
  */
-async function dispatchCAPI(eventName, { phone, value, name, currency = 'BRL', event_id } = {}) {
+async function dispatchCAPI(eventName, { phone, value, name, currency = 'BRL', event_id, fbp, fbc, event_source_url, user_agent } = {}) {
   try {
     const payload = {
       event_name: eventName,
@@ -42,6 +42,12 @@ async function dispatchCAPI(eventName, { phone, value, name, currency = 'BRL', e
       currency,
     };
     if (event_id) payload.event_id = event_id;
+    // EMQ: parâmetros do CLIENTE capturados no checkout (do pedido). Melhoram o
+    // match do Purchase. Só anexa o que existir (venda manual/WhatsApp pode não ter).
+    if (fbp) payload.fbp = fbp;
+    if (fbc) payload.fbc = fbc;
+    if (event_source_url) payload.event_source_url = event_source_url;
+    if (user_agent) payload.user_agent = user_agent;
 
     const headers = {
       'x-webhook-secret': WEBHOOK_SECRET,
@@ -68,12 +74,12 @@ async function dispatchCAPI(eventName, { phone, value, name, currency = 'BRL', e
  * Dispara o evento Purchase para a Meta via Edge Function.
  * event_id é OBRIGATÓRIO (dedup Pixel↔CAPI + idempotência). Sem ele, NÃO envia.
  */
-export async function dispatchCAPIPurchase({ phone, value, name, event_id } = {}) {
+export async function dispatchCAPIPurchase({ phone, value, name, event_id, fbp, fbc, event_source_url, user_agent } = {}) {
   if (!event_id) {
     console.warn('[capi] Purchase sem event_id — NÃO enviado (dedup obrigatório).');
     return { ok: false, error: 'event_id is required for Purchase' };
   }
-  return dispatchCAPI('Purchase', { phone, value, name, event_id });
+  return dispatchCAPI('Purchase', { phone, value, name, event_id, fbp, fbc, event_source_url, user_agent });
 }
 
 /**

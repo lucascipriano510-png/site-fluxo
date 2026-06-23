@@ -61,9 +61,9 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 // 🔖 Version stamp — atualize a cada deploy para auditar o que está publicado.
-const FN_VERSION = '2026-06-19.1';
+const FN_VERSION = '2026-06-23.1';
 const FN_NAME    = 'webhook-meta';
-const FN_NOTES   = 'P17: event_id obrigatorio p/ Purchase; idempotencia por event_id; sem test_event_code em producao';
+const FN_NOTES   = 'P17 intacto (event_id/idempotencia). EMQ: admin nao usa IP/UA do request (sao do admin); usa fbp/fbc/UA/url do body (capturados no checkout do cliente).';
 
 console.log(`[${FN_NAME}] boot version=${FN_VERSION} notes="${FN_NOTES}"`);
 
@@ -145,10 +145,19 @@ Deno.serve(async (req) => {
 
   const eventId    = String(body?.event_id || crypto.randomUUID());
   const sourceUrl  = String(body?.event_source_url || '');
-  const userAgent  = String(body?.user_agent || req.headers.get('user-agent') || '');
+  // EMQ: Purchase/Refund são SEMPRE relay do admin (o request é do admin, não do
+  // cliente) -> NÃO usar IP/UA do request (sinal errado piora o match). Usa só o
+  // que veio no body (fbp/fbc/UA/url capturados no checkout do cliente e gravados
+  // no pedido). Eventos do navegador (AddToCart/InitiateCheckout/PageView) vêm do
+  // próprio cliente -> usa o x-forwarded-for / user-agent reais do request.
+  const isRelayed  = (eventName === 'Purchase' || eventName === 'Refund');
+  const userAgent  = String(body?.user_agent || (isRelayed ? '' : (req.headers.get('user-agent') || '')));
   const fbp        = body?.fbp ? String(body.fbp) : null;
   const fbc        = body?.fbc ? String(body.fbc) : null;
-  const clientIp   = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null;
+  const fwdIp      = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null;
+  const clientIp   = isRelayed
+    ? (body?.client_ip_address ? String(body.client_ip_address) : null)
+    : fwdIp;
   const customData = (body?.custom_data && typeof body.custom_data === 'object') ? body.custom_data : {};
 
   // Para Purchase manter validações fortes (registro de venda)

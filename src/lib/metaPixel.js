@@ -38,6 +38,7 @@ export function initMetaPixel() {
   /* eslint-enable */
 
   try {
+    ensureFbc(); // reconstrói _fbc do fbclid antes de qualquer evento
     window.fbq('init', META_PIXEL_ID);
     // PageView inicial (com event_id pra permitir dedup com a CAPI)
     trackEvent('PageView');
@@ -60,6 +61,33 @@ function readCookie(name) {
   if (typeof document === 'undefined') return null;
   const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
   return m ? decodeURIComponent(m[1]) : null;
+}
+
+// EMQ: garante o cookie _fbc no formato oficial da Meta (fb.1.<ts>.<fbclid>)
+// quando o usuário chega via anúncio (?fbclid=...) e o Pixel ainda não criou o
+// cookie. Persiste 90 dias (padrão Meta). Não sobrescreve um _fbc existente.
+export function ensureFbc() {
+  try {
+    if (typeof window === 'undefined') return;
+    if (readCookie('_fbc')) return;
+    const fbclid = new URLSearchParams(window.location.search).get('fbclid');
+    if (!fbclid) return;
+    const fbc = `fb.1.${Date.now()}.${fbclid}`;
+    const exp = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toUTCString();
+    document.cookie = `_fbc=${fbc}; expires=${exp}; path=/; SameSite=Lax`;
+  } catch (e) { /* silencioso */ }
+}
+
+// Coleta os parâmetros de browser do CLIENTE (pra gravar no pedido e enviar no
+// Purchase depois). fbc já reconstruído por ensureFbc() se veio de anúncio.
+export function getMetaBrowserParams() {
+  ensureFbc();
+  return {
+    fbp: readCookie('_fbp') || null,
+    fbc: readCookie('_fbc') || null,
+    client_ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+    src_url: typeof window !== 'undefined' ? window.location.href : '',
+  };
 }
 
 async function sendCAPIEvent(payload) {

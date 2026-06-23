@@ -110,11 +110,18 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config,
           const alreadySent = await getOrderPurchaseEventId(purchaseOrderId);
           if (!alreadySent) {
             const purchaseEventId = createMetaEventId();
+            // EMQ: usa os parâmetros do CLIENTE capturados no checkout (gravados no
+            // pedido), não os do admin. Melhora o match do Purchase.
+            const raw = leadToUpdate._raw || {};
             const res = await dispatchCAPIPurchase({
               phone: leadToUpdate.phone,
               value: leadToUpdate.value,
               name: leadToUpdate.name,
               event_id: purchaseEventId,
+              fbp: raw.fbp || null,
+              fbc: raw.fbc || null,
+              event_source_url: raw.src_url || null,
+              user_agent: raw.client_ua || null,
             });
             if (res?.ok) await markOrderPurchaseSent(purchaseOrderId, purchaseEventId);
           }

@@ -23,7 +23,7 @@ import { fetchOrders } from './lib/orders';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
 import { createMetaEventId } from './lib/capi';
-import { initMetaPixel, trackEvent } from './lib/metaPixel';
+import { initMetaPixel, trackEvent, getMetaBrowserParams } from './lib/metaPixel';
 import { criarAtendimentoFromPedido } from './lib/crm';
 import { fetchRatingsBatch } from './lib/reviews';
 // Admin + recharts: code-split. Só baixam quando o painel abre — fora do bundle do cliente.
@@ -1501,6 +1501,11 @@ function App() {
         image: String(item?.image ?? '')
       }));
 
+      // EMQ/CAPI: captura os parâmetros de browser do CLIENTE AGORA (ele está no
+      // site) pra gravar no pedido. O Purchase é disparado depois pelo admin —
+      // sem isso, iria com os dados do admin (IP/UA/cookies errados).
+      const metaParams = getMetaBrowserParams();
+
       // Schema real da tabela: order_number | name | phone | items (jsonb) | value | status
       const payload = {
         order_number: orderNum,
@@ -1509,6 +1514,10 @@ function App() {
         items: itensNormalizados,
         value: totalPedido,
         status: 'NOVO',
+        fbp: metaParams.fbp,
+        fbc: metaParams.fbc,
+        client_ua: metaParams.client_ua,
+        src_url: metaParams.src_url,
       };
 
       console.log('[checkout] enviando pedido:', payload);
