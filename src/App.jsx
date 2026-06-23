@@ -252,8 +252,8 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
             }
           }}
           draggable={false}
-          style={{ pointerEvents: 'none' }}
-          className={`w-full h-full object-contain transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''} transition-transform`}
+          className={`w-full h-full object-contain ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''}`}
+          style={{ pointerEvents: 'none', transition: 'opacity 0.4s' }}
         />
       )}
     </div>
@@ -3446,7 +3446,7 @@ function App() {
                 >
                   <img
                     src={optimizeImage(heroImg, 1600, 90)}
-                    className="w-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                    className="w-full object-contain"
                     style={{ maxHeight: '640px' }}
                     alt={selectedProduct.name}
                     fetchPriority="high"
