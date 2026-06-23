@@ -222,7 +222,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
     return () => clearTimeout(t);
   }, [canLoad]);
 
-  const srcSet = buildSrcSet(src, [320, 480, 640, 900, 1200, 1600], 86);
+  const srcSet = buildSrcSet(src, [320, 480, 640, 900, 1200, 1600], 88);
 
   return (
     <div ref={wrapperRef} className="absolute inset-0">
@@ -2750,7 +2750,7 @@ function App() {
                          <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1024px) 24vw, (min-width: 768px) 31vw, 48vw" />
+                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1024px) 46vw, (min-width: 768px) 50vw, 48vw" />
                              </div>
                            ))}
                          </AutoScrollGallery>
