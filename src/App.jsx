@@ -2282,7 +2282,7 @@ function App() {
         onCollectionFilter={setActiveCollectionFilter}
       />
 
-      <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-screen lg:max-w-[1280px] lg:mx-auto" data-testid="catalog-main">
+      <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-screen lg:max-w-[1500px] lg:mx-auto" data-testid="catalog-main">
         <div className="relative group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
           <input id="search-input" placeholder="Busque por peça, cor, tamanho ou preço…" data-testid="input-search" className="w-full border py-4 pl-14 pr-12 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -2684,7 +2684,7 @@ function App() {
            </div>
         ) : (
            <>
-           <div className="products-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '0 4px', marginLeft: '-20px', marginRight: '-20px', width: 'calc(100% + 40px)' }} data-testid="products-grid">
+           <div className="products-grid-container grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 lg:gap-4 -mx-5 lg:mx-0 px-1 lg:px-0 w-[calc(100%+40px)] lg:w-full" data-testid="products-grid">
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                const hasMultipleImages = [product.image, ...(Array.isArray(product.gallery) ? product.gallery : [])].filter(Boolean).length > 1;
@@ -2750,7 +2750,7 @@ function App() {
                          <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} />
+                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1024px) 24vw, (min-width: 768px) 31vw, 48vw" />
                              </div>
                            ))}
                          </AutoScrollGallery>
