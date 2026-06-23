@@ -34,7 +34,9 @@ export const optimizeImage = (src, width = 600, quality = 90) => {
     if (wsrvFailed) return src;
 
     // Supabase Storage + demais URLs externas: wsrv.nl faz resize + WebP on-the-fly.
-    return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we`;
+    // &sharp = sharpen pós-redução (o pulo do gato): imagem reduzida fica mole;
+    // o sharpen devolve o "estalo" de nitidez que as CDNs profissionais aplicam.
+    return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we&sharp=1.5`;
   } catch {
     return src;
   }

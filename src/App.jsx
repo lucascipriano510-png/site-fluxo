@@ -2691,8 +2691,18 @@ function App() {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                const hasMultipleImages = [product.image, ...(Array.isArray(product.gallery) ? product.gallery : [])].filter(Boolean).length > 1;
                 return (
-                  <div
+                  <motion.div
                     key={product.id}
+                    initial={{ opacity: 0, y: 28 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "80px" }}
+                    transition={{ type: 'spring', damping: 22, stiffness: 180, delay: Math.min(idx, 5) * 0.07 }}
+                    whileHover={!isOutOfStock && !prefersReducedMotion ? {
+                      y: -6,
+                      boxShadow: '0 32px 64px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.14)',
+                      transition: { type: 'spring', damping: 18, stiffness: 280 }
+                    } : {}}
+                    whileTap={!isOutOfStock ? { scale: 0.975, transition: { type: 'spring', damping: 25, stiffness: 400 } } : {}}
                     className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
@@ -2738,9 +2748,14 @@ function App() {
                            );
                          })()}
 
-                         {/* ZERO CAMADAS: imagem plana, sem AutoScrollGallery (scroll/GPU).
-                             Card ja e div puro (sem framer). Teste de nitidez definitivo. */}
-                         <ProductImage src={product.image} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2} order={100 + idx} sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw" />
+                         {/* Galeria do card (catálogo) — passa as fotos ao TOQUE (dedo parado) */}
+                         <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
+                           {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
+                             <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
+                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw" />
+                             </div>
+                           ))}
+                         </AutoScrollGallery>
 
                         {isOutOfStock && (
                            <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px] flex items-center justify-center">
@@ -2935,7 +2950,7 @@ function App() {
                           </div>
                         </div>
                       </motion.div>
-                  </div>
+                  </motion.div>
                 )
              })}
            </div>
