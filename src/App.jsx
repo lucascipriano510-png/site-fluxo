@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Share2 } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
@@ -1470,6 +1470,21 @@ function App() {
     setSelectedProduct(product);
     setSelectedSizes({});
     emitSignal('produto_visto', { product }); // sinal: lead olhou esta peça
+  };
+
+  // Compartilhar a peça: usa o share nativo do celular; sem suporte, copia o link.
+  // Usa o deep link ?produto=SKU que o site já entende.
+  const handleShareProduct = async (product) => {
+    if (!product) return;
+    const url = `https://www.fluxooutlet.com.br/?produto=${encodeURIComponent(product.sku || '')}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${product.name} — Fluxo Outlet`, text: 'Olha essa peça da Fluxo Outlet 👇', url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        showToast('Link copiado!');
+      }
+    } catch { /* cancelado pelo usuário — ignora */ }
   };
 
   const handleSizeSelect = (sizeName, maxStock) => {
@@ -3328,6 +3343,7 @@ function App() {
               <div className="relative w-full bg-zinc-900">
                 {/* Voltar — flutua sobre a imagem, logo abaixo da barra Fluxo */}
                 <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="absolute top-3 left-3 z-20 flex items-center gap-1 text-white bg-black/50 backdrop-blur-md rounded-full pl-2 pr-3 py-2 touch-manipulation border border-white/10 active:scale-90 transition-transform text-[10px] font-black uppercase tracking-widest"><ChevronLeft size={16}/> Voltar</button>
+                <button onClick={() => handleShareProduct(selectedProduct)} aria-label="Compartilhar" className="absolute top-3 right-3 z-20 flex items-center justify-center text-white bg-black/50 backdrop-blur-md rounded-full w-9 h-9 touch-manipulation border border-white/10 active:scale-90 transition-transform"><Share2 size={15}/></button>
                 <div
                   className="relative w-full aspect-[4/5] overflow-hidden"
                   style={{ touchAction: 'pan-y' }}
@@ -3579,13 +3595,22 @@ function App() {
                   {/* Topo: caminho + fechar na mesma linha */}
                   <div className="flex items-start justify-between gap-4 mb-8">
                     {renderBreadcrumb()}
-                    <button
-                      onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }}
-                      aria-label="Fechar"
-                      className="shrink-0 w-9 h-9 -mt-1.5 -mr-1.5 flex items-center justify-center rounded-full text-zinc-400 hover:text-white bg-zinc-900 border border-white/10 transition-colors hover:bg-zinc-800"
-                    >
-                      <X size={16}/>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0 -mt-1.5 -mr-1.5">
+                      <button
+                        onClick={() => handleShareProduct(selectedProduct)}
+                        aria-label="Compartilhar"
+                        className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-400 hover:text-white bg-zinc-900 border border-white/10 transition-colors hover:bg-zinc-800"
+                      >
+                        <Share2 size={15}/>
+                      </button>
+                      <button
+                        onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }}
+                        aria-label="Fechar"
+                        className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-400 hover:text-white bg-zinc-900 border border-white/10 transition-colors hover:bg-zinc-800"
+                      >
+                        <X size={16}/>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Cabeçalho do produto — nome herói, rating/ref subordinados */}
