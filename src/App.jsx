@@ -2663,7 +2663,7 @@ function App() {
                   // will-change:transform sempre ligado = downscale ruim do Chrome).
                   <div
                     key={product.id}
-                    className={`cv-card @container group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
+                    className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
                   >
@@ -2783,86 +2783,88 @@ function App() {
                           <h3 className="uppercase line-clamp-1 mb-1.5" style={{ color: '#9CA3AF', fontSize: '9.5px', fontWeight: '500', letterSpacing: '0.1em' }}>
                             {product.name}
                           </h3>
-                          {/* Linha 2 — preço + botão. CONTAINER QUERY: empilha conforme a
-                              largura DO CARD (não da tela). Card apertado (<220px, qualquer
-                              celular no grid de 2 col) → preço em cima, botão full-width
-                              embaixo. Card largo (desktop) → lado-a-lado. */}
-                          <div className="flex flex-col items-stretch gap-2 mb-1.5 @[220px]:flex-row @[220px]:items-center @[220px]:justify-between @[220px]:gap-2">
-                            {(() => {
-                              const live = !isOutOfStock && isOfferLive(product);
-                              const promo = product.promotional_price;
-                              const hasPromo = !isOutOfStock && !live && promo && promo < product.price;
-                              const mainPrice = live ? offerPrice(product) : (hasPromo ? promo : product.price);
-                              const showStrike = live || hasPromo;
-                              return (
-                                <div className="flex flex-col leading-none min-w-0">
-                                  {showStrike && (
-                                    <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>
-                                      {formatBRL(product.price || 0)}
-                                    </span>
+                          {(() => {
+                            const live = !isOutOfStock && isOfferLive(product);
+                            const promo = product.promotional_price;
+                            const hasPromo = !isOutOfStock && !live && promo && promo < product.price;
+                            const mainPrice = live ? offerPrice(product) : (hasPromo ? promo : product.price);
+                            const showStrike = live || hasPromo;
+                            return (
+                              <>
+                                {/* Linha 2 — preço (com riscado) + botão SEMPRE lado a lado.
+                                    O Pix/contador saiu daqui pra uma linha própria abaixo, então
+                                    o botão tem espaço e nunca sobrepõe o preço, mesmo em cards estreitos. */}
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <div className="flex flex-col leading-none min-w-0">
+                                    {showStrike && (
+                                      <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>
+                                        {formatBRL(product.price || 0)}
+                                      </span>
+                                    )}
+                                    <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? '#fde68a' : '#F3F4F6'), fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0, whiteSpace: 'nowrap' }}>
+                                      {formatBRL(mainPrice || 0)}
+                                    </p>
+                                  </div>
+                                  {!isOutOfStock && (
+                                    <motion.button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
+                                      whileHover={prefersReducedMotion ? {} : { scale: 1.04, transition: { duration: 0.15, ease: 'easeOut' } }}
+                                      whileTap={prefersReducedMotion ? {} : { scale: 0.96, transition: { duration: 0.08 } }}
+                                      style={{
+                                        height: '32px', padding: '0 12px', borderRadius: '6px', flexShrink: 0,
+                                        background: 'linear-gradient(135deg, #D4D4D4 0%, #A8A8A8 50%, #C8C8C8 100%)',
+                                        color: '#1a1a1a', fontWeight: '700', fontSize: '10px',
+                                        letterSpacing: '0.08em', textTransform: 'uppercase',
+                                        border: '1px solid rgba(255,255,255,0.15)',
+                                        boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+                                        cursor: 'pointer', fontFamily: 'inherit', outline: 'none',
+                                        touchAction: 'manipulation',
+                                        position: 'relative', overflow: 'hidden',
+                                      }}
+                                    >
+                                      {!prefersReducedMotion && (
+                                        <>
+                                          <style>{`
+                                            @keyframes shineBuy {
+                                              0%,60% { transform: translateX(-180%) skewX(-18deg); }
+                                              100%    { transform: translateX(280%) skewX(-18deg); }
+                                            }
+                                          `}</style>
+                                          <span aria-hidden="true" style={{
+                                            position: 'absolute', inset: 0, overflow: 'hidden',
+                                            borderRadius: 'inherit', pointerEvents: 'none',
+                                          }}>
+                                            <span style={{
+                                              position: 'absolute', top: 0, left: 0,
+                                              width: '28%', height: '100%',
+                                              background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.13), transparent)',
+                                              animation: 'shineBuy 6s ease-in-out infinite',
+                                            }} />
+                                          </span>
+                                        </>
+                                      )}
+                                      COMPRAR
+                                    </motion.button>
                                   )}
-                                  <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? '#fde68a' : '#F3F4F6'), fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0 }}>
-                                    {formatBRL(mainPrice || 0)}
-                                  </p>
-                                  {!isOutOfStock && live ? (
-                                    <OfferCountdown
-                                      target={offerEndsAt(product)}
-                                      variant="compact"
-                                      onExpire={bumpOffers}
-                                      style={{ marginTop: '4px' }}
-                                    />
-                                  ) : !isOutOfStock ? (
-                                    <span style={{ color: '#A1A1AA', fontSize: '9.5px', fontWeight: 600, letterSpacing: '0.02em', marginTop: '3px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                      <span style={{ color: '#32BCAD', display: 'inline-flex' }}><PixIcon size={11} /></span>
-                                      {formatBRL((mainPrice || 0) * 0.95)} no Pix
-                                    </span>
-                                  ) : null}
                                 </div>
-                              );
-                            })()}
-                            {!isOutOfStock && (
-                              <motion.button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
-                                whileHover={prefersReducedMotion ? {} : { scale: 1.04, transition: { duration: 0.15, ease: 'easeOut' } }}
-                                whileTap={prefersReducedMotion ? {} : { scale: 0.96, transition: { duration: 0.08 } }}
-                                style={{
-                                  height: '32px', padding: '0 14px', borderRadius: '6px', flexShrink: 0,
-                                  background: 'linear-gradient(135deg, #D4D4D4 0%, #A8A8A8 50%, #C8C8C8 100%)',
-                                  color: '#1a1a1a', fontWeight: '700', fontSize: '10px',
-                                  letterSpacing: '0.08em', textTransform: 'uppercase',
-                                  border: '1px solid rgba(255,255,255,0.15)',
-                                  boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
-                                  cursor: 'pointer', fontFamily: 'inherit', outline: 'none',
-                                  touchAction: 'manipulation',
-                                  position: 'relative', overflow: 'hidden',
-                                }}
-                              >
-                                {!prefersReducedMotion && (
-                                  <>
-                                    <style>{`
-                                      @keyframes shineBuy {
-                                        0%,60% { transform: translateX(-180%) skewX(-18deg); }
-                                        100%    { transform: translateX(280%) skewX(-18deg); }
-                                      }
-                                    `}</style>
-                                    <span aria-hidden="true" style={{
-                                      position: 'absolute', inset: 0, overflow: 'hidden',
-                                      borderRadius: 'inherit', pointerEvents: 'none',
-                                    }}>
-                                      <span style={{
-                                        position: 'absolute', top: 0, left: 0,
-                                        width: '28%', height: '100%',
-                                        background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.13), transparent)',
-                                        animation: 'shineBuy 6s ease-in-out infinite',
-                                      }} />
-                                    </span>
-                                  </>
-                                )}
-                                COMPRAR
-                              </motion.button>
-                            )}
-                          </div>
+                                {/* Linha 2b — Pix / contador: LARGURA CHEIA embaixo, não disputa espaço com o botão */}
+                                {!isOutOfStock && live ? (
+                                  <OfferCountdown
+                                    target={offerEndsAt(product)}
+                                    variant="compact"
+                                    onExpire={bumpOffers}
+                                    style={{ marginBottom: '6px' }}
+                                  />
+                                ) : !isOutOfStock ? (
+                                  <span style={{ color: '#A1A1AA', fontSize: '9.5px', fontWeight: 600, letterSpacing: '0.02em', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ color: '#32BCAD', display: 'inline-flex' }}><PixIcon size={11} /></span>
+                                    {formatBRL((mainPrice || 0) * 0.95)} no Pix
+                                  </span>
+                                ) : null}
+                              </>
+                            );
+                          })()}
 
                           {/* Selo de frete / entrega local */}
                           {!isOutOfStock && (
