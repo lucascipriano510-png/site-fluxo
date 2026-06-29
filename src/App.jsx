@@ -1212,6 +1212,9 @@ function App() {
   const featuredPeekedRef = useRef(false);
   // Início do toque na galeria do produto aberto (swipe lateral troca a foto).
   const productSwipeRef = useRef({ x: 0, y: 0 });
+  // Posição do scroll do catálogo no momento que um produto foi aberto -> restaurada
+  // ao fechar (o home é desmontado e volta ao topo; isso devolve onde o cliente estava).
+  const catalogScrollRef = useRef(0);
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(_initialUrlFilters.colecao || null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
@@ -1245,6 +1248,16 @@ function App() {
   useEffect(() => {
     if (productPageOpen) scrollProductTop();
   }, [selectedProduct?.id, productPageOpen]);
+  // Ao FECHAR o produto: restaura a posição que o catálogo tinha (o home remontou).
+  // Duplo rAF espera o layout do home reassentar antes de rolar.
+  useEffect(() => {
+    if (productPageOpen) return;
+    const y = catalogScrollRef.current;
+    if (y > 0) {
+      requestAnimationFrame(() => requestAnimationFrame(() => { try { window.scrollTo(0, y); } catch {} }));
+      catalogScrollRef.current = 0;
+    }
+  }, [productPageOpen]);
 
   // Announcement bar: rotate phrases with fade
   const [marqueeIdx, setMarqueeIdx] = useState(0);
@@ -1452,6 +1465,8 @@ function App() {
     if (!product) return;
     // Kits podem ser abertos mesmo sem estoque próprio (estoque vem dos componentes)
     if (!product.is_kit && product.stock <= 0) return;
+    // Guarda onde o catálogo estava p/ restaurar ao voltar (só quando vem da vitrine).
+    if (!productPageOpen) catalogScrollRef.current = window.scrollY || window.pageYOffset || 0;
     setSelectedProduct(product);
     setSelectedSizes({});
     emitSignal('produto_visto', { product }); // sinal: lead olhou esta peça
