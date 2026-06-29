@@ -18,7 +18,10 @@ export const markWsrvFailed = () => {
 };
 
 // Otimização de imagens via CDN (WebP + resize on-the-fly).
-export const optimizeImage = (src, width = 600, quality = 90) => {
+// `sharp` = força do sharpen pós-redução (1 = suave/padrão). Subir ajuda
+// detalhes finos de alto contraste (símbolos, detalhes brancos em tecido escuro)
+// a voltar a "estalar" — é o que mais revela detalhe sem aumentar a resolução.
+export const optimizeImage = (src, width = 600, quality = 90, sharp = 1) => {
   if (!src || typeof src !== 'string') return src;
   if (src.startsWith('data:') || src.startsWith('blob:')) return src;
   try {
@@ -40,7 +43,7 @@ export const optimizeImage = (src, width = 600, quality = 90) => {
     // Supabase Storage + demais URLs externas: wsrv.nl faz resize + WebP on-the-fly.
     // &sharp = sharpen pós-redução (o pulo do gato): imagem reduzida fica mole;
     // o sharpen devolve o "estalo" de nitidez que as CDNs profissionais aplicam.
-    return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we&sharp=1`;
+    return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp&we&sharp=${sharp}`;
   } catch {
     return src;
   }
