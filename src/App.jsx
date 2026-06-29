@@ -3240,10 +3240,20 @@ function App() {
       {selectedProduct && !selectedProduct.is_kit && (() => {
         const productGallery = [selectedProduct.image, ...((Array.isArray(selectedProduct.gallery) ? selectedProduct.gallery : []) || [])].filter(Boolean);
         const heroImg = activeProductImage || selectedProduct.image;
-        const relatedProducts = (products || []).filter(p =>
-          p.id !== selectedProduct.id && !p.is_kit && p.stock > 0 &&
-          (p.category === selectedProduct.category || p.featured)
-        ).slice(0, 4);
+        // Kits que CONTÊM a peça atual (via kit_items) aparecem PRIMEIRO na sugestão.
+        // Kit tem stock 0 por design (disponibilidade vem dos componentes), então NÃO
+        // aplicamos o filtro de stock aqui — só is_active.
+        const linkedKits = (products || []).filter(p =>
+          p.is_kit && p.is_active !== false &&
+          (kitItemsByKit[p.id] || []).includes(selectedProduct.id)
+        );
+        const relatedProducts = [
+          ...linkedKits,
+          ...(products || []).filter(p =>
+            p.id !== selectedProduct.id && !p.is_kit && p.stock > 0 &&
+            (p.category === selectedProduct.category || p.featured)
+          ),
+        ].slice(0, 4);
         // Caminho até o produto: início.categoria.subcategoria.produto (clicável p/ navegar).
         const goHome = () => { setSelectedProduct(null); setSelectedSizes({}); };
         const goCategory = (cat, sub) => {
@@ -3455,6 +3465,7 @@ function App() {
                         >
                           <div className="aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 relative mb-2">
                             <img src={optimizeImage(p.image, 400, 80)} className="w-full h-full object-cover group-active:scale-105 transition-transform duration-300" alt={p.name} loading="lazy" />
+                            {p.is_kit && <span className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md shadow-lg"><Zap size={8} className="fill-zinc-950"/> Kit</span>}
                           </div>
                           <p className="text-[10px] font-black text-zinc-300 uppercase truncate">{p.name}</p>
                           <p className="text-[11px] font-black text-emerald-500">{formatBRL(p.promotional_price || p.price || 0)}</p>
@@ -3648,6 +3659,7 @@ function App() {
                     >
                       <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 relative mb-3">
                         <img src={optimizeImage(p.image, 400, 80)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={p.name} loading="lazy" />
+                        {p.is_kit && <span className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-lg"><Zap size={9} className="fill-zinc-950"/> Kit</span>}
                       </div>
                       <p className="text-[11px] font-black text-zinc-300 uppercase truncate">{p.name}</p>
                       <p className="text-sm font-black text-emerald-500">{formatBRL(p.promotional_price || p.price || 0)}</p>
