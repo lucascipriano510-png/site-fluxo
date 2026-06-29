@@ -386,7 +386,13 @@ const AutoScrollGallery = ({ count = 1, children, auto = false, startDelay = 0 }
         advance();
         timerRef.current = setInterval(advance, AUTOPLAY_MS);
       },
-      deactivate: () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } },
+      // Ao interromper (dedo saiu / tocou em outra área): para o ciclo E volta
+      // SEMPRE pra primeira imagem (a principal), não importa onde parou.
+      // O crossfade de opacidade já faz a volta suave.
+      deactivate: () => {
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+        setIdx(0);
+      },
     };
     galleryRegistry.set(el, controller);
     return () => {
