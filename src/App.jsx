@@ -197,7 +197,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
             }
           }}
           draggable={false}
-          style={{ pointerEvents: 'none', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
+          style={{ pointerEvents: 'none' }}
           className={`w-full h-full object-contain transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''}`}
         />
       )}
@@ -3212,7 +3212,6 @@ function App() {
                   <img
                     src={optimizeImage(heroImg, 1600, 90)}
                     className="w-full h-full object-cover"
-                    style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
                     alt={selectedProduct.name}
                     fetchPriority="high"
                     draggable={false}
@@ -3408,7 +3407,7 @@ function App() {
                   <img
                     src={optimizeImage(heroImg, 1600, 90)}
                     className="w-full object-contain"
-                    style={{ maxHeight: '640px', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
+                    style={{ maxHeight: '640px' }}
                     alt={selectedProduct.name}
                     fetchPriority="high"
                   />
