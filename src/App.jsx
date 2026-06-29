@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Share2 } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Share2, Bell } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
@@ -15,6 +15,7 @@ import { isOfferLive, offerPrice, offerPercent, offerEndsAt, offerCampaign, OFFE
 import { parseQueryIntent, productMatchesIntent, scoreProductForSearch, hasActiveQuery } from './lib/search';
 import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
 import { fetchOrders } from './lib/orders';
+import { requestStockAlert, fetchStockAlerts } from './lib/stockAlerts';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
 import { createMetaEventId } from './lib/capi';
@@ -30,6 +31,7 @@ const AdminDashboard = React.lazy(() => import('./components/AdminDashboard'));
 const AdminRastreio = React.lazy(() => import('./components/AdminRastreio'));
 const AdminCRM = React.lazy(() => import('./components/AdminCRM'));
 const AdminGrowth = React.lazy(() => import('./components/AdminGrowth'));
+const AdminStockAlerts = React.lazy(() => import('./components/AdminStockAlerts'));
 
 // ==========================================
 // 1. CONFIGURAÇÃO E DADOS INICIAIS
@@ -276,6 +278,64 @@ const ProductVideoPip = ({ src }) => {
         aria-label="Fechar vídeo"
         className="absolute top-1 right-1 z-10 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center active:scale-90 transition-transform"
       ><X size={11} /></button>
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────────────────────
+// Modal "Avise-me quando voltar": cliente deixa o telefone num tamanho/produto
+// esgotado -> vira lead (tabela stock_notifications). Aparece de baixo no mobile.
+// ──────────────────────────────────────────────────────────────
+const StockAlertModal = ({ target, onClose, showToast }) => {
+  const [phone, setPhone] = React.useState('');
+  const [sending, setSending] = React.useState(false);
+  if (!target) return null;
+  const { product, size } = target;
+  const submit = async (e) => {
+    e.preventDefault();
+    if (sending) return;
+    setSending(true);
+    const res = await requestStockAlert({ product, size, phone });
+    setSending(false);
+    if (res.ok) { showToast?.('Beleza! Te avisamos quando voltar 🙌'); onClose(); }
+    else showToast?.(res.error || 'Confira o telefone', 'error');
+  };
+  return (
+    <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end lg:items-center justify-center" onClick={onClose}>
+      <form
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={submit}
+        className="w-full lg:max-w-sm bg-zinc-950 border border-white/10 rounded-t-3xl lg:rounded-3xl p-6 space-y-4 shadow-[0_-10px_40px_rgba(0,0,0,0.6)]"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="grid place-items-center w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-400"><Bell size={16}/></span>
+            <div>
+              <h3 className="text-[13px] font-black uppercase tracking-wide text-white leading-tight">Avise-me quando voltar</h3>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase">{product?.name}{size ? ` · Tam ${size}` : ''}</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Fechar" className="text-zinc-500 hover:text-white shrink-0"><X size={18}/></button>
+        </div>
+        <p className="text-[11px] text-zinc-400 leading-snug">Deixa seu WhatsApp que a gente te chama assim que essa peça voltar ao estoque.</p>
+        <input
+          type="tel"
+          inputMode="numeric"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="(34) 9 9999-9999"
+          autoFocus
+          className="w-full p-4 bg-zinc-900 border border-white/10 rounded-2xl text-[15px] font-bold text-white outline-none focus:border-emerald-500/50"
+        />
+        <button
+          type="submit"
+          disabled={sending}
+          className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${sending ? 'bg-zinc-800 text-zinc-500' : 'bg-emerald-500 text-zinc-950 active:scale-[0.98]'}`}
+        >
+          {sending ? 'Enviando…' : <><Bell size={14}/> Quero ser avisado</>}
+        </button>
+      </form>
     </div>
   );
 };
@@ -1118,6 +1178,10 @@ function App() {
   const [recentlyViewed, setRecentlyViewed] = useState(() => {
     try { return JSON.parse(localStorage.getItem('fluxo_recently_viewed') || '[]'); } catch { return []; }
   });
+  // Alvo do modal "Avise-me quando voltar": { product, size } ou null.
+  const [stockAlertTarget, setStockAlertTarget] = useState(null);
+  // Contador de avisos de estoque pendentes (badge na aba admin).
+  const [stockAlertsPending, setStockAlertsPending] = useState(0);
    const [currentPage, setCurrentPage] = useState(() => {
     // Restaura a página a partir do path /paginaN (preferido) ou /pagina/N (fallback legado),
     // depois ?page=N (legado) ou sessionStorage.
@@ -2128,6 +2192,14 @@ function App() {
       .catch(() => {});
   }, [products]);
 
+  // Avisos de estoque pendentes (badge na aba admin "Avisos").
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchStockAlerts()
+      .then(rows => setStockAlertsPending(rows.filter(r => !r.notified).length))
+      .catch(() => {});
+  }, [isAdmin]);
+
   const handleOpenUserDrawer = () => {
     if (userProfile?.phone) {
       setDrawerTab('orders');
@@ -2147,6 +2219,7 @@ function App() {
     { key: 'crm', icon: <MessageCircle size={18}/>, label: 'Atend.' },
     { key: 'growth', icon: <Flame size={18}/>, label: 'Vendas' },
     { key: 'banners', icon: <Megaphone size={18}/>, label: 'Promo' },
+    { key: 'alerts', icon: <Bell size={18}/>, label: 'Avisos', badge: stockAlertsPending > 0 ? (stockAlertsPending > 99 ? '99+' : String(stockAlertsPending)) : null },
     { key: 'config', icon: <Settings size={18}/>, label: 'Setup' },
     { key: 'rastreio', icon: <Database size={18}/>, label: 'CAPI' },
   ];
@@ -2190,6 +2263,7 @@ function App() {
               {adminTab === 'rastreio' && <AdminRastreio />}
               {adminTab === 'crm' && <AdminCRM showToast={showToast} config={config} />}
               {adminTab === 'growth' && <AdminGrowth leads={leads} products={products} config={config} />}
+              {adminTab === 'alerts' && <AdminStockAlerts showToast={showToast} onPendingChange={setStockAlertsPending} />}
               </React.Suspense>
             </AdminTabErrorBoundary>
           </main>
@@ -3532,12 +3606,11 @@ function App() {
                       return (
                         <button
                           key={idx}
-                          disabled={isEsgotado}
-                          onClick={() => !isEsgotado && handleSizeSelect(sz, stock)}
-                          className={`py-4 rounded-xl border font-black text-sm transition-all touch-manipulation flex flex-col items-center justify-center gap-0.5 ${isEsgotado ? 'bg-zinc-900/40 border-zinc-800/50 cursor-not-allowed' : 'bg-zinc-900 border-zinc-800 text-zinc-300 active:scale-95'}`}
+                          onClick={() => isEsgotado ? setStockAlertTarget({ product: selectedProduct, size: sz }) : handleSizeSelect(sz, stock)}
+                          className={`py-4 rounded-xl border font-black text-sm transition-all touch-manipulation flex flex-col items-center justify-center gap-0.5 ${isEsgotado ? 'bg-zinc-900/40 border-zinc-800/50 active:scale-95' : 'bg-zinc-900 border-zinc-800 text-zinc-300 active:scale-95'}`}
                         >
-                          <span className={isEsgotado ? 'text-zinc-700 line-through text-xs' : ''}>{sz}</span>
-                          {isEsgotado && <span className="text-[7px] text-zinc-700 font-black uppercase">Esgotado</span>}
+                          <span className={isEsgotado ? 'text-zinc-600 line-through text-xs' : ''}>{sz}</span>
+                          {isEsgotado && <span className="text-[7px] text-emerald-400 font-black uppercase flex items-center gap-0.5"><Bell size={7}/> Avise-me</span>}
                           {isLowStock && !isEsgotado && <span className="text-[7px] text-red-400 font-black">Ult. {stock}</span>}
                         </button>
                       );
@@ -3735,7 +3808,7 @@ function App() {
                             </div>
                           </div>
                         );
-                        return <button key={idx} disabled={stock <= 0} onClick={() => handleSizeSelect(sz, stock)} className={`py-4 rounded-xl border font-black text-sm transition-all ${stock > 0 ? 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-white hover:text-white hover:bg-zinc-800' : 'bg-zinc-900/50 border-zinc-800 text-zinc-600 opacity-40 cursor-not-allowed'}`}>{sz}</button>;
+                        return <button key={idx} onClick={() => stock > 0 ? handleSizeSelect(sz, stock) : setStockAlertTarget({ product: selectedProduct, size: sz })} className={`py-4 rounded-xl border font-black text-sm transition-all flex flex-col items-center justify-center gap-0.5 ${stock > 0 ? 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-white hover:text-white hover:bg-zinc-800' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:border-emerald-500/40'}`}>{stock > 0 ? sz : <><span className="line-through text-zinc-600">{sz}</span><span className="text-[7px] text-emerald-400 font-black uppercase flex items-center gap-0.5"><Bell size={7}/> Avise-me</span></>}</button>;
                       })}
                     </div>
                   </div>
@@ -3796,6 +3869,9 @@ function App() {
         );
       })()}
       </AnimatePresence>
+
+      {/* Modal "Avise-me quando voltar" (estoque) */}
+      <StockAlertModal target={stockAlertTarget} onClose={() => setStockAlertTarget(null)} showToast={showToast} />
 
       {/* BARRA FLUTUANTE DA SACOLA */}
       {cart.length > 0 && !showCart && !isCartModalOpen && !productPageOpen && (
