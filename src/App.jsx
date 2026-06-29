@@ -1210,6 +1210,8 @@ function App() {
   const [checkoutOrderNumber, setCheckoutOrderNumber] = useState('');
   const featuredRailRef = useRef(null);
   const featuredPeekedRef = useRef(false);
+  // Início do toque na galeria do produto aberto (swipe lateral troca a foto).
+  const productSwipeRef = useRef({ x: 0, y: 0 });
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(_initialUrlFilters.colecao || null);
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
@@ -3311,11 +3313,29 @@ function App() {
               <div className="relative w-full bg-zinc-900">
                 {/* Voltar — flutua sobre a imagem, logo abaixo da barra Fluxo */}
                 <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="absolute top-3 left-3 z-20 flex items-center gap-1 text-white bg-black/50 backdrop-blur-md rounded-full pl-2 pr-3 py-2 touch-manipulation border border-white/10 active:scale-90 transition-transform text-[10px] font-black uppercase tracking-widest"><ChevronLeft size={16}/> Voltar</button>
-                <div className="relative w-full aspect-[4/5] overflow-hidden">
+                <div
+                  className="relative w-full aspect-[4/5] overflow-hidden"
+                  style={{ touchAction: 'pan-y' }}
+                  onTouchStart={(e) => { const t = e.touches[0]; productSwipeRef.current = { x: t.clientX, y: t.clientY }; }}
+                  onTouchEnd={(e) => {
+                    if (productGallery.length <= 1) return;
+                    const t = e.changedTouches[0];
+                    const dx = t.clientX - productSwipeRef.current.x;
+                    const dy = t.clientY - productSwipeRef.current.y;
+                    // Só conta como swipe se for horizontal o suficiente (e mais que vertical).
+                    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+                      const i = Math.max(0, productGallery.indexOf(heroImg));
+                      const next = dx < 0
+                        ? (i + 1) % productGallery.length
+                        : (i - 1 + productGallery.length) % productGallery.length;
+                      setActiveProductImage(productGallery[next]);
+                    }
+                  }}
+                >
                   {/* LQIP blur-up atrás do hero pesado (1600px): preview instantâneo
                       do produto -> nunca aparece quadrado vazio ao abrir o card. */}
                   <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url("${optimizeImage(heroImg, 40, 35)}")`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(12px)', transform: 'scale(1.06)' }} />
-                  {/* Imagem única — troca só por TOQUE nas miniaturas/pontos (sem arrastar) */}
+                  {/* Troca a foto por SWIPE lateral (handlers no container) ou toque nas miniaturas/pontos */}
                   <img
                     src={optimizeImage(heroImg, 1600, 90)}
                     className="relative z-[1] w-full h-full object-cover"
