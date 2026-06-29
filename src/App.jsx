@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Play } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
@@ -259,9 +259,6 @@ const ProductVideoPip = ({ src }) => {
       >
         {videoEl('w-full h-full', { objectFit: 'cover', pointerEvents: 'none' })}
       </button>
-      <span className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-black/55 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md pointer-events-none">
-        <Play size={8} className="fill-white" /> Vídeo
-      </span>
       <button
         onClick={(e) => { e.stopPropagation(); setClosed(true); }}
         aria-label="Fechar vídeo"
@@ -2291,8 +2288,13 @@ function App() {
         </div>
       </header>
 
-      {/* CORPO DA LOJA — oculto no mobile quando a página de produto está aberta */}
-      <div className={productPageOpen ? 'hidden lg:block' : ''}>
+      {/* CORPO DA LOJA — DESMONTADO (não só escondido) quando a página de produto
+          está aberta. Ao abrir um produto, o site inteiro (catálogo, banners e TODOS
+          os observers/imagens dos cards) sai da árvore React = libera banda e CPU
+          100% pro card aberto (imagens extras + vídeo carregam rápido, nada do site
+          carrega junto). Fechar o produto remonta o home. */}
+      {!productPageOpen && (
+      <div>
 
       {/* ── Barra de Benefícios ─────────────────────────────── */}
       <div
@@ -3169,6 +3171,7 @@ function App() {
         </div>
       </footer>
       </div>
+      )}
       {/* /CORPO DA LOJA */}
 
       {showAdminLogin && (
