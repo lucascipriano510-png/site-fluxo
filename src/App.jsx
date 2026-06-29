@@ -1318,14 +1318,21 @@ function App() {
   useEffect(() => {
     if (productPageOpen) scrollProductTop();
   }, [selectedProduct?.id, productPageOpen]);
-  // Ao FECHAR o produto: restaura a posição que o catálogo tinha (o home remontou).
-  // Duplo rAF espera o layout do home reassentar antes de rolar.
+  // Ao FECHAR o produto: restaura a posição do catálogo (#root, não window).
+  // O home remonta e a altura assenta aos poucos -> reescreve algumas vezes até colar.
   useEffect(() => {
     if (productPageOpen) return;
     const y = catalogScrollRef.current;
     if (y > 0) {
-      requestAnimationFrame(() => requestAnimationFrame(() => { try { window.scrollTo(0, y); } catch {} }));
-      catalogScrollRef.current = 0;
+      const doScroll = () => {
+        const root = document.getElementById('root');
+        if (root) root.scrollTop = y;
+        try { window.scrollTo(0, y); } catch {}
+      };
+      requestAnimationFrame(() => requestAnimationFrame(doScroll));
+      setTimeout(doScroll, 60);
+      setTimeout(doScroll, 180);
+      setTimeout(() => { doScroll(); catalogScrollRef.current = 0; }, 320);
     }
   }, [productPageOpen]);
 
@@ -1536,7 +1543,11 @@ function App() {
     // Kits podem ser abertos mesmo sem estoque próprio (estoque vem dos componentes)
     if (!product.is_kit && product.stock <= 0) return;
     // Guarda onde o catálogo estava p/ restaurar ao voltar (só quando vem da vitrine).
-    if (!productPageOpen) catalogScrollRef.current = window.scrollY || window.pageYOffset || 0;
+    // IMPORTANTE: o catálogo rola pelo #root (overflow-y:scroll), NÃO pela window.
+    if (!productPageOpen) {
+      const root = document.getElementById('root');
+      catalogScrollRef.current = root ? root.scrollTop : (window.scrollY || 0);
+    }
     setSelectedProduct(product);
     setSelectedSizes({});
     emitSignal('produto_visto', { product }); // sinal: lead olhou esta peça
