@@ -163,7 +163,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
       (entries) => entries.forEach((entry) => {
         if (entry.isIntersecting) { setInView(true); io.disconnect(); }
       }),
-      { rootMargin: '1400px 0px', threshold: 0.01 }
+      { rootMargin: '2500px 0px', threshold: 0.01 }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -175,8 +175,20 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
 
   return (
     <div ref={wrapperRef} className="absolute inset-0">
-      {!loaded && (
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%)', backgroundSize: '200% 100%', animation: 'skeleton-shine 1.4s ease-in-out infinite', zIndex: 1 }} />
+      {/* LQIP blur-up: preview minúsculo (~32px, <1KB) do PRÓPRIO produto aparece
+          quase instantâneo no lugar do "quadrado vazio carregando". A imagem nítida
+          entra por cima e o preview some -> o cliente nunca encara espaço vazio
+          esperando (efeito Netshoes). Só carrega perto do viewport (gated por inView). */}
+      {(priority || inView) && !loaded && src && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0, zIndex: 1,
+            backgroundImage: `url("${optimizeImage(src, 32, 35)}")`,
+            backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+            filter: 'blur(10px)', transform: 'scale(1.04)',
+          }}
+        />
       )}
       {(priority || inView) && (
         <img
@@ -198,7 +210,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
           }}
           draggable={false}
           style={{ pointerEvents: 'none' }}
-          className={`w-full h-full object-contain transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''}`}
+          className={`w-full h-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''}`}
         />
       )}
     </div>
@@ -3290,10 +3302,13 @@ function App() {
                 {/* Voltar — flutua sobre a imagem, logo abaixo da barra Fluxo */}
                 <button onClick={() => { setSelectedProduct(null); setSelectedSizes({}); }} className="absolute top-3 left-3 z-20 flex items-center gap-1 text-white bg-black/50 backdrop-blur-md rounded-full pl-2 pr-3 py-2 touch-manipulation border border-white/10 active:scale-90 transition-transform text-[10px] font-black uppercase tracking-widest"><ChevronLeft size={16}/> Voltar</button>
                 <div className="relative w-full aspect-[4/5] overflow-hidden">
+                  {/* LQIP blur-up atrás do hero pesado (1600px): preview instantâneo
+                      do produto -> nunca aparece quadrado vazio ao abrir o card. */}
+                  <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url("${optimizeImage(heroImg, 40, 35)}")`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(12px)', transform: 'scale(1.06)' }} />
                   {/* Imagem única — troca só por TOQUE nas miniaturas/pontos (sem arrastar) */}
                   <img
                     src={optimizeImage(heroImg, 1600, 90)}
-                    className="w-full h-full object-cover"
+                    className="relative z-[1] w-full h-full object-cover"
                     alt={selectedProduct.name}
                     fetchPriority="high"
                     draggable={false}
@@ -3486,9 +3501,11 @@ function App() {
                   style={{ maxHeight: '640px' }}
                   aria-label="Ampliar foto"
                 >
+                  {/* LQIP blur-up atrás do hero pesado (1600px): preview instantâneo */}
+                  <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url("${optimizeImage(heroImg, 40, 35)}")`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', filter: 'blur(12px)', transform: 'scale(1.04)' }} />
                   <img
                     src={optimizeImage(heroImg, 1600, 90)}
-                    className="w-full object-contain"
+                    className="relative z-[1] w-full object-contain"
                     style={{ maxHeight: '640px' }}
                     alt={selectedProduct.name}
                     fetchPriority="high"
