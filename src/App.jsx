@@ -4331,12 +4331,11 @@ function App() {
         }
 
         img {
-          image-rendering: -webkit-optimize-contrast;
-          image-rendering: high-quality;
-          image-rendering: crisp-edges;
-          -webkit-backface-visibility: hidden;
-          backface-visibility: hidden;
-          transform: translateZ(0);
+          /* auto = downscaling suave e de alta qualidade do navegador (correto p/
+             FOTO). crisp-edges/optimize-contrast serrilhavam a foto reduzida; e o
+             translateZ forcava cada img p/ camada GPU (rasterizada em baixa res).
+             Eram a causa real do "borrado/perdeu pixels" no desktop E no mobile. */
+          image-rendering: auto;
           object-fit: cover;
           display: block;
           max-width: 100%;
