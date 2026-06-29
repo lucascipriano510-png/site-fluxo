@@ -1112,6 +1112,12 @@ function App() {
   const [selectedColor, setSelectedColor] = useState('TODOS');
   const [priceRange, setPriceRange] = useState('TODOS');
   const [kitsOnly, setKitsOnly] = useState(!!_initialUrlFilters.kits);
+  // Ordenação escolhida pelo cliente: relevancia (padrão) | preco_asc | preco_desc | novidades
+  const [sortMode, setSortMode] = useState('relevancia');
+  // Histórico "vistos recentemente" (ids), persistido no localStorage.
+  const [recentlyViewed, setRecentlyViewed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('fluxo_recently_viewed') || '[]'); } catch { return []; }
+  });
    const [currentPage, setCurrentPage] = useState(() => {
     // Restaura a página a partir do path /paginaN (preferido) ou /pagina/N (fallback legado),
     // depois ?page=N (legado) ou sessionStorage.
@@ -1470,6 +1476,12 @@ function App() {
     setSelectedProduct(product);
     setSelectedSizes({});
     emitSignal('produto_visto', { product }); // sinal: lead olhou esta peça
+    // Histórico "vistos recentemente" (id no topo, único, máx 12).
+    setRecentlyViewed(prev => {
+      const next = [product.id, ...prev.filter(id => id !== product.id)].slice(0, 12);
+      try { localStorage.setItem('fluxo_recently_viewed', JSON.stringify(next)); } catch {}
+      return next;
+    });
   };
 
   // Compartilhar a peça: usa o share nativo do celular; sem suporte, copia o link.
@@ -1836,6 +1848,14 @@ function App() {
   }, [productsLoaded, products]);
 
   const sortedProducts = useMemo(() => {
+    // Ordenação EXPLÍCITA do cliente tem prioridade (inclusive sobre a busca).
+    if (sortMode === 'preco_asc' || sortMode === 'preco_desc') {
+      const ep = (p) => Number(p.promotional_price || p.price || 0);
+      return [...filteredProducts].sort((a, b) => sortMode === 'preco_asc' ? ep(a) - ep(b) : ep(b) - ep(a));
+    }
+    if (sortMode === 'novidades') {
+      return [...filteredProducts].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    }
     // Com busca ativa: ordena por RELEVÂNCIA (nome exato > começa com > contém...).
     if (searchActive) {
       return [...filteredProducts]
@@ -1855,7 +1875,16 @@ function App() {
       if (bSales !== aSales) return bSales - aSales;
       return 0;
     });
-  }, [filteredProducts, ratingsMap, searchActive, searchIntent]);
+  }, [filteredProducts, ratingsMap, searchActive, searchIntent, sortMode]);
+
+  // Produtos do histórico (ids -> objetos atuais), só os que ainda existem/têm estoque
+  // e excluindo o que está aberto agora.
+  const recentlyViewedProducts = useMemo(() => (
+    (recentlyViewed || [])
+      .map(id => (products || []).find(p => p.id === id))
+      .filter(p => p && (p.is_kit || (p.stock || 0) > 0) && p.id !== selectedProduct?.id)
+      .slice(0, 10)
+  ), [recentlyViewed, products, selectedProduct?.id]);
 
   const totalPages = Math.max(1, Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE));
   const paginatedProducts = useMemo(() => {
@@ -2753,13 +2782,46 @@ function App() {
           return <SubBanner banner={midBanner} whatsapp={config?.whatsapp} />;
         })()}
 
+        {/* Vistos recentemente — trilha horizontal (só fora de busca, p/ não poluir) */}
+        {recentlyViewedProducts.length > 0 && !searchActive && (
+          <div className="pt-1 animate-in">
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/90 mb-3">Vistos recentemente</p>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5 lg:mx-0 lg:px-0" style={{ touchAction: 'pan-x pan-y' }}>
+              {recentlyViewedProducts.map(p => (
+                <button key={p.id} onClick={() => handleProductClick(p)} className="shrink-0 w-24 lg:w-32 text-left group">
+                  <div className="aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 relative mb-1.5">
+                    <img src={optimizeImage(p.image, 300, 78)} loading="lazy" decoding="async" className="w-full h-full object-cover group-active:scale-105 transition-transform duration-300" alt={p.name} />
+                    {p.is_kit && <span className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md"><Zap size={8} className="fill-zinc-950"/> Kit</span>}
+                  </div>
+                  <p className="text-[9px] font-black uppercase text-zinc-300 truncate">{p.name}</p>
+                  <p className="text-[10px] font-black text-emerald-500">{formatBRL(p.promotional_price || p.price || 0)}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {filteredProducts.length > 0 && (
-          <div className="flex items-center justify-between pt-1 animate-in">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/90">Peças Disponíveis</span>
-            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 flex items-center gap-1.5" data-testid="products-count">
-              <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 animate-pulse"></span>
-              {filteredProducts.length} {filteredProducts.length === 1 ? 'peça' : 'peças'}
-            </span>
+          <div className="flex items-center justify-between gap-3 pt-1 animate-in">
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/90 shrink-0">Peças Disponíveis</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 flex items-center gap-1.5 shrink-0" data-testid="products-count">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 animate-pulse"></span>
+                {filteredProducts.length} {filteredProducts.length === 1 ? 'peça' : 'peças'}
+              </span>
+              <select
+                value={sortMode}
+                onChange={(e) => { setSortMode(e.target.value); setCurrentPage(1); }}
+                aria-label="Ordenar"
+                className="bg-zinc-900 border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-wider text-zinc-200 px-2.5 py-1.5 outline-none focus:border-emerald-500/50 cursor-pointer appearance-none"
+                style={{ backgroundImage: 'none' }}
+              >
+                <option value="relevancia">Ordenar: Relevância</option>
+                <option value="preco_asc">Menor preço</option>
+                <option value="preco_desc">Maior preço</option>
+                <option value="novidades">Novidades</option>
+              </select>
+            </div>
           </div>
         )}
 
