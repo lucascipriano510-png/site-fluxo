@@ -4301,7 +4301,6 @@ function App() {
           font-family: 'Inter', sans-serif;
           -webkit-tap-highlight-color: transparent;
           background-color: #09090b;
-          image-rendering: -webkit-optimize-contrast;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
         }
