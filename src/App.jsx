@@ -2663,7 +2663,7 @@ function App() {
                   // will-change:transform sempre ligado = downscale ruim do Chrome).
                   <div
                     key={product.id}
-                    className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-transform duration-300 ease-out ${!isOutOfStock ? 'hover:-translate-y-1.5 active:scale-[0.98]' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
+                    className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
                   >
