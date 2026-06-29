@@ -32,6 +32,7 @@ export async function upsertProduct(product) {
     collection_name: product.collection_name || null,
     is_kit: !!product.is_kit,
     gallery: Array.isArray(product.gallery) ? product.gallery : [],
+    video_url: product.video_url || null,
     updated_at: new Date().toISOString(),
     // Campos novos — opcionais, compatíveis com produtos antigos
     is_active: product.is_active !== false,
@@ -183,6 +184,37 @@ export async function uploadImage(file) {
   // Obtém a URL pública
   const { data: { publicUrl } } = supabase.storage
     .from('product-images')
+    .getPublicUrl(filePath);
+
+  return publicUrl;
+}
+
+// ===== STORAGE (VÍDEOS) =====
+
+/**
+ * Faz upload de um vídeo curto do produto para o bucket 'product-videos'
+ * e retorna a URL pública. Sem compressão (o navegador toca o MP4 direto,
+ * mudo/loop). Mantenha vídeos curtos (5–15s) e leves.
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+export async function uploadVideo(file) {
+  if (!file) return null;
+  const fileExt = (file.name.split('.').pop() || 'mp4').toLowerCase();
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+  const filePath = `uploads/${fileName}`;
+
+  const { error } = await supabase.storage
+    .from('product-videos')
+    .upload(filePath, file, { contentType: file.type || 'video/mp4' });
+
+  if (error) {
+    console.error('[storage] upload de vídeo falhou:', error.message);
+    throw error;
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('product-videos')
     .getPublicUrl(filePath);
 
   return publicUrl;

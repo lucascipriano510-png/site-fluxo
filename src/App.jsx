@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Play } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
@@ -201,6 +201,72 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
           className={`w-full h-full object-contain transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''}`}
         />
       )}
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────────────────────
+// Pop-up flutuante de VÍDEO do produto (canto inferior esquerdo da página
+// do produto aberto). Aparece SÓ quando o produto tem video_url (opcional).
+// SEMPRE mudo (autoplay/loop/playsInline — único jeito de tocar sozinho no
+// iPhone). Toque AMPLIA (continua mudo, nunca tem som); X fecha o quadradinho.
+// ──────────────────────────────────────────────────────────────
+const ProductVideoPip = ({ src }) => {
+  const [closed, setClosed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const vidRef = useRef(null);
+  // Garante mudo + tenta dar play (iOS só faz autoplay se mudo + playsInline).
+  useEffect(() => {
+    const v = vidRef.current;
+    if (v) { v.muted = true; v.play?.().catch(() => {}); }
+  }, [src, expanded]);
+  if (!src || closed) return null;
+
+  const videoEl = (cls, style) => (
+    <video ref={vidRef} src={src} muted loop autoPlay playsInline preload="auto" className={cls} style={style} />
+  );
+
+  if (expanded) {
+    return (
+      <div
+        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6"
+        onClick={() => setExpanded(false)}
+        role="dialog"
+        aria-label="Vídeo do produto ampliado"
+      >
+        <div className="relative" onClick={(e) => e.stopPropagation()}>
+          {videoEl('max-h-[82vh] max-w-[92vw] rounded-2xl shadow-2xl', { objectFit: 'contain' })}
+          <button
+            onClick={() => setExpanded(false)}
+            aria-label="Fechar vídeo"
+            className="absolute -top-3 -right-3 bg-white text-zinc-950 rounded-full w-9 h-9 flex items-center justify-center shadow-xl active:scale-90 transition-transform"
+          ><X size={18} /></button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="fixed z-[90] left-3 bottom-[92px] lg:bottom-6 w-[108px] lg:w-[132px] aspect-[3/4] rounded-2xl overflow-hidden border border-white/15 bg-zinc-950 shadow-[0_12px_30px_rgba(0,0,0,0.55)]"
+      style={{ animation: 'pipIn 0.3s ease-out' }}
+    >
+      <style>{`@keyframes pipIn { from { opacity: 0; transform: translateY(12px) scale(0.92); } to { opacity: 1; transform: none; } }`}</style>
+      <button
+        onClick={() => setExpanded(true)}
+        className="block w-full h-full touch-manipulation"
+        aria-label="Ampliar vídeo do produto"
+      >
+        {videoEl('w-full h-full', { objectFit: 'cover', pointerEvents: 'none' })}
+      </button>
+      <span className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-black/55 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md pointer-events-none">
+        <Play size={8} className="fill-white" /> Vídeo
+      </span>
+      <button
+        onClick={(e) => { e.stopPropagation(); setClosed(true); }}
+        aria-label="Fechar vídeo"
+        className="absolute top-1 right-1 z-10 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center active:scale-90 transition-transform"
+      ><X size={11} /></button>
     </div>
   );
 };
@@ -3198,6 +3264,8 @@ function App() {
         );
         return (
         <React.Fragment key={`product-modal-${selectedProduct.id}`}>
+          {/* Pop-up flutuante de vídeo (opcional, só se o produto tiver video_url) */}
+          <ProductVideoPip key={`pip-${selectedProduct.id}`} src={selectedProduct.video_url} />
           {/* ── MOBILE: página de produto em fluxo no documento (oculto no desktop) ── */}
           {/* A barra real (hambúrguer/logo/perfil/sacola) fica sticky logo acima — barra compartilhada com o home. */}
           <motion.div

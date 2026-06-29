@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Barcode, Camera, Check, Clock, Edit3, Flame, Home, Image as ImageIcon, ImagePlus, Layers, Minus, Plus, RefreshCcw, Scan, ScanLine, Search, Tag, Trash2, Upload, X, Zap } from 'lucide-react';
+import { Barcode, Camera, Check, Clock, Edit3, Film, Flame, Home, Image as ImageIcon, ImagePlus, Layers, Minus, Plus, RefreshCcw, Scan, ScanLine, Search, Tag, Trash2, Upload, X, Zap } from 'lucide-react';
 import { formatBRL } from '../lib/format';
 import { CAMPAIGN_LABELS, CAMPAIGN_SHORT, OFFER_CAMPAIGNS, formatDayMonth, todayLocalISO } from '../lib/offers';
-import { fetchKitItems, saveKitItems, upsertProduct } from '../lib/supabase';
+import { fetchKitItems, saveKitItems, upsertProduct, uploadVideo } from '../lib/supabase';
 
 const AdminInventory = ({ products, setProducts, showToast, availableCollections, productImageFile, setProductImageFile, uploadImage }) => {
   const [editMode, setEditMode] = useState(null);
@@ -59,6 +59,9 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
   const [isKit, setIsKit] = useState(false);
   const [galleryUrls, setGalleryUrls] = useState([]);
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  // Vídeo opcional do produto (pop-up flutuante na página do produto).
+  const [videoUrl, setVideoUrl] = useState('');
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [kitComponentIds, setKitComponentIds] = useState([]);
   const [kitSearch, setKitSearch] = useState('');
 
@@ -84,6 +87,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setFormSizes(normalizedSizes.length > 0 ? normalizedSizes : [{ size: 'U', stock: editMode.stock || 0 }]);
       setIsKit(!!editMode.is_kit);
       setGalleryUrls(Array.isArray(editMode.gallery) ? editMode.gallery : []);
+      setVideoUrl(editMode.video_url || '');
       setIsActive(editMode.is_active !== false);
       setColor(editMode.color || '');
       setSecondaryColors(Array.isArray(editMode.secondary_colors) ? editMode.secondary_colors : []);
@@ -109,6 +113,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setFormSizes([{ size: 'P', stock: 5 }, { size: 'M', stock: 5 }]);
       setIsKit(false);
       setGalleryUrls([]);
+      setVideoUrl('');
       setKitComponentIds([]);
       setIsActive(true);
       setColor('');
@@ -151,6 +156,27 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
   };
 
   const removeGalleryUrl = (url) => setGalleryUrls(prev => prev.filter(u => u !== url));
+
+  const handleVideoFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Limite defensivo: 50MB. Vídeo de produto deve ser curto/leve.
+    if (file.size > 50 * 1024 * 1024) {
+      showToast('Vídeo muito grande (máx. 50MB). Use um clipe curto/comprimido.', 'error');
+      e.target.value = '';
+      return;
+    }
+    setIsUploadingVideo(true);
+    try {
+      const url = await uploadVideo(file);
+      if (url) { setVideoUrl(url); showToast('Vídeo adicionado'); }
+    } catch (err) {
+      showToast('Erro ao subir vídeo: ' + err.message, 'error');
+    } finally {
+      setIsUploadingVideo(false);
+      e.target.value = '';
+    }
+  };
 
   const toggleKitComponent = (pid) => {
     setKitComponentIds(prev => prev.includes(pid) ? prev.filter(x => x !== pid) : [...prev, pid]);
@@ -325,6 +351,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
         featured: fd.get('featured') === 'on',
         is_kit: isKit,
         gallery: galleryUrls,
+        video_url: videoUrl || null,
         is_active: isActive,
         color: color || null,
         secondary_colors: secondaryColors.length > 0 ? secondaryColors : null,
@@ -356,6 +383,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setEditMode(null);
       setPreviewImage('');
       setProductImageFile(null);
+      setVideoUrl('');
     } catch (err) {
       console.error('[save] erro:', err);
       showToast('Erro ao salvar produto: ' + err.message, 'error');
@@ -600,6 +628,26 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
                 </label>
               </div>
               {isUploadingGallery && <p className="text-[9px] text-emerald-400 font-bold uppercase">Enviando imagens...</p>}
+            </div>
+            {/* Vídeo opcional — vira o pop-up flutuante na página do produto (mudo/loop) */}
+            <div className="space-y-2 pt-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase flex items-center gap-1"><Film size={12}/> Vídeo do produto (opcional)</label>
+              {videoUrl ? (
+                <div className="relative w-[120px] aspect-[3/4] rounded-xl overflow-hidden border border-white/10 bg-zinc-950">
+                  <video src={videoUrl} muted loop autoPlay playsInline className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => setVideoUrl('')} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md"><X size={10}/></button>
+                </div>
+              ) : (
+                <label className="w-[120px] aspect-[3/4] rounded-xl border-2 border-dashed border-white/15 grid place-items-center cursor-pointer hover:border-emerald-500/50 transition-colors">
+                  <div className="flex flex-col items-center gap-1">
+                    <Upload size={18} className="text-emerald-500" />
+                    <span className="text-[8px] font-black uppercase text-zinc-500">Subir vídeo</span>
+                  </div>
+                  <input type="file" accept="video/*" className="hidden" onChange={handleVideoFile} />
+                </label>
+              )}
+              {isUploadingVideo && <p className="text-[9px] text-emerald-400 font-bold uppercase">Enviando vídeo...</p>}
+              <p className="text-[8px] text-zinc-600 leading-snug">Curto (5–15s), comprimido. Toca sozinho mudo num quadradinho flutuante no canto inferior esquerdo.</p>
             </div>
           </div>
 
