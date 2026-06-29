@@ -180,7 +180,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
       )}
       {(priority || inView) && (
         <img
-          src={fullRes ? src : optimizeImage(src, fixedWidth || 1000, fixedWidth ? 90 : 86)}
+          src={fullRes ? src : optimizeImage(src, fixedWidth || 1000, fixedWidth ? 95 : 86)}
           srcSet={srcSet}
           sizes={(fullRes || fixedWidth) ? undefined : (sizesProp || "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw")}
           alt={alt}
@@ -2712,7 +2712,7 @@ function App() {
                          <AutoScrollGallery count={[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).length}>
                            {[product.image, ...((Array.isArray(product.gallery) ? product.gallery : []))].filter(Boolean).map((imgSrc, i) => (
                              <div key={i} style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always', flexShrink: 0, width: '100%', height: '100%', position: 'relative' }}>
-                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1536px) 290px, (min-width: 1024px) 19vw, (min-width: 768px) 24vw, 48vw" fixedWidth={isDesktopViewport ? Math.round(480 * Math.min((typeof window !== 'undefined' && window.devicePixelRatio) || 1, 2.5)) : undefined} />
+                               <ProductImage src={imgSrc} alt={product.name} isOutOfStock={isOutOfStock} priority={idx < 2 && i === 0} order={i === 0 ? 100 + idx : 2000 + idx * 10 + i} sizes="(min-width: 1536px) 290px, (min-width: 1024px) 19vw, (min-width: 768px) 24vw, 48vw" fixedWidth={isDesktopViewport ? Math.round(360 * Math.min((typeof window !== 'undefined' && window.devicePixelRatio) || 1, 2.5)) : undefined} />
                              </div>
                            ))}
                          </AutoScrollGallery>
