@@ -3,6 +3,7 @@ import { Barcode, Camera, Check, Clock, Edit3, Film, Flame, Home, Image as Image
 import { formatBRL } from '../lib/format';
 import { CAMPAIGN_LABELS, CAMPAIGN_SHORT, OFFER_CAMPAIGNS, formatDayMonth, todayLocalISO } from '../lib/offers';
 import { fetchKitItems, saveKitItems, upsertProduct, uploadVideo } from '../lib/supabase';
+import { optimizeImage } from '../lib/images';
 
 const AdminInventory = ({ products, setProducts, showToast, availableCollections, productImageFile, setProductImageFile, uploadImage }) => {
   const [editMode, setEditMode] = useState(null);
@@ -533,7 +534,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
                {scannedProduct && (
                    <div className="w-full max-w-sm bg-zinc-900 rounded-[32px] p-6 border border-emerald-500/30 shadow-2xl animate-slide-up flex-1 flex flex-col">
                        <div className="flex gap-4 mb-6">
-                           <img src={scannedProduct.image} className="w-24 h-32 object-cover rounded-2xl border border-white/5" alt={scannedProduct.name}/>
+                           <img src={optimizeImage(scannedProduct.image, 280, 78)} loading="lazy" decoding="async" className="w-24 h-32 object-cover rounded-2xl border border-white/5" alt={scannedProduct.name}/>
                            <div className="flex flex-col justify-center">
                                <span className="text-[10px] bg-zinc-950 text-zinc-400 px-3 py-1 rounded-lg font-black uppercase inline-block self-start mb-2 border border-white/5">SKU: {scannedProduct.sku}</span>
                                <h3 className="text-sm font-black text-white uppercase leading-tight">{scannedProduct.name}</h3>
@@ -618,7 +619,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
               <div className="grid grid-cols-4 gap-2">
                 {galleryUrls.map((url, i) => (
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
-                    <img src={url} className="w-full h-full object-cover" alt="" />
+                    <img src={optimizeImage(url, 200, 72)} loading="lazy" decoding="async" className="w-full h-full object-cover" alt="" />
                     <button type="button" onClick={() => removeGalleryUrl(url)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><X size={10}/></button>
                   </div>
                 ))}
@@ -887,7 +888,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
                   return (
                     <button type="button" key={p.id} onClick={() => toggleKitComponent(p.id)} className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all text-left ${selected ? 'bg-amber-400/10 border-amber-400/60' : 'bg-zinc-950 border-white/5 hover:border-white/15'}`}>
                       <div className={`w-5 h-5 rounded grid place-items-center border-2 shrink-0 ${selected ? 'bg-amber-400 border-amber-400' : 'border-zinc-600'}`}>{selected && <Check size={12} className="text-zinc-950" strokeWidth={3}/>}</div>
-                      <img src={p.image} className="w-10 h-10 rounded-lg object-cover border border-white/5" alt="" />
+                      <img src={optimizeImage(p.image, 120, 70)} loading="lazy" decoding="async" className="w-10 h-10 rounded-lg object-cover border border-white/5" alt="" />
                       <div className="flex-1 min-w-0"><p className="text-[11px] font-black uppercase text-white truncate">{p.name}</p><p className="text-[9px] text-zinc-500 font-bold">{p.sku} · {formatBRL(p.price||0)}</p></div>
                     </button>
                   );
@@ -926,7 +927,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
           {filteredInv.map(p => (
             <div key={p.id} className="bg-zinc-900 p-4 rounded-[32px] border border-white/5 flex items-center gap-4 hover:border-white/10 transition-colors">
               <div className="relative">
-                <img src={p.image} className={`w-16 h-16 rounded-[20px] object-cover shrink-0 ${p.stock === 0 ? 'grayscale opacity-50' : ''}`} alt={p.name} />
+                <img src={optimizeImage(p.image, 160, 72)} loading="lazy" decoding="async" className={`w-16 h-16 rounded-[20px] object-cover shrink-0 ${p.stock === 0 ? 'grayscale opacity-50' : ''}`} alt={p.name} />
                 {p.stock === 0 && <span className="absolute -top-2 -right-2 bg-red-500 w-4 h-4 rounded-full border-2 border-zinc-900"></span>}
               </div>
               <div className="flex-1 overflow-hidden">
