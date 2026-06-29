@@ -180,7 +180,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
       )}
       {(priority || inView) && (
         <img
-          src={fullRes ? src : optimizeImage(src, fixedWidth || 1000, fixedWidth ? 95 : 86, fixedWidth ? 2.5 : 1)}
+          src={fullRes ? src : optimizeImage(src, fixedWidth || 1000, fixedWidth ? 95 : 86, fixedWidth ? 1.5 : 1)}
           srcSet={srcSet}
           sizes={(fullRes || fixedWidth) ? undefined : (sizesProp || "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw")}
           alt={alt}
