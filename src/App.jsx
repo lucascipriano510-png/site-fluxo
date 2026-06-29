@@ -2783,8 +2783,10 @@ function App() {
                           <h3 className="uppercase line-clamp-1 mb-1.5" style={{ color: '#9CA3AF', fontSize: '9.5px', fontWeight: '500', letterSpacing: '0.1em' }}>
                             {product.name}
                           </h3>
-                          {/* Linha 2 — preço + botão */}
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                          {/* Linha 2 — preço + botão. Em telas estreitas (card fica
+                              apertado) EMPILHA: preço em cima, botão full-width embaixo,
+                              pra não sobrepor. A partir de 380px volta lado-a-lado. */}
+                          <div className="flex flex-col items-stretch gap-2 mb-1.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between min-[380px]:gap-2">
                             {(() => {
                               const live = !isOutOfStock && isOfferLive(product);
                               const promo = product.promotional_price;
