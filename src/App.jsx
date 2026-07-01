@@ -40,13 +40,9 @@ const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'fluxo-dark-ultimate
 const LEAD_STORAGE_KEY = '@fluxo-outlet:lead-data-v3';
 const BANNERS_STORAGE_KEY = `@${APP_ID}:banners`;
 
-const DEFAULT_PRODUCTS = [
-  { id: 1, sku: 'CAM-BRA-001', name: 'Camiseta Branca Basic', price: 89.90, category: 'VESTUÁRIO', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800', stock: 25, sales: 12, sizes: [{size: 'P', stock: 5}, {size: 'M', stock: 10}, {size: 'G', stock: 10}], featured: true },
-  { id: 2, sku: 'CAL-JOG-001', name: 'Calça Jogger Tech', price: 169.90, category: 'VESTUÁRIO', image: 'https://images.unsplash.com/photo-1552346154-21d32810aba3?w=800', stock: 15, sales: 8, sizes: [{size: '38', stock: 5}, {size: '40', stock: 5}, {size: '42', stock: 5}], featured: false },
-  { id: 3, sku: 'TEN-RUN-002', name: 'Tênis Running Fluxo', price: 299.90, category: 'CALÇADOS', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800', stock: 2, sales: 45, sizes: [{size: '39', stock: 1}, {size: '41', stock: 1}], featured: true },
-  { id: 4, sku: 'BON-PRE-003', name: 'Boné Archer Black', price: 79.90, category: 'ACESSÓRIOS', image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800', stock: 0, sales: 120, sizes: [{size: 'U', stock: 0}], featured: false }, 
-  { id: 5, sku: '9059', name: 'Calça Super Skinny Malibu Rasgada', price: 189.90, category: 'VESTUÁRIO', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800', stock: 10, sales: 5, sizes: [{size: '38', stock: 5}, {size: '40', stock: 5}], featured: true }
-];
+// (DEFAULT_PRODUCTS removido: os produtos demo de Unsplash apareciam de verdade
+// pro cliente no 1º acesso sem cache até o Supabase responder — dava pra clicar
+// em peça que não existe. Agora o catálogo mostra SKELETON enquanto carrega.)
 
 const DEFAULT_CONFIG = {
   brandName: 'FLUXO OUTLET EXCLUSIVE',
@@ -1110,10 +1106,10 @@ function App() {
       const cached = JSON.parse(localStorage.getItem(PRODUCTS_CACHE_KEY) || 'null');
       if (cached && Date.now() - cached.ts < PRODUCTS_CACHE_TTL && Array.isArray(cached.data) && cached.data.length > 0) return cached.data;
     } catch {}
-    return DEFAULT_PRODUCTS;
+    return []; // vazio até o Supabase responder — o catálogo mostra skeleton
   });
   const [productsLoaded, setProductsLoaded] = useState(false);
-  const productsRef = useRef(DEFAULT_PRODUCTS);
+  const productsRef = useRef([]);
   useEffect(() => { productsRef.current = productsRaw; }, [productsRaw]);
 
   // Carrega produtos do Supabase + polling reduzido para 60s (era 5s)
@@ -3139,7 +3135,21 @@ function App() {
           </div>
         )}
 
-        {filteredProducts.length === 0 ? (
+        {!productsLoaded && (products || []).length === 0 ? (
+           /* SKELETON — 1º acesso sem cache: nunca mostrar catálogo vazio nem produto demo */
+           <div className="products-grid-container grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2.5 lg:gap-4 -mx-5 lg:mx-0 px-1 lg:px-0 w-[calc(100%+40px)] lg:w-full" data-testid="products-skeleton">
+             {Array.from({ length: 8 }).map((_, i) => (
+               <div key={i} className="rounded-2xl overflow-hidden border flex flex-col" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                 <div className="aspect-[4/5] bg-zinc-800/50 animate-pulse" />
+                 <div className="p-3 space-y-2">
+                   <div className="h-2.5 w-3/4 bg-zinc-800/60 rounded animate-pulse" />
+                   <div className="h-4 w-1/2 bg-zinc-800/60 rounded animate-pulse" />
+                   <div className="h-8 w-full bg-zinc-800/40 rounded-md animate-pulse" />
+                 </div>
+               </div>
+             ))}
+           </div>
+        ) : filteredProducts.length === 0 ? (
            <div className="text-center py-20 opacity-50 animate-in">
                <Package size={48} className="mx-auto mb-4 text-zinc-600"/>
                <h3 className="font-black uppercase text-sm tracking-widest text-zinc-400">Nenhum produto encontrado</h3>
@@ -4243,7 +4253,7 @@ function App() {
             <X size={20}/>
           </button>
           <img
-            src={optimizeImage(zoomImage, 1200, 90)}
+            src={optimizeImage(zoomImage, 2000, 92)}
             alt="Visualização ampliada"
             className="max-w-full max-h-full object-contain rounded-3xl shadow-[0_20px_80px_rgba(0,0,0,0.6)] animate-in"
             onClick={(e) => e.stopPropagation()}
@@ -4296,6 +4306,8 @@ function App() {
                               <span className="font-black text-xs text-white w-6 text-center">{item.quantity}</span>
                               <button onClick={() => {
                                  const p = products.find(x => x.id === item.id);
+                                 // Produto saiu do catálogo com item ainda na sacola: não deixa aumentar (evita crash).
+                                 if (!p) { showToast('Peça indisponível no momento', 'error'); return; }
                                  const sz = (p.sizes || []).find(s => (typeof s === 'string' ? s : s.size) === item.size);
                                  const max = sz ? (typeof sz === 'string' ? p.stock : sz.stock) : p.stock;
                                  if (item.quantity < max) setCart(cart.map(i => i.itemKey === item.itemKey ? {...i, quantity: i.quantity + 1} : i));

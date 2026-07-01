@@ -6,8 +6,10 @@
     <meta name="theme-color" content="#09090b" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Preload do banner principal — elimina tela preta no LCP -->
-    <link rel="preload" as="image" href="https://tapgnlrjhrhewqlpahvg.supabase.co/storage/v1/object/public/product-images/uploads/1780603307357-c93uqo1ylij.png" fetchpriority="high" />
+    <!-- (preload de banner REMOVIDO: o banner real é servido via wsrv com URL
+         dinâmica do Supabase — o preload hardcoded nunca batia com a URL renderizada
+         e baixava um PNG full-res de vários MB à toa em toda visita. O skeleton do
+         BannerImage cobre o carregamento.) -->
     <!-- Preconnect para reduzir handshake TLS nas requisições críticas -->
     <link rel="preconnect" href="https://tapgnlrjhrhewqlpahvg.supabase.co" crossorigin />
     <!-- wsrv.nl serve TODAS as imagens de produto: preconnect (TLS quente) acelera o 1º paint -->

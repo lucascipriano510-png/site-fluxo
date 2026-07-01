@@ -164,7 +164,6 @@ export function trackEvent(eventName, data = {}) {
   return eventId;
 }
 
-// Compat com chamada antiga
-export async function dispatchCAPIPurchase({ phone, value, type = 'purchase' }) {
-  return trackEvent(type === 'cancel' ? 'Purchase' : 'Purchase', { phone, value });
-}
+// (Removido o wrapper compat dispatchCAPIPurchase: ninguém importava daqui —
+// Admin/ManualSale usam o de ./capi.js — e o ternário tratava 'cancel' como
+// Purchase, ou seja, um cancelamento viraria COMPRA na Meta se alguém usasse.)
