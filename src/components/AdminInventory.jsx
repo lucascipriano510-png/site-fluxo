@@ -48,6 +48,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
   const [searchTags, setSearchTags] = useState([]);
   const [searchTagInput, setSearchTagInput] = useState('');
   const [botDescription, setBotDescription] = useState('');
+  const [description, setDescription] = useState(''); // descrição da VITRINE (cliente lê)
   const [promotionalPrice, setPromotionalPrice] = useState('');
   // ===== OFERTA DO DIA =====
   const [offerActive, setOfferActive] = useState(false);
@@ -96,6 +97,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setMaterial(editMode.material || '');
       setSearchTags(Array.isArray(editMode.search_tags) ? editMode.search_tags : []);
       setBotDescription(editMode.bot_description || '');
+      setDescription(editMode.description || '');
       setPromotionalPrice(editMode.promotional_price != null ? String(editMode.promotional_price) : '');
       setOfferActive(!!editMode.offer_active);
       setOfferDiscount(editMode.offer_discount_percent != null ? String(editMode.offer_discount_percent) : '');
@@ -123,6 +125,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
       setMaterial('');
       setSearchTags([]);
       setBotDescription('');
+      setDescription('');
       setPromotionalPrice('');
       setOfferActive(false);
       setOfferDiscount('');
@@ -360,6 +363,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
         material: material.trim() || null,
         search_tags: searchTags.length > 0 ? searchTags : null,
         bot_description: botDescription.trim() || null,
+        description: description.trim() || null,
         promotional_price: promotionalPrice !== '' ? parseFloat(promotionalPrice) : null,
         featured_order: editMode !== 'new' && typeof editMode.featured_order === 'number' ? editMode.featured_order : 999,
         // Oferta do Dia — só vale se tiver % E data de validade
@@ -740,6 +744,11 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
               <datalist id="material-list">
                 {['algodão','malha egípcia','jeans','sarja','poliéster','viscose','linho'].map(m => <option key={m} value={m}/>)}
               </datalist>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Descrição da peça (aparece pro cliente)</label>
+              <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} placeholder={'Ex: "Peça premium com caimento reto, tecido encorpado que não marca. Gola reforçada, não deforma na lavagem."'} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none focus:border-emerald-500/50 resize-none" />
+              <p className="text-[8px] font-bold text-zinc-600 uppercase px-1">2–4 linhas vendem mais. Diferente da descrição do bot.</p>
             </div>
           </div>
 

@@ -42,6 +42,9 @@ export async function upsertProduct(product) {
     material: product.material || null,
     search_tags: Array.isArray(product.search_tags) && product.search_tags.length > 0 ? product.search_tags : null,
     bot_description: product.bot_description || null,
+    // Descrição da VITRINE (o que o cliente lê na página do produto).
+    // Requer SUPABASE_PRODUCT_DESCRIPTION_SETUP.sql rodado no SQL Editor.
+    description: product.description || null,
     promotional_price: product.promotional_price != null ? Number(product.promotional_price) : null,
     featured_order: product.featured_order != null ? Number(product.featured_order) : 999,
     // Oferta do Dia

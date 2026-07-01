@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Share2, Bell } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Share2, Bell, Ruler } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
@@ -336,6 +336,191 @@ const StockAlertModal = ({ target, onClose, showToast }) => {
           {sending ? 'Enviando…' : <><Bell size={14}/> Quero ser avisado</>}
         </button>
       </form>
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────────────────────
+// Guia de medidas: tabela aproximada por tipo de peça (camisa/calça/calçado),
+// deduzido de categoria + formato dos tamanhos. Medidas aproximadas (±2 cm);
+// dúvida real vai pro WhatsApp — vender o tamanho certo = menos troca.
+// ──────────────────────────────────────────────────────────────
+const SIZE_GUIDE_TABLES = {
+  roupas: {
+    title: 'Camisetas · Blusas · Moletons',
+    cols: ['Tam', 'Tórax (cm)', 'Compr. (cm)'],
+    rows: [
+      ['P', '96–100', '68'],
+      ['M', '100–106', '70'],
+      ['G', '106–112', '72'],
+      ['GG', '112–120', '74'],
+      ['XG', '120–128', '76'],
+    ],
+  },
+  calcas: {
+    title: 'Calças · Bermudas · Shorts',
+    cols: ['Tam', 'Cintura (cm)'],
+    rows: [
+      ['36', '74–78'], ['38', '78–82'], ['40', '82–86'], ['42', '86–90'],
+      ['44', '90–96'], ['46', '96–102'], ['48', '102–108'],
+    ],
+  },
+  calcados: {
+    title: 'Calçados',
+    cols: ['BR', 'Pé (cm)'],
+    rows: [
+      ['37', '23,5'], ['38', '24,2'], ['39', '24,8'], ['40', '25,5'],
+      ['41', '26,2'], ['42', '26,8'], ['43', '27,5'], ['44', '28,2'],
+    ],
+  },
+};
+const sizeGuideKind = (product) => {
+  const ctx = `${product?.category || ''} ${product?.subcategory || ''} ${product?.name || ''}`;
+  if (/CAL[ÇC]AD|T[ÊE]NIS|SAPAT|CHINEL|SAND[ÁA]L/i.test(ctx)) return 'calcados';
+  const sizes = (product?.sizes || []).map(s => String(typeof s === 'string' ? s : (s?.size || '')).trim());
+  if (sizes.some(s => /^\d+$/.test(s))) return 'calcas';
+  return 'roupas';
+};
+// Produto de tamanho único (U) não precisa de guia — o botão nem aparece.
+const hasSizeGuide = (product) => (product?.sizes || []).some(s => {
+  const n = String(typeof s === 'string' ? s : (s?.size || '')).trim().toUpperCase();
+  return n && n !== 'U' && n !== 'UNICO' && n !== 'ÚNICO';
+});
+
+const SizeGuideModal = ({ product, onClose, whatsapp }) => {
+  if (!product) return null;
+  const guide = SIZE_GUIDE_TABLES[sizeGuideKind(product)];
+  const waNumber = String(whatsapp || '').replace(/\D/g, '');
+  return (
+    <div className="fixed inset-0 z-[220] bg-black/80 backdrop-blur-sm flex items-end lg:items-center justify-center" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full lg:max-w-sm bg-zinc-950 border border-white/10 rounded-t-3xl lg:rounded-3xl p-6 space-y-4 shadow-[0_-10px_40px_rgba(0,0,0,0.6)]"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="grid place-items-center w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-400"><Ruler size={16}/></span>
+            <div>
+              <h3 className="text-[13px] font-black uppercase tracking-wide text-white leading-tight">Guia de Medidas</h3>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase">{guide.title}</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Fechar" className="text-zinc-500 hover:text-white shrink-0 touch-manipulation"><X size={18}/></button>
+        </div>
+        <div className="rounded-2xl border border-white/10 overflow-hidden">
+          <table className="w-full text-center">
+            <thead>
+              <tr className="bg-zinc-900">
+                {guide.cols.map(c => (
+                  <th key={c} className="py-2.5 px-2 text-[9px] font-black uppercase tracking-widest text-zinc-400">{c}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {guide.rows.map((row, i) => (
+                <tr key={row[0]} className={i % 2 ? 'bg-zinc-900/40' : ''}>
+                  {row.map((cell, j) => (
+                    <td key={j} className={`py-2.5 px-2 text-[12px] tabular-nums ${j === 0 ? 'font-black text-white' : 'font-bold text-zinc-300'}`}>{cell}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[10px] text-zinc-500 font-bold leading-snug">Medidas aproximadas (±2 cm) — cada modelagem varia um pouco. Na dúvida entre dois tamanhos, chama a gente que a equipe mede a peça pra você.</p>
+        {waNumber && (
+          <a
+            href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Oi! Tô na dúvida do tamanho dessa peça 👇\n\n*${product.name}*\nSKU: ${product.sku || 'N/A'}\n\nPodem me ajudar com as medidas?`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 bg-emerald-500 text-zinc-950 active:scale-[0.98] transition-transform touch-manipulation"
+          >
+            <MessageCircle size={14}/> Tirar dúvida no WhatsApp
+          </a>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────────────────────
+// Páginas institucionais (rodapé): Sobre a Loja / Política de Troca /
+// Privacidade (LGPD). Antes eram links mortos (#) — matavam a confiança.
+// Texto usa os dados do config (marca/cidade/whats) pra nunca desatualizar.
+// ──────────────────────────────────────────────────────────────
+const InfoModal = ({ page, config, onClose }) => {
+  if (!page) return null;
+  const waNumber = String(config?.whatsapp || '').replace(/\D/g, '');
+  const city = String(config?.location || 'Uberaba, MG');
+  const cityShort = city.split(',')[0].trim();
+  const brand = config?.brandName || 'Fluxo Outlet';
+  const PAGES = {
+    sobre: {
+      icon: <MapPin size={16}/>,
+      title: 'Sobre a Loja',
+      sections: [
+        { h: 'Quem somos', p: `A ${brand} é loja física de streetwear e peças premium em ${city}. Coleções limitadas, peça selecionada uma a uma — sem atacado de qualidade duvidosa.` },
+        { h: 'Como funciona', p: 'Você escolhe no site e finaliza pelo WhatsApp, com atendimento de gente de verdade antes e depois da compra.' },
+        { h: 'Entrega', p: `Entrega no mesmo dia em ${cityShort} (frete grátis), retirada na loja ou envio para todo o Brasil com frete combinado no atendimento.` },
+      ],
+    },
+    trocas: {
+      icon: <Truck size={16}/>,
+      title: 'Política de Troca',
+      sections: [
+        { h: 'Troca de tamanho ou cor', p: 'Até 7 dias corridos após o recebimento, com a peça sem uso, sem lavagem e com etiqueta. É só chamar no WhatsApp com o número do pedido.' },
+        { h: 'Arrependimento (compra online)', p: 'Você pode desistir da compra em até 7 dias corridos após receber (art. 49 do Código de Defesa do Consumidor), com devolução do valor pago.' },
+        { h: 'Peça com defeito', p: 'Defeito de fabricação tem prazo de até 30 dias (art. 26 do CDC). Manda foto no WhatsApp que a gente resolve com troca ou reembolso.' },
+        { h: 'Como solicitar', p: 'Chama no WhatsApp com o número do pedido e foto da peça. O frete da troca é combinado no atendimento.' },
+      ],
+    },
+    privacidade: {
+      icon: <ShieldCheck size={16}/>,
+      title: 'Privacidade',
+      sections: [
+        { h: 'O que coletamos', p: 'Nome e WhatsApp informados no pedido, itens e valores comprados, e cookies de medição de anúncios (Meta Pixel).' },
+        { h: 'Para que usamos', p: 'Processar e acompanhar seu pedido, avisar quando uma peça voltar ao estoque e medir o resultado dos nossos anúncios.' },
+        { h: 'Com quem compartilhamos', p: 'Não vendemos seus dados. Dados de medição vão para a Meta de forma criptografada (hash) e a infraestrutura roda em provedores técnicos (Supabase/Vercel).' },
+        { h: 'Seus direitos (LGPD)', p: 'Você pode pedir acesso, correção ou exclusão dos seus dados a qualquer momento pelo nosso WhatsApp.' },
+      ],
+    },
+  };
+  const data = PAGES[page];
+  if (!data) return null;
+  return (
+    <div className="fixed inset-0 z-[220] bg-black/80 backdrop-blur-sm flex items-end lg:items-center justify-center" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full lg:max-w-md bg-zinc-950 border border-white/10 rounded-t-3xl lg:rounded-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.6)] flex flex-col"
+        style={{ maxHeight: '82dvh' }}
+      >
+        <div className="flex items-start justify-between gap-3 p-6 pb-4 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="grid place-items-center w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-400">{data.icon}</span>
+            <h3 className="text-[13px] font-black uppercase tracking-wide text-white leading-tight">{data.title}</h3>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Fechar" className="text-zinc-500 hover:text-white shrink-0 touch-manipulation"><X size={18}/></button>
+        </div>
+        <div className="overflow-y-auto px-6 space-y-5" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+          {data.sections.map(s => (
+            <div key={s.h}>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-1.5">{s.h}</p>
+              <p className="text-[13px] leading-relaxed text-zinc-300">{s.p}</p>
+            </div>
+          ))}
+          {waNumber && (
+            <a
+              href={`https://wa.me/${waNumber}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 bg-zinc-900 border border-white/10 text-white hover:bg-zinc-800 active:scale-[0.98] transition-all touch-manipulation"
+            >
+              <MessageCircle size={14}/> Falar com a loja
+            </a>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -1207,6 +1392,9 @@ function App() {
   });
   // Alvo do modal "Avise-me quando voltar": { product, size } ou null.
   const [stockAlertTarget, setStockAlertTarget] = useState(null);
+  // Guia de medidas (página do produto) e páginas institucionais do rodapé.
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [infoPage, setInfoPage] = useState(null); // 'sobre' | 'trocas' | 'privacidade'
   // Contador de avisos de estoque pendentes (badge na aba admin).
   const [stockAlertsPending, setStockAlertsPending] = useState(0);
    const [currentPage, setCurrentPage] = useState(() => {
@@ -1247,6 +1435,7 @@ function App() {
     if (selectedProduct && !selectedProduct.is_kit) {
       setActiveProductImage(selectedProduct.image);
     }
+    setShowSizeGuide(false); // trocar/fechar produto nunca deixa o guia aberto
   }, [selectedProduct]);
   // 🟣 ViewContent (Pixel + CAPI com mesmo event_id) — dispara em QUALQUER abertura
   // de produto (catálogo, relacionados, deeplink, kit). Meio do funil: sem ele a
@@ -2059,6 +2248,10 @@ function App() {
   );
   // Ordem = prioridade do topo p/ o fundo (camada mais "por cima" fecha primeiro).
   const backLayers = [
+    !!zoomImage        && (() => setZoomImage(null)),
+    !!stockAlertTarget && (() => setStockAlertTarget(null)),
+    showSizeGuide      && (() => setShowSizeGuide(false)),
+    !!infoPage         && (() => setInfoPage(null)),
     showLeadModal     && (() => { setShowLeadModal(false); setCheckoutSuccess(false); }),
     isCartModalOpen   && (() => setIsCartModalOpen(false)),
     showCart          && (() => setShowCart(false)),
@@ -3348,24 +3541,14 @@ function App() {
           <div className="grid grid-cols-2 gap-x-8 gap-y-3 border-t border-white/5 pt-8">
             <div className="space-y-3">
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em]">Institucional</p>
-              {[
-                ['Sobre a Loja', '#'],
-                ['Contato', `https://wa.me/${(config.whatsapp || '').replace(/\D/g,'')}`],
-              ].map(([label, href]) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide">{label}</a>
-              ))}
+              <button onClick={() => setInfoPage('sobre')} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left touch-manipulation">Sobre a Loja</button>
+              <a href={`https://wa.me/${(config.whatsapp || '').replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide">Contato</a>
             </div>
             <div className="space-y-3">
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em]">Ajuda</p>
-              {[
-                ['Política de Troca', '#'],
-                ['Privacidade', '#'],
-                ['Meus Pedidos', null],
-              ].map(([label, href]) => (
-                href
-                  ? <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide">{label}</a>
-                  : <button key={label} onClick={() => setShowMyOrders(true)} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left">{label}</button>
-              ))}
+              <button onClick={() => setInfoPage('trocas')} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left touch-manipulation">Política de Troca</button>
+              <button onClick={() => setInfoPage('privacidade')} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left touch-manipulation">Privacidade</button>
+              <button onClick={() => setShowMyOrders(true)} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left touch-manipulation">Meus Pedidos</button>
             </div>
           </div>
 
@@ -3632,7 +3815,14 @@ function App() {
 
                 {/* ── TAMANHO ── seção própria, separada por divisor */}
                 <div className="flex flex-col gap-4 border-t border-white/5 pt-8">
-                  <p className="text-[11px] font-black text-white uppercase tracking-[0.22em]">Selecione o Tamanho</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[11px] font-black text-white uppercase tracking-[0.22em]">Selecione o Tamanho</p>
+                    {hasSizeGuide(selectedProduct) && (
+                      <button onClick={() => setShowSizeGuide(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400 touch-manipulation active:opacity-70 transition-opacity">
+                        <Ruler size={12}/> Guia de medidas
+                      </button>
+                    )}
+                  </div>
                   <div className="grid grid-cols-4 gap-2.5">
                     {(selectedProduct.sizes || []).map((s, idx) => {
                       const sz = typeof s === 'string' ? s : s.size;
@@ -3664,6 +3854,29 @@ function App() {
                     })}
                   </div>
                 </div>
+
+                {/* ── SOBRE A PEÇA ── descrição da vitrine + material/cor (só se existir) */}
+                {(selectedProduct.description || selectedProduct.material || selectedProduct.color) && (
+                  <div className="flex flex-col gap-3 border-t border-white/5 pt-8">
+                    <p className="text-[11px] font-black text-white uppercase tracking-[0.22em]">Sobre a peça</p>
+                    {selectedProduct.description && (
+                      <p className="text-[14px] leading-relaxed whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>{selectedProduct.description}</p>
+                    )}
+                    {(selectedProduct.material || selectedProduct.color) && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedProduct.material && (
+                          <span className="text-[10px] font-black uppercase tracking-wide text-zinc-300 bg-zinc-900 border border-white/10 rounded-full px-3 py-1.5">{selectedProduct.material}</span>
+                        )}
+                        {selectedProduct.color && (
+                          <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-zinc-300 bg-zinc-900 border border-white/10 rounded-full px-3 py-1.5">
+                            {colorDot(selectedProduct.color) && <span className="w-2.5 h-2.5 rounded-full border border-white/20" style={{ background: colorDot(selectedProduct.color) }} />}
+                            {selectedProduct.color}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Trust signals */}
                 <div className="grid grid-cols-3 gap-3 pt-8 border-t border-white/5">
@@ -3839,7 +4052,14 @@ function App() {
 
                   {/* Tamanho — seção com divisor */}
                   <div className="border-t border-white/10 pt-8 mb-8">
-                    <p className="text-[11px] font-black text-white uppercase tracking-[0.22em] mb-4">Selecione o Tamanho</p>
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <p className="text-[11px] font-black text-white uppercase tracking-[0.22em]">Selecione o Tamanho</p>
+                      {hasSizeGuide(selectedProduct) && (
+                        <button onClick={() => setShowSizeGuide(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors">
+                          <Ruler size={12}/> Guia de medidas
+                        </button>
+                      )}
+                    </div>
                     <div className="grid grid-cols-5 gap-2.5">
                       {(selectedProduct.sizes || []).filter(s => { const stock = typeof s === 'string' ? selectedProduct.stock : s.stock; return Number(stock || 0) > 0; }).map((s, idx) => {
                         const sz = typeof s === 'string' ? s : s.size;
@@ -3865,6 +4085,29 @@ function App() {
                     {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola — ${Object.values(selectedSizes).reduce((a,b)=>a+b,0)} ${Object.values(selectedSizes).reduce((a,b)=>a+b,0) === 1 ? 'peça' : 'peças'}`}
                     <ShoppingBag size={16}/>
                   </button>
+
+                  {/* Sobre a peça — descrição da vitrine + material/cor (só se existir) */}
+                  {(selectedProduct.description || selectedProduct.material || selectedProduct.color) && (
+                    <div className="mt-8 pt-8 border-t border-white/10">
+                      <p className="text-[11px] font-black text-white uppercase tracking-[0.22em] mb-3">Sobre a peça</p>
+                      {selectedProduct.description && (
+                        <p className="text-[14px] leading-relaxed whitespace-pre-line mb-3" style={{ color: 'var(--text-secondary)' }}>{selectedProduct.description}</p>
+                      )}
+                      {(selectedProduct.material || selectedProduct.color) && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedProduct.material && (
+                            <span className="text-[10px] font-black uppercase tracking-wide text-zinc-300 bg-zinc-900 border border-white/10 rounded-full px-3 py-1.5">{selectedProduct.material}</span>
+                          )}
+                          {selectedProduct.color && (
+                            <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-zinc-300 bg-zinc-900 border border-white/10 rounded-full px-3 py-1.5">
+                              {colorDot(selectedProduct.color) && <span className="w-2.5 h-2.5 rounded-full border border-white/20" style={{ background: colorDot(selectedProduct.color) }} />}
+                              {selectedProduct.color}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Trust signals */}
                   <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-3 gap-4">
@@ -3919,6 +4162,14 @@ function App() {
 
       {/* Modal "Avise-me quando voltar" (estoque) */}
       <StockAlertModal target={stockAlertTarget} onClose={() => setStockAlertTarget(null)} showToast={showToast} />
+
+      {/* Guia de medidas (página do produto) */}
+      {showSizeGuide && selectedProduct && (
+        <SizeGuideModal product={selectedProduct} whatsapp={config?.whatsapp} onClose={() => setShowSizeGuide(false)} />
+      )}
+
+      {/* Páginas institucionais do rodapé (Sobre / Trocas / Privacidade) */}
+      <InfoModal page={infoPage} config={config} onClose={() => setInfoPage(null)} />
 
       {/* BARRA FLUTUANTE DA SACOLA */}
       {cart.length > 0 && !showCart && !isCartModalOpen && !productPageOpen && (
