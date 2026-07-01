@@ -2956,7 +2956,8 @@ function App() {
                               </div>
                             </div>
                             <div className="p-3">
-                              <h3 className="uppercase line-clamp-1 mb-1.5" style={{ color: '#D4D4D8', fontSize: '9.5px', fontWeight: 600, letterSpacing: '0.08em' }}>{product.name}</h3>
+                              {/* Nome no card de oferta — mesmo tratamento do catálogo (legível, 2 linhas reservadas) */}
+                              <h3 className="uppercase line-clamp-2 mb-1.5" style={{ color: '#E4E4E7', fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.04em', lineHeight: 1.35, minHeight: '2.7em' }}>{product.name}</h3>
                               <div className="flex items-baseline gap-2">
                                 <span style={{ color: '#fde68a', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: 800, letterSpacing: '-0.01em' }}>{formatBRL(novo)}</span>
                                 <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>{formatBRL(product.price || 0)}</span>
@@ -3283,8 +3284,9 @@ function App() {
                         onClick={() => !isOutOfStock && handleProductClick(product)}
                       >
                         <div style={{ position: 'relative', zIndex: 6 }}>
-                          {/* Linha 1 — nome */}
-                          <h3 className="uppercase line-clamp-1 mb-1.5" style={{ color: '#9CA3AF', fontSize: '9.5px', fontWeight: '500', letterSpacing: '0.1em' }}>
+                          {/* Linha 1 — nome. É o que o cliente compra: legível (11.5px, quase branco),
+                              2 linhas com altura RESERVADA (cards continuam alinhados no grid). */}
+                          <h3 className="uppercase line-clamp-2 mb-1.5" style={{ color: '#E4E4E7', fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.04em', lineHeight: 1.35, minHeight: '2.7em' }}>
                             {product.name}
                           </h3>
                           {(() => {
