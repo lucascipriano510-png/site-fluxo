@@ -365,7 +365,7 @@ let galleryDwellCard = null;    // card atualmente sob o dedo (sendo cronometrad
 let galleryDwellTimer = null;   // dispara quando o dedo fica ~DWELL_MS sobre o MESMO card
 let galleryLastCheck = 0;       // throttle do elementFromPoint
 let galleryLastX = 0, galleryLastY = 0; // última posição do dedo (usada quando o timer dispara)
-const GALLERY_DWELL_MS = 600;   // tempo do dedo SOBRE a imagem p/ começar a passar as fotos
+const GALLERY_DWELL_MS = 280;   // tempo do dedo SOBRE a imagem p/ começar a passar as fotos
 
 const setActiveGalleryAt = (x, y) => {
   let el = null;
