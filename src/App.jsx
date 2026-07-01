@@ -361,10 +361,10 @@ const AUTO_CYCLE_MS = 2800; // ritmo do modo AUTO (destaque), sozinho — mais l
 const galleryRegistry = new Map(); // element -> { activate, deactivate }
 let activeGalleryEl = null;
 let galleryListenersOn = false;
-let lastPointCheck = 0;
 let galleryTouchStartX = 0;
 let galleryTouchStartY = 0;
-let galleryDragDecided = false; // gesto já virou arrasto do carrossel / rolagem?
+let galleryDwellTimer = null;   // dispara quando o dedo fica parado ~DWELL_MS sobre um card
+const GALLERY_DWELL_MS = 550;   // "descanso" do dedo p/ começar a passar as fotos (estilo hover)
 
 const setActiveGalleryAt = (x, y) => {
   let el = null;
@@ -380,38 +380,43 @@ const setActiveGalleryAt = (x, y) => {
 const ensureGalleryListeners = () => {
   if (galleryListenersOn || typeof window === 'undefined') return;
   galleryListenersOn = true;
-  // Importante: NÃO paramos no touchend. O card que começou a passar continua
-  // sozinho até que OUTRA ÁREA seja tocada — aí ou outro card assume (sobre um
-  // card) ou para (toque fora de qualquer card). Por isso só ouvimos start/move.
+  // Gatilho estilo "hover no mobile": enquanto o cliente rola, o dedo passa por cima
+  // das imagens. Quando ele PARA/descansa sobre um card por ~DWELL_MS, aquele card
+  // começa a passar as fotos sozinho — o cliente não precisa saber que é toque.
+  // Um card por vez. Dedo voltando a se mover (rolagem) solta o card.
+  const clearDwell = () => { if (galleryDwellTimer) { clearTimeout(galleryDwellTimer); galleryDwellTimer = null; } };
+  const scheduleDwell = (x, y) => {
+    clearDwell();
+    galleryDwellTimer = setTimeout(() => {
+      galleryDwellTimer = null;
+      setActiveGalleryAt(x, y); // dedo descansou aqui -> ativa o card sob o dedo
+    }, GALLERY_DWELL_MS);
+  };
   const onStart = (e) => {
     const t = e.touches && e.touches[0]; if (!t) return;
     galleryTouchStartX = t.clientX;
     galleryTouchStartY = t.clientY;
-    galleryDragDecided = false;
-    setActiveGalleryAt(t.clientX, t.clientY); // toque parado já começa a passar as fotos
+    scheduleDwell(t.clientX, t.clientY); // pousar e ficar parado já dispara
   };
   const onMove = (e) => {
     const t = e.touches && e.touches[0]; if (!t) return;
-    // Decide cedo: arrasto HORIZONTAL = intenção de mover o carrossel (não trocar foto);
-    // rolagem VERTICAL = sair do card. Em qualquer um, SOLTA a galeria pra não atrapalhar.
-    if (!galleryDragDecided) {
-      const dx = Math.abs(t.clientX - galleryTouchStartX);
-      const dy = Math.abs(t.clientY - galleryTouchStartY);
-      if ((dx > 10 && dx > dy) || dy > 10) {
-        galleryDragDecided = true;
-        if (activeGalleryEl && galleryRegistry.has(activeGalleryEl)) galleryRegistry.get(activeGalleryEl).deactivate();
-        activeGalleryEl = null;
-        return;
-      }
+    const movedX = Math.abs(t.clientX - galleryTouchStartX);
+    const movedY = Math.abs(t.clientY - galleryTouchStartY);
+    // Dedo se movendo (rolando): solta o card que estava passando e reprograma o
+    // "descanso" a partir daqui — quando o dedo parar, este novo card assume.
+    if (movedX > 6 || movedY > 6) {
+      if (activeGalleryEl && galleryRegistry.has(activeGalleryEl)) galleryRegistry.get(activeGalleryEl).deactivate();
+      activeGalleryEl = null;
+      galleryTouchStartX = t.clientX;
+      galleryTouchStartY = t.clientY;
+      scheduleDwell(t.clientX, t.clientY);
     }
-    if (galleryDragDecided) return; // já é arrasto/rolagem → não reativa a galeria
-    const now = Date.now();
-    if (now - lastPointCheck < 90) return; // throttle leve
-    lastPointCheck = now;
-    setActiveGalleryAt(t.clientX, t.clientY);
   };
+  const onEnd = () => { clearDwell(); }; // levantar o dedo cancela dwell pendente (tap seco não ativa)
   window.addEventListener('touchstart', onStart, { passive: true });
   window.addEventListener('touchmove', onMove, { passive: true });
+  window.addEventListener('touchend', onEnd, { passive: true });
+  window.addEventListener('touchcancel', onEnd, { passive: true });
 };
 
 // Ícone do Pix (lucide não tem ícone de marca). Cor herda de `color`.
