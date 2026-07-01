@@ -471,6 +471,20 @@ const AutoScrollGallery = ({ count = 1, children, auto = false, startDelay = 0 }
     };
   }, [auto, multi, advance]);
 
+  // DESKTOP (hover): passar o mouse por cima vai trocando as fotos; sair volta
+  // SEMPRE pra principal. Só em dispositivos com hover real (não dispara em toque).
+  const canHover = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: hover)').matches;
+  const hoverStart = () => {
+    if (auto || timerRef.current) return;
+    advance();
+    timerRef.current = setInterval(advance, AUTOPLAY_MS);
+  };
+  const hoverStop = () => {
+    if (auto) return;
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    setIdx(0);
+  };
+
   const arr = React.Children.toArray(children);
   // Imagem ÚNICA (a maioria): renderiza DIRETA, sem nenhum wrapper de opacidade
   // -> nenhuma camada de GPU -> a foto renderiza direto = nitidez maxima.
@@ -478,7 +492,12 @@ const AutoScrollGallery = ({ count = 1, children, auto = false, startDelay = 0 }
   // Múltiplas: crossfade por opacidade. touchAction pan-y deixa o arrasto
   // horizontal passar pro carrossel pai.
   return (
-    <div ref={ref} style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }}>
+    <div
+      ref={ref}
+      style={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }}
+      onMouseEnter={canHover ? hoverStart : undefined}
+      onMouseLeave={canHover ? hoverStop : undefined}
+    >
       {arr.map((child, i) => (
         <div
           key={i}
