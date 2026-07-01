@@ -1248,6 +1248,27 @@ function App() {
       setActiveProductImage(selectedProduct.image);
     }
   }, [selectedProduct]);
+  // 🟣 ViewContent (Pixel + CAPI com mesmo event_id) — dispara em QUALQUER abertura
+  // de produto (catálogo, relacionados, deeplink, kit). Meio do funil: sem ele a
+  // Meta não tem sinal de "viu a peça" pra retargeting/otimização de catálogo.
+  useEffect(() => {
+    if (!selectedProduct) return;
+    try {
+      const p = selectedProduct;
+      const live = isOfferLive(p);
+      const promo = Number(p.promotional_price || 0);
+      const value = live ? offerPrice(p) : ((promo > 0 && promo < p.price) ? promo : Number(p.price || 0));
+      trackPixel('ViewContent', {
+        event_id: createMetaEventId(),
+        value,
+        currency: 'BRL',
+        content_name: p.name,
+        content_ids: [String(p.sku || p.id)],
+        content_type: 'product',
+      });
+    } catch (e) { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProduct?.id]);
   const [zoomImage, setZoomImage] = useState(null);
   const [showCart, setShowCart] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
@@ -1375,13 +1396,16 @@ function App() {
   // Referência para o clique duplo
   const lastTapRef = useRef(0);
   useEffect(() => {
+    // viewport-fit=cover é OBRIGATÓRIO aqui: sem ele o env(safe-area-inset-*) vira 0
+    // no iPhone com notch e o CTA fixo/sacola colam no gesto de home.
+    const VIEWPORT_CONTENT = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
     const viewport = document.querySelector('meta[name="viewport"]');
     if (viewport) {
-      viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+      viewport.content = VIEWPORT_CONTENT;
     } else {
       const meta = document.createElement('meta');
       meta.name = 'viewport';
-      meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+      meta.content = VIEWPORT_CONTENT;
       document.head.appendChild(meta);
     }
     // Inicializa Meta Pixel + dispara PageView (com dedup via CAPI)
@@ -1748,17 +1772,8 @@ function App() {
       const waNumber = String(config?.whatsapp || '5534984148067').replace(/\D/g, '');
       const whatsappUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
 
-      // 🟣 AddToCart no clique de finalizar/WhatsApp (Pixel + CAPI com mesmo event_id)
-      const addToCartEventId = createMetaEventId();
-      trackPixel('AddToCart', {
-        event_id: addToCartEventId,
-        value: totalPedido,
-        currency: 'BRL',
-        phone: customerPhone,
-        content_ids: itensNormalizados.map(i => String(i.sku || i.id)),
-        content_type: 'product',
-        contents: itensNormalizados.map(i => ({ id: String(i.sku || i.id), quantity: i.qty, item_price: i.price })),
-      });
+      // (AddToCart REMOVIDO daqui: já dispara no momento real de adicionar à sacola.
+      //  Duplicar no finalizar inflava o evento e distorcia o custo por AddToCart.)
 
       // 🟣 InitiateCheckout (gatilho híbrido — Pixel + CAPI com mesmo event_id)
       const checkoutEventId = createMetaEventId();
@@ -4013,7 +4028,8 @@ function App() {
                 ) : (
                     cart.map(item => (
                       <div key={item.itemKey} className="bg-zinc-900/50 p-3 rounded-[24px] border border-white/5 flex gap-4 shadow-sm animate-in">
-                        <img src={item.image} className="w-20 h-24 rounded-[16px] object-cover border border-white/5" alt="Item" />
+                        {/* Thumb via wsrv: sem isso o original cru (1–5 MB) desce pra um thumb de 80px */}
+                        <img src={optimizeImage(item.image, 200, 80)} className="w-20 h-24 rounded-[16px] object-cover border border-white/5" alt="Item" loading="lazy" decoding="async" />
                         <div className="flex-1 flex flex-col justify-between py-1">
                           <div className="flex justify-between items-start">
                             <div className="overflow-hidden pr-2"><h4 className="font-black text-white text-[11px] uppercase truncate leading-tight">{item.name}</h4><span className="text-[9px] font-bold text-zinc-500 uppercase block mt-0.5">Tam: {item.size}</span></div>
