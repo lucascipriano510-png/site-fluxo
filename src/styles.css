@@ -133,15 +133,15 @@
 
 /* ── Premium gray layer system ─────────────────────────────────────────── */
 :root {
-  --bg-base:     #1c1c1e;
-  --bg-surface:  #242426;
-  --bg-elevated: #2c2c2e;
-  --bg-header:   #1a1a1c;
-  --border:      #3a3a3c;
-  --border-light:#48484a;
-  --text-primary:#f5f5f7;
-  --text-secondary:#aeaeb2;
-  --text-muted:  #636366;
+  --bg-base:     #26262a;
+  --bg-surface:  #2f2f33;
+  --bg-elevated: #3a3a3f;
+  --bg-header:   #232327;
+  --border:      #46464b;
+  --border-light:#54545a;
+  --text-primary:#f7f7f9;
+  --text-secondary:#b9b9be;
+  --text-muted:  #6e6e73;
   --gold:        #c9a84c;
 }
 
@@ -351,4 +351,62 @@
 .glass3d > * {
   position: relative;
   z-index: 6;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * BRILHO — polimento visual (dark premium). Alphas baixos de propósito:
+ * a ideia é a loja parecer "iluminada"/refletindo luz, sem piscar/brega.
+ * ───────────────────────────────────────────────────────────── */
+
+/* 1) Glow ambiente: luzes radiais suaves atrás de tudo (aplicado no .app-shell
+ *    da vitrine via style inline; aqui fica a versão utilitária reutilizável). */
+.brilho-ambient {
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(245, 158, 11, 0.06), transparent 60%),
+    radial-gradient(1000px 680px at 100% 4%, rgba(16, 185, 129, 0.05), transparent 55%),
+    var(--bg-base) !important;
+  background-attachment: fixed;
+}
+
+/* 2) Cards "pegando luz": gloss diagonal sutil no topo do card. Fica ACIMA da
+ *    imagem, mas com pointer-events none e concentrado no topo (some ~40%). */
+.cv-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(157deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 22%, rgba(255, 255, 255, 0) 42%);
+  pointer-events: none;
+  z-index: 7;
+  opacity: 0.9;
+  transition: opacity 0.25s ease;
+}
+.cv-card:hover::before { opacity: 1; }
+
+/* 3) Acentos que "acendem": halo suave (usar via classe onde quiser realçar). */
+.brilho-glow-emerald { box-shadow: 0 0 18px rgba(16, 185, 129, 0.28), 0 6px 20px rgba(0, 0, 0, 0.4); }
+.brilho-text-glow { text-shadow: 0 0 18px rgba(255, 255, 255, 0.18); }
+.brilho-text-glow-amber { text-shadow: 0 0 20px rgba(245, 200, 100, 0.45); }
+
+/* 4) Reflexo passando (sheen): luz diagonal cruzando lentamente. Passa a cada
+ *    ~7s, bem discreto. Colocar num filho absoluto com pointer-events none. */
+@keyframes brilhoSheen {
+  0%   { transform: translateX(-140%) skewX(-18deg); }
+  22%  { transform: translateX(160%)  skewX(-18deg); }
+  100% { transform: translateX(160%)  skewX(-18deg); }
+}
+.brilho-sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.14), transparent);
+  animation: brilhoSheen 7s ease-in-out infinite;
+  z-index: 8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brilho-sheen { animation: none; display: none; }
 }

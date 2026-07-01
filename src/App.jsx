@@ -2330,7 +2330,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell min-h-screen font-sans text-white pb-0 selection:bg-emerald-500 selection:text-zinc-950" style={{ background: 'var(--bg-base)' }}>
+    <div className="app-shell brilho-ambient min-h-screen font-sans text-white pb-0 selection:bg-emerald-500 selection:text-zinc-950">
       
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
@@ -3063,7 +3063,7 @@ function App() {
                           cursor: isOutOfStock ? 'default' : 'pointer',
                           position: 'relative',
                           zIndex: 4,
-                          background: 'linear-gradient(to bottom, hsl(222 14% 13%) 0%, hsl(222 14% 11%) 100%)',
+                          background: 'linear-gradient(to bottom, hsl(228 9% 19%) 0%, hsl(228 9% 16%) 100%)',
                           backgroundImage: 'url("https://www.transparenttextures.com/patterns/egg-shell.png")',
                           backgroundSize: '100px',
                           boxShadow: '0 -1px 0 rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04)',
@@ -3093,7 +3093,7 @@ function App() {
                                         {formatBRL(product.price || 0)}
                                       </span>
                                     )}
-                                    <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? '#fde68a' : '#F3F4F6'), fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0, whiteSpace: 'nowrap' }}>
+                                    <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? '#fde68a' : '#F3F4F6'), fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0, whiteSpace: 'nowrap', textShadow: (!isOutOfStock && live) ? '0 0 16px rgba(245,200,100,0.45)' : 'none' }}>
                                       {formatBRL(mainPrice || 0)}
                                     </p>
                                   </div>
@@ -3109,7 +3109,7 @@ function App() {
                                         color: '#1a1a1a', fontWeight: '700', fontSize: '10px',
                                         letterSpacing: '0.08em', textTransform: 'uppercase',
                                         border: '1px solid rgba(255,255,255,0.15)',
-                                        boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+                                        boxShadow: '0 1px 4px rgba(0,0,0,0.4), 0 0 14px rgba(255,255,255,0.10)',
                                         cursor: 'pointer', fontFamily: 'inherit', outline: 'none',
                                         touchAction: 'manipulation',
                                         position: 'relative', overflow: 'hidden',
@@ -3507,7 +3507,7 @@ function App() {
           {/* A barra real (hambúrguer/logo/perfil/sacola) fica sticky logo acima — barra compartilhada com o home. */}
           <motion.div
             className="lg:hidden min-h-screen"
-            style={{ background: '#171717' }}
+            style={{ background: '#202024' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -3715,7 +3715,7 @@ function App() {
           {/* ── DESKTOP: página de produto real (oculto no mobile) ── */}
           <motion.div
             className="hidden lg:block fixed inset-0 z-30 overflow-y-auto"
-            style={{ background: '#171717' }}
+            style={{ background: '#202024' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
