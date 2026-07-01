@@ -176,9 +176,6 @@ export default function BannerCarousel({ activeBanners, bannersLoaded, isAdmin, 
         })}
       </div>
 
-      {/* Reflexo passando (brilho premium) — luz diagonal cruzando o banner */}
-      {activeBanners.length > 0 && <div className="brilho-sheen" aria-hidden="true" />}
-
       {/* Dimmer que escurece conforme banner sai da viewport */}
       <div className="absolute inset-0 bg-zinc-950 pointer-events-none" style={{ opacity: 'var(--banner-dim, 0)', willChange: 'opacity' }} aria-hidden="true" />
 

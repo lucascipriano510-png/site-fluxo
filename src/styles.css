@@ -388,25 +388,3 @@
 .brilho-text-glow { text-shadow: 0 0 18px rgba(255, 255, 255, 0.18); }
 .brilho-text-glow-amber { text-shadow: 0 0 20px rgba(245, 200, 100, 0.45); }
 
-/* 4) Reflexo passando (sheen): luz diagonal cruzando lentamente. Passa a cada
- *    ~7s, bem discreto. Colocar num filho absoluto com pointer-events none. */
-@keyframes brilhoSheen {
-  0%   { transform: translateX(-140%) skewX(-18deg); }
-  22%  { transform: translateX(160%)  skewX(-18deg); }
-  100% { transform: translateX(160%)  skewX(-18deg); }
-}
-.brilho-sheen {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 45%;
-  pointer-events: none;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.14), transparent);
-  animation: brilhoSheen 7s ease-in-out infinite;
-  z-index: 8;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .brilho-sheen { animation: none; display: none; }
-}

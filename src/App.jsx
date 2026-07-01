@@ -1951,10 +1951,6 @@ function App() {
 
   const sortedProducts = useMemo(() => {
     // Ordenação EXPLÍCITA do cliente tem prioridade (inclusive sobre a busca).
-    if (sortMode === 'preco_asc' || sortMode === 'preco_desc') {
-      const ep = (p) => Number(p.promotional_price || p.price || 0);
-      return [...filteredProducts].sort((a, b) => sortMode === 'preco_asc' ? ep(a) - ep(b) : ep(b) - ep(a));
-    }
     if (sortMode === 'novidades') {
       return [...filteredProducts].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     }
@@ -2929,8 +2925,6 @@ function App() {
                 style={{ backgroundImage: 'none' }}
               >
                 <option value="relevancia">Ordenar: Relevância</option>
-                <option value="preco_asc">Menor preço</option>
-                <option value="preco_desc">Maior preço</option>
                 <option value="novidades">Novidades</option>
               </select>
             </div>
