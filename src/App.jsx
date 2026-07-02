@@ -2741,21 +2741,20 @@ function App() {
         })()}
 
         <div id="catalog-section" className="flex gap-3 lg:gap-5 overflow-x-auto lg:overflow-x-visible lg:flex-wrap lg:justify-center no-scrollbar pb-1 lg:pb-0 mask-linear lg:[mask-image:none] native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
-          {/* Botão destacado de KITS — sempre primeiro */}
+          {/* Botão destacado de KITS — tile quadrado igual às categorias (mesma família visual) */}
           {(products || []).some(p => p.is_kit) && (
             <div className="flex flex-col items-center gap-2 shrink-0">
               <button
                 key="__kits__"
                 onClick={() => { setKitsOnly(v => !v); }}
                 data-testid="category-filter-KITS"
-                className={`relative px-4 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border-2 transition-all touch-manipulation flex items-center gap-1.5 ${kitsOnly
-                  ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-zinc-950 border-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.45)]'
-                  : 'bg-zinc-950 text-amber-400 border-amber-400/50 hover:border-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.18)]'}`}
+                className={`w-[76px] h-[76px] lg:w-[96px] lg:h-[96px] rounded-2xl border-2 flex items-center justify-center transition-all duration-200 touch-manipulation ${kitsOnly
+                  ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 border-amber-300 shadow-[0_0_24px_rgba(251,191,36,0.45)]'
+                  : 'bg-zinc-950 border-amber-400/40 hover:border-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.15)]'}`}
               >
-                <Zap size={12} className={kitsOnly ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'} />
-                KITS
+                <Zap size={28} className={kitsOnly ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'} />
               </button>
-              <span className="text-[9px] font-black uppercase tracking-widest text-transparent select-none">·</span>
+              <span className={`text-[10px] lg:text-[12px] font-black uppercase tracking-widest leading-none ${kitsOnly ? 'text-amber-300' : 'text-amber-400/80'}`}>Kits</span>
             </div>
           )}
           {kitsOnly && (
@@ -2777,27 +2776,30 @@ function App() {
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 data-testid={`category-filter-${cat}`}
-                whileTap={{ scale: 0.92 }}
-                className="flex flex-col items-center gap-2 shrink-0 touch-manipulation lg:min-w-[80px]"
-                style={{ minWidth: '60px' }}
+                whileTap={{ scale: 0.94 }}
+                className="flex flex-col items-center gap-2 shrink-0 touch-manipulation"
               >
-                <div className={`w-[58px] h-[58px] lg:w-[72px] lg:h-[72px] rounded-full overflow-hidden border-2 transition-all duration-200 bg-black flex items-center justify-center relative ${
+                {/* Tile quadrado (canto arredondado conversa com os cards) — maior que a
+                    bolinha antiga, imagem preenche tudo + gradiente inferior dá profundidade. */}
+                <div className={`w-[76px] h-[76px] lg:w-[96px] lg:h-[96px] rounded-2xl overflow-hidden border-2 transition-all duration-200 bg-zinc-950 flex items-center justify-center relative ${
                   isActive
-                    ? 'border-emerald-500 shadow-[0_0_14px_rgba(16,185,129,0.45)]'
+                    ? 'border-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.45)]'
                     : 'border-white/10 hover:border-white/30'
                 }`}>
                   {imgUrl ? (
-                    <img src={imgUrl} alt={cat} className="w-full h-full object-cover" style={{ objectPosition: imgPos }} loading="lazy" decoding="async" />
+                    <img src={optimizeImage(imgUrl, 220, 82)} alt={cat} className="w-full h-full object-cover" style={{ objectPosition: imgPos }} loading="lazy" decoding="async" />
+                  ) : cat === 'TODOS' ? (
+                    <Layers size={28} className={`transition-colors ${isActive ? 'text-emerald-400/90' : 'text-white/30'}`} />
                   ) : (
-                    <span className={`text-lg lg:text-xl font-black select-none transition-colors ${isActive ? 'text-emerald-400/80' : 'text-white/25'}`}>
+                    <span className={`text-2xl lg:text-3xl font-black select-none transition-colors ${isActive ? 'text-emerald-400/80' : 'text-white/25'}`}>
                       {(cat || '?').charAt(0)}
                     </span>
                   )}
-                  {imgUrl && <div className="absolute inset-0 bg-black/25 pointer-events-none" />}
-                  {isActive && <div className="absolute inset-[3px] rounded-full border border-emerald-500/40 pointer-events-none" />}
+                  {imgUrl && <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent pointer-events-none" />}
+                  {isActive && <div className="absolute inset-[3px] rounded-[13px] border border-emerald-400/40 pointer-events-none" />}
                 </div>
-                <span className={`text-[9px] lg:text-[12px] font-black uppercase tracking-widest leading-none transition-colors ${
-                  isActive ? 'text-emerald-400' : 'text-zinc-500'
+                <span className={`text-[10px] lg:text-[12px] font-black uppercase tracking-widest leading-none transition-colors ${
+                  isActive ? 'text-emerald-400' : 'text-zinc-400'
                 }`}>
                   {cat}
                 </span>
