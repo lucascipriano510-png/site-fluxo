@@ -624,7 +624,7 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
                 {galleryUrls.map((url, i) => (
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
                     <img src={optimizeImage(url, 200, 72)} loading="lazy" decoding="async" className="w-full h-full object-cover" alt="" />
-                    <button type="button" onClick={() => removeGalleryUrl(url)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><X size={10}/></button>
+                    <button type="button" onClick={() => removeGalleryUrl(url)} aria-label="Remover imagem" className="absolute top-1 right-1 z-10 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-transform"><X size={11}/></button>
                   </div>
                 ))}
                 <label className="aspect-square rounded-xl border-2 border-dashed border-white/15 grid place-items-center cursor-pointer hover:border-emerald-500/50 transition-colors">
