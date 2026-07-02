@@ -4,6 +4,7 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/p/:sku", "destination": "/api/produto?sku=:sku" },
+    { "source": "/s/:ids", "destination": "/api/selecao?ids=:ids" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/(.*)", "destination": "/" }
   ]

@@ -1380,6 +1380,7 @@ function App() {
       busca: sp.get('busca') || '',
       kits: sp.get('kits') === '1',
       colecao: sp.get('colecao') || null,
+      selecao: sp.get('selecao') || null,
     };
   })();
   const [selectedCategory, setSelectedCategory] = useState(_initialUrlFilters.categoria || 'TODOS');
@@ -1571,6 +1572,13 @@ function App() {
   // ao fechar (o home é desmontado e volta ao topo; isso devolve onde o cliente estava).
   const catalogScrollRef = useRef(0);
   const [activeCollectionFilter, setActiveCollectionFilter] = useState(_initialUrlFilters.colecao || null);
+  // Seleção curada via link (?selecao=SKU,SKU,...) — vitrine só com essas peças.
+  // Diferente de coleção (nomeada no admin): é avulsa, montada na hora pelo vendedor.
+  const [selectionSkus, setSelectionSkus] = useState(() =>
+    _initialUrlFilters.selecao
+      ? _initialUrlFilters.selecao.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
+      : null
+  );
   const [adminTab, setAdminTab] = useState('dashboard'); 
   const visualFrame = useVisualViewportFrame();
   const viewportOverlayStyle = { top: visualFrame.top, height: visualFrame.height || '100dvh' };
@@ -2095,6 +2103,7 @@ function App() {
         return sName === sizeNorm && sStock > 0;
       }));
       const matchesCollection = !activeCollectionFilter || p.collection_name === activeCollectionFilter;
+      const matchesSelection = !selectionSkus || selectionSkus.includes(String(p.sku || '').toUpperCase());
       const matchesColor = selectedColor === 'TODOS'
         || String(p.color || '').toLowerCase() === selectedColor
         || (Array.isArray(p.secondary_colors) && p.secondary_colors.some(c => String(c || '').toLowerCase() === selectedColor));
@@ -2107,14 +2116,14 @@ function App() {
           if (r.max != null && eff > r.max) matchesPrice = false;
         }
       }
-      return matchesCat && matchesSub && matchesSearch && matchesSize && matchesCollection && matchesColor && matchesPrice;
+      return matchesCat && matchesSub && matchesSearch && matchesSize && matchesCollection && matchesSelection && matchesColor && matchesPrice;
     });
     if (!noveltyMode) return base;
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const recent = base.filter(p => p.created_at && new Date(p.created_at) > thirtyDaysAgo);
     if (recent.length > 0) return recent;
     return [...base].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 8);
-  }, [noveltyMode, kitsOnly, selectedCategory, selectedSubcategory, searchIntent, selectedSize, selectedColor, priceRange, products, activeCollectionFilter]);
+  }, [noveltyMode, kitsOnly, selectedCategory, selectedSubcategory, searchIntent, selectedSize, selectedColor, priceRange, products, activeCollectionFilter, selectionSkus]);
 
   // Subcategorias disponíveis dentro da categoria atual (ignora produtos sem estoque)
   const availableSubcategories = useMemo(() => {
@@ -2172,6 +2181,7 @@ function App() {
         setOrDel('busca', (searchQuery || '').trim(), '');
         setOrDel('kits', kitsOnly ? '1' : '', '');
         setOrDel('colecao', activeCollectionFilter || '', '');
+        setOrDel('selecao', selectionSkus ? selectionSkus.join(',') : '', '');
         const newSearch = sp.toString();
         const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '') + url.hash;
         const current = window.location.pathname + window.location.search + window.location.hash;
@@ -2180,7 +2190,7 @@ function App() {
       } catch {}
     }, 200);
     return () => clearTimeout(handle);
-  }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery, kitsOnly, activeCollectionFilter]);
+  }, [selectedCategory, selectedSubcategory, selectedSize, searchQuery, kitsOnly, activeCollectionFilter, selectionSkus]);
 
   // (O "voltar" agora é gerenciado pela ÂNCORA DE HISTÓRICO mais abaixo —
   //  fecha a camada do topo / pede confirmação de saída. A URL continua
@@ -2189,7 +2199,7 @@ function App() {
   // Deep link de coleção (?colecao=X): rola direto pro catálogo já filtrado.
   const _scrolledToColecao = React.useRef(false);
   useEffect(() => {
-    if (_scrolledToColecao.current || !productsLoaded || !_initialUrlFilters.colecao) return;
+    if (_scrolledToColecao.current || !productsLoaded || (!_initialUrlFilters.colecao && !_initialUrlFilters.selecao)) return;
     _scrolledToColecao.current = true;
     setTimeout(() => document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
   }, [productsLoaded]);
@@ -3001,6 +3011,15 @@ function App() {
             <button onClick={() => setActiveCollectionFilter(null)} className="p-2 bg-zinc-300 text-zinc-950 rounded-xl active:scale-90 transition-transform"><X size={14}/></button>
           </div>
         )}
+        {selectionSkus && (
+          <div className="flex items-center justify-between bg-zinc-500/10 border border-zinc-400/20 p-4 rounded-2xl animate-in" data-testid="selection-chip">
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black uppercase text-zinc-300 tracking-widest">Seleção montada pra você</span>
+              <span className="text-xs font-black uppercase text-white">{selectionSkus.length} peça(s) escolhida(s)</span>
+            </div>
+            <button onClick={() => setSelectionSkus(null)} className="p-2 bg-zinc-300 text-zinc-950 rounded-xl active:scale-90 transition-transform" aria-label="Ver loja toda"><X size={14}/></button>
+          </div>
+        )}
         {noveltyMode && (
           <div className="flex items-center justify-between bg-zinc-500/10 border border-zinc-400/20 p-4 rounded-2xl animate-in">
             <div className="flex flex-col">
@@ -3049,7 +3068,7 @@ function App() {
 
         {/* OFERTAS — carrosséis por campanha (Dia/Semana/Mês), na ordem do Setup */}
         {(() => {
-          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1;
           if (!isDefaultView) return null;
           const orderCfg = Array.isArray(config?.offerCampaignOrder) && config.offerCampaignOrder.length > 0 ? config.offerCampaignOrder : OFFER_CAMPAIGNS;
           const campaignsOrdered = [...orderCfg.filter(c => OFFER_CAMPAIGNS.includes(c)), ...OFFER_CAMPAIGNS.filter(c => !orderCfg.includes(c))];
@@ -3159,7 +3178,7 @@ function App() {
 
         {/* DESTAQUES */}
         {(() => {
-          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1;
           if (!isDefaultView) return null;
           const featured = (products || [])
             .filter(p => p.featured && (p.is_kit || (p.stock || 0) > 0))
@@ -3267,7 +3286,7 @@ function App() {
 
         {/* SUB-BANNER (meio) — faixa decorativa 2:1 entre Destaques e Peças */}
         {(() => {
-          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && currentPage === 1;
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1;
           if (!isDefaultView || !midBanner) return null;
           return <SubBanner banner={midBanner} whatsapp={config?.whatsapp} />;
         })()}
