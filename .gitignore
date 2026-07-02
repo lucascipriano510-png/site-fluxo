@@ -30,7 +30,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
--e 
 # Environment and credential files
 .env
 .env.*
@@ -39,33 +38,12 @@ credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
+
+# Artefatos temporários do enriquecimento de catálogo (scripts/*.mjs são versionados)
+scripts/_enrich_imgs/
+scripts/_enrich_pending.json
+scripts/_apply.json
+scripts/enrich-progress.json
 
 # Supabase CLI temp
 supabase/.temp/
