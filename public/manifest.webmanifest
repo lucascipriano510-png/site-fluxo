@@ -1,0 +1,13 @@
+{
+  "name": "Fluxo Outlet",
+  "short_name": "Fluxo",
+  "description": "Streetwear premium — coleções limitadas, entrega no mesmo dia em Uberaba.",
+  "start_url": "/?utm_source=pwa",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/og-image.jpg", "sizes": "1024x1024", "type": "image/jpeg", "purpose": "any" }
+  ]
+}
