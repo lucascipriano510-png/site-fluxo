@@ -86,8 +86,13 @@ export default function ManualSale({ products, setProducts, setLeads, mapOrderRo
       }
 
       // 3) Dispara Purchase pra Meta (mesmo caminho do site) + trava idempotência
+      // CATÁLOGO: itens com sku -> content_ids (liga a venda ao item do catálogo)
       const eventId = createMetaEventId();
-      const res = await dispatchCAPIPurchase({ phone: phoneClean, value: total, name: name.trim(), event_id: eventId });
+      const res = await dispatchCAPIPurchase({
+        phone: phoneClean, value: total, name: name.trim(), event_id: eventId,
+        content_ids: items.map(i => String(i.sku || i.id)),
+        contents: items.map(i => ({ id: String(i.sku || i.id), quantity: Number(i.qty || 1), item_price: Number(i.price || 0) })),
+      });
       if (res?.ok) { try { await markOrderPurchaseSent(order.id, eventId); } catch {} }
 
       // 4) Mostra na lista de Pedidos na hora

@@ -113,6 +113,9 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config,
             // EMQ: usa os parâmetros do CLIENTE capturados no checkout (gravados no
             // pedido), não os do admin. Melhora o match do Purchase.
             const raw = leadToUpdate._raw || {};
+            // CATÁLOGO: itens do pedido (id = sku, mesmo do feed meta-catalog) —
+            // é o que permite a campanha de catálogo atribuir a VENDA ao produto.
+            const orderItems = Array.isArray(leadToUpdate.items) ? leadToUpdate.items : [];
             const res = await dispatchCAPIPurchase({
               phone: leadToUpdate.phone,
               value: leadToUpdate.value,
@@ -122,6 +125,8 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config,
               fbc: raw.fbc || null,
               event_source_url: raw.src_url || null,
               user_agent: raw.client_ua || null,
+              content_ids: orderItems.map(i => String(i.sku || i.id)),
+              contents: orderItems.map(i => ({ id: String(i.sku || i.id), quantity: Number(i.qty || i.quantity || 1), item_price: Number(i.price || 0) })),
             });
             if (res?.ok) await markOrderPurchaseSent(purchaseOrderId, purchaseEventId);
           }

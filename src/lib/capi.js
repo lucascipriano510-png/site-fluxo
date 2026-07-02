@@ -32,7 +32,7 @@ function normalizePhoneBR(raw) {
  * Dispara um evento para a Meta via Edge Function.
  * Não lança erros — apenas loga no console.
  */
-async function dispatchCAPI(eventName, { phone, value, name, currency = 'BRL', event_id, fbp, fbc, event_source_url, user_agent } = {}) {
+async function dispatchCAPI(eventName, { phone, value, name, currency = 'BRL', event_id, fbp, fbc, event_source_url, user_agent, content_ids, contents } = {}) {
   try {
     const payload = {
       event_name: eventName,
@@ -48,6 +48,16 @@ async function dispatchCAPI(eventName, { phone, value, name, currency = 'BRL', e
     if (fbc) payload.fbc = fbc;
     if (event_source_url) payload.event_source_url = event_source_url;
     if (user_agent) payload.user_agent = user_agent;
+    // CATÁLOGO: content_ids/contents ligam o Purchase ao item do catálogo da Meta
+    // (id = String(sku || id), mesmo do feed meta-catalog). Sem isso a campanha
+    // de catálogo otimiza às cegas na compra. webhook-meta repassa custom_data.
+    const custom_data = {};
+    if (Array.isArray(content_ids) && content_ids.length > 0) custom_data.content_ids = content_ids;
+    if (Array.isArray(contents) && contents.length > 0) custom_data.contents = contents;
+    if (Object.keys(custom_data).length > 0) {
+      custom_data.content_type = 'product';
+      payload.custom_data = custom_data;
+    }
 
     const headers = {
       'x-webhook-secret': WEBHOOK_SECRET,
@@ -74,12 +84,12 @@ async function dispatchCAPI(eventName, { phone, value, name, currency = 'BRL', e
  * Dispara o evento Purchase para a Meta via Edge Function.
  * event_id é OBRIGATÓRIO (dedup Pixel↔CAPI + idempotência). Sem ele, NÃO envia.
  */
-export async function dispatchCAPIPurchase({ phone, value, name, event_id, fbp, fbc, event_source_url, user_agent } = {}) {
+export async function dispatchCAPIPurchase({ phone, value, name, event_id, fbp, fbc, event_source_url, user_agent, content_ids, contents } = {}) {
   if (!event_id) {
     console.warn('[capi] Purchase sem event_id — NÃO enviado (dedup obrigatório).');
     return { ok: false, error: 'event_id is required for Purchase' };
   }
-  return dispatchCAPI('Purchase', { phone, value, name, event_id, fbp, fbc, event_source_url, user_agent });
+  return dispatchCAPI('Purchase', { phone, value, name, event_id, fbp, fbc, event_source_url, user_agent, content_ids, contents });
 }
 
 /**

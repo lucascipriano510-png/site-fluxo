@@ -1434,10 +1434,12 @@ function App() {
     setShowSizeGuide(false); // trocar/fechar produto nunca deixa o guia aberto
   }, [selectedProduct]);
   // 🟣 ViewContent (Pixel + CAPI com mesmo event_id) — dispara em QUALQUER abertura
-  // de produto (catálogo, relacionados, deeplink, kit). Meio do funil: sem ele a
+  // de produto (catálogo, relacionados, deeplink). Meio do funil: sem ele a
   // Meta não tem sinal de "viu a peça" pra retargeting/otimização de catálogo.
+  // KIT não dispara: kit fica FORA do feed meta-catalog (sem estoque próprio) e
+  // content_id sem par no catálogo só gera aviso de "evento sem item" na Meta.
   useEffect(() => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || selectedProduct.is_kit) return;
     try {
       const p = selectedProduct;
       const live = isOfferLive(p);
@@ -1859,7 +1861,10 @@ function App() {
     showToast('Adicionado à sacola ✓');
     // 🟣 AddToCart (Pixel + CAPI com mesmo event_id)
     try {
-      const addedValue = entries.reduce((acc, [, qty]) => acc + (Number(selectedProduct.price || 0) * Number(qty || 0)), 0);
+      // Valor do evento = preço EFETIVAMENTE cobrado no carrinho (oferta viva usa
+      // o preço com desconto) — antes ia o preço cheio e inflava o funil vs Purchase.
+      const unitPrice = isOfferLive(selectedProduct) ? offerPrice(selectedProduct) : Number(selectedProduct.price || 0);
+      const addedValue = entries.reduce((acc, [, qty]) => acc + (unitPrice * Number(qty || 0)), 0);
       const addedQty   = entries.reduce((acc, [, qty]) => acc + Number(qty || 0), 0);
       const event_id = createMetaEventId();
       trackPixel('AddToCart', {
@@ -1869,7 +1874,7 @@ function App() {
         content_name: selectedProduct.name,
         content_ids: [String(selectedProduct.sku || selectedProduct.id)],
         content_type: 'product',
-        contents: [{ id: String(selectedProduct.sku || selectedProduct.id), quantity: addedQty, item_price: Number(selectedProduct.price || 0) }],
+        contents: [{ id: String(selectedProduct.sku || selectedProduct.id), quantity: addedQty, item_price: unitPrice }],
       });
     } catch (e) { /* ignore */ }
     setSelectedProduct(null);
