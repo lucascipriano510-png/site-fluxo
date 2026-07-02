@@ -2741,21 +2741,19 @@ function App() {
         })()}
 
         <div id="catalog-section" className="flex gap-3 lg:gap-5 overflow-x-auto lg:overflow-x-visible lg:flex-wrap lg:justify-center no-scrollbar pb-1 lg:pb-0 mask-linear lg:[mask-image:none] native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
-          {/* Botão destacado de KITS — tile quadrado igual às categorias (mesma família visual) */}
+          {/* Botão destacado de KITS — mini-banner da mesma família das categorias */}
           {(products || []).some(p => p.is_kit) && (
-            <div className="flex flex-col items-center gap-2 shrink-0">
-              <button
-                key="__kits__"
-                onClick={() => { setKitsOnly(v => !v); }}
-                data-testid="category-filter-KITS"
-                className={`w-[76px] h-[76px] lg:w-[96px] lg:h-[96px] rounded-2xl border-2 flex items-center justify-center transition-all duration-200 touch-manipulation ${kitsOnly
-                  ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 border-amber-300 shadow-[0_0_24px_rgba(251,191,36,0.45)]'
-                  : 'bg-zinc-950 border-amber-400/40 hover:border-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.15)]'}`}
-              >
-                <Zap size={28} className={kitsOnly ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'} />
-              </button>
-              <span className={`text-[10px] lg:text-[12px] font-black uppercase tracking-widest leading-none ${kitsOnly ? 'text-amber-300' : 'text-amber-400/80'}`}>Kits</span>
-            </div>
+            <button
+              key="__kits__"
+              onClick={() => { setKitsOnly(v => !v); }}
+              data-testid="category-filter-KITS"
+              className={`relative shrink-0 w-[92px] h-[115px] lg:w-[120px] lg:h-[150px] rounded-2xl overflow-hidden border-2 flex items-center justify-center transition-all duration-200 touch-manipulation ${kitsOnly
+                ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 border-amber-300 shadow-[0_0_24px_rgba(251,191,36,0.45)]'
+                : 'bg-zinc-950 border-amber-400/40 hover:border-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.15)]'}`}
+            >
+              <Zap size={30} className={`-mt-4 ${kitsOnly ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'}`} />
+              <span className={`absolute bottom-2.5 left-2.5 right-2.5 text-left text-[10px] lg:text-[11px] font-black uppercase tracking-wider leading-tight ${kitsOnly ? 'text-zinc-950' : 'text-amber-400'}`}>Kits</span>
+            </button>
           )}
           {kitsOnly && (
             <button
@@ -2776,31 +2774,33 @@ function App() {
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 data-testid={`category-filter-${cat}`}
-                whileTap={{ scale: 0.94 }}
-                className="flex flex-col items-center gap-2 shrink-0 touch-manipulation"
-              >
-                {/* Tile quadrado (canto arredondado conversa com os cards) — maior que a
-                    bolinha antiga, imagem preenche tudo + gradiente inferior dá profundidade. */}
-                <div className={`w-[76px] h-[76px] lg:w-[96px] lg:h-[96px] rounded-2xl overflow-hidden border-2 transition-all duration-200 bg-zinc-950 flex items-center justify-center relative ${
+                whileTap={{ scale: 0.96 }}
+                className={`relative shrink-0 w-[92px] h-[115px] lg:w-[120px] lg:h-[150px] rounded-2xl overflow-hidden border-2 transition-all duration-200 touch-manipulation bg-zinc-950 ${
                   isActive
                     ? 'border-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.45)]'
                     : 'border-white/10 hover:border-white/30'
-                }`}>
-                  {imgUrl ? (
-                    <img src={optimizeImage(imgUrl, 220, 82)} alt={cat} className="w-full h-full object-cover" style={{ objectPosition: imgPos }} loading="lazy" decoding="async" />
-                  ) : cat === 'TODOS' ? (
-                    <Layers size={28} className={`transition-colors ${isActive ? 'text-emerald-400/90' : 'text-white/30'}`} />
-                  ) : (
-                    <span className={`text-2xl lg:text-3xl font-black select-none transition-colors ${isActive ? 'text-emerald-400/80' : 'text-white/25'}`}>
-                      {(cat || '?').charAt(0)}
-                    </span>
-                  )}
-                  {imgUrl && <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent pointer-events-none" />}
-                  {isActive && <div className="absolute inset-[3px] rounded-[13px] border border-emerald-400/40 pointer-events-none" />}
-                </div>
-                <span className={`text-[10px] lg:text-[12px] font-black uppercase tracking-widest leading-none transition-colors ${
-                  isActive ? 'text-emerald-400' : 'text-zinc-400'
-                }`}>
+                }`}
+              >
+                {/* Mini-banner 4:5 estilo lookbook: foto cheia + nome DENTRO sobre gradiente. */}
+                {imgUrl ? (
+                  <img src={optimizeImage(imgUrl, 300, 82)} alt={cat} className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: imgPos }} loading="lazy" decoding="async" />
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center -mt-4">
+                    {cat === 'TODOS' ? (
+                      <Layers size={30} className={`transition-colors ${isActive ? 'text-emerald-400/90' : 'text-white/30'}`} />
+                    ) : (
+                      <span className={`text-3xl font-black select-none transition-colors ${isActive ? 'text-emerald-400/80' : 'text-white/25'}`}>
+                        {(cat || '?').charAt(0)}
+                      </span>
+                    )}
+                  </span>
+                )}
+                {/* Gradiente inferior segura o nome sobre qualquer foto */}
+                <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/85 via-black/35 to-transparent pointer-events-none" />
+                <span
+                  className={`absolute bottom-2.5 left-2.5 right-2.5 text-left text-[10px] lg:text-[11px] font-black uppercase tracking-wider leading-tight transition-colors ${isActive ? 'text-emerald-400' : 'text-white'}`}
+                  style={{ textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}
+                >
                   {cat}
                 </span>
               </motion.button>
@@ -3478,7 +3478,10 @@ function App() {
 
       {/* ── BLOCO DE CONFIANÇA — loja real e local (reforço antes do rodapé) ── */}
       <section className="w-full px-6 lg:px-10 mt-16 lg:mt-20 lg:max-w-[1280px] lg:mx-auto">
-        <div className="rounded-3xl border border-white/10 bg-zinc-900/40 p-5 lg:p-7">
+        {/* Fundo SÓLIDO (não translúcido): alpha sobre o gradiente do brilho fazia o
+            Chrome Android piscar/riscar este painel ao rolar. #202024 = mesma cor
+            que o zinc-900/40 resultava sobre o fundo — visual idêntico, sem alpha. */}
+        <div className="rounded-3xl border border-white/10 p-5 lg:p-7" style={{ background: '#202024' }}>
           <div className="flex items-center gap-2 mb-5">
             <ShieldCheck size={15} className="text-emerald-500 shrink-0" />
             <span className="text-[10px] lg:text-[11px] font-black uppercase tracking-[0.22em] text-white">Loja de verdade, daqui de {(config.location || 'Uberaba, MG').split(',')[0]}</span>
@@ -3522,12 +3525,17 @@ function App() {
         </div>
       </section>
 
-      <footer className="mt-20 bg-zinc-900/50 border-t border-white/5 pt-14 pb-10 px-6 lg:px-16 w-full">
+      {/* Footer também com fundo sólido (era zinc-900/50 translúcido — mesma causa de flicker no Android) */}
+      <footer className="mt-20 border-t border-white/5 pt-14 pb-10 px-6 lg:px-16 w-full" style={{ background: '#1f1f23' }}>
         <div className="max-w-2xl lg:max-w-5xl mx-auto space-y-12">
 
           {/* Logo + tagline */}
           <div className="flex flex-col items-center text-center gap-4">
-            <div className="h-16 w-full flex items-center justify-center relative overflow-hidden pointer-events-none">
+            {/* isolation:isolate: o mix-blend-screen da logo compõe só contra este
+                container (bg sólido igual ao footer) e não contra a página toda —
+                mix-blend "vazando" pro documento é outra causa clássica de flash
+                de tela no Chrome Android durante o scroll. Visual: idêntico. */}
+            <div className="h-16 w-full flex items-center justify-center relative overflow-hidden pointer-events-none" style={{ isolation: 'isolate', background: '#1f1f23' }}>
               {config.logoUrl ? (
                 <img src={config.logoUrl} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto max-w-full object-contain mix-blend-screen opacity-90 transition-transform" />
               ) : (
