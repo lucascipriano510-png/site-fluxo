@@ -39,6 +39,7 @@ export function initMetaPixel() {
 
   try {
     ensureFbc(); // reconstrói _fbc do fbclid antes de qualquer evento
+    captureUtmParams(); // guarda de qual anúncio o cliente veio (last-touch)
     window.fbq('init', META_PIXEL_ID);
     // PageView inicial (com event_id pra permitir dedup com a CAPI)
     trackEvent('PageView');
@@ -76,6 +77,34 @@ export function ensureFbc() {
     const exp = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toUTCString();
     document.cookie = `_fbc=${fbc}; expires=${exp}; path=/; SameSite=Lax`;
   } catch (e) { /* silencioso */ }
+}
+
+// ── Atribuição de anúncio (UTM) ──────────────────────────────────────
+// Guarda os utm_* da URL no localStorage (LAST-TOUCH: o clique mais recente
+// vence). O pedido grava isso na coluna orders.utm → dá pra ver QUAL
+// campanha/criativo gerou cada venda e cortar anúncio que só gasta.
+const UTM_KEY = 'fluxo_utm_last';
+
+export function captureUtmParams() {
+  try {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const utm = {};
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach((k) => {
+      const v = sp.get(k);
+      if (v) utm[k] = String(v).slice(0, 150);
+    });
+    // Clique de anúncio Meta sem utm configurado ainda marca a origem.
+    if (Object.keys(utm).length === 0 && sp.get('fbclid')) utm.utm_source = 'meta(fbclid)';
+    if (Object.keys(utm).length === 0) return; // sem parâmetro novo: mantém o último salvo
+    utm.at = new Date().toISOString();
+    utm.landing = (window.location.pathname + window.location.search).slice(0, 300);
+    localStorage.setItem(UTM_KEY, JSON.stringify(utm));
+  } catch { /* silencioso */ }
+}
+
+export function getStoredUtm() {
+  try { return JSON.parse(localStorage.getItem(UTM_KEY) || 'null'); } catch { return null; }
 }
 
 // Coleta os parâmetros de browser do CLIENTE (pra gravar no pedido e enviar no

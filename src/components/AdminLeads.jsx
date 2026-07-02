@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Barcode, Box, Clock, Database, Edit3, MessageCircle, X, Plus } from 'lucide-react';
+import { Barcode, Box, Clock, Database, Edit3, Megaphone, MessageCircle, X, Plus } from 'lucide-react';
 import { createMetaEventId, dispatchCAPIPurchase, dispatchCAPIRefund } from '../lib/capi';
 import { formatBRL } from '../lib/format';
 import { cancelOrder, confirmOrderSale, getOrderPurchaseEventId, markOrderPurchaseSent, restoreOrderStock, updateOrderPhone, updateOrderStatus, updateOrderValue } from '../lib/orders';
@@ -341,6 +341,19 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config,
                   <span className={`text-[10px] font-semibold ${sd.fresh ? 'text-blue-400' : 'text-zinc-500'}`}>
                     {sd.label}
                   </span>
+                </div>
+              );
+            })()}
+            {/* Origem do anúncio (orders.utm, last-touch) — mostra qual campanha/criativo vendeu */}
+            {(() => {
+              const u = lead._raw?.utm;
+              if (!u) return null;
+              const label = [u.utm_campaign, u.utm_content].filter(Boolean).join(' › ') || u.utm_source;
+              if (!label) return null;
+              return (
+                <div className="flex items-center gap-1.5 mb-2" title={`${u.utm_source || ''} ${u.utm_medium || ''} — ${u.landing || ''}`}>
+                  <Megaphone size={9} className="text-violet-400 shrink-0" />
+                  <span className="text-[10px] font-semibold text-violet-400 truncate">{label}</span>
                 </div>
               );
             })()}

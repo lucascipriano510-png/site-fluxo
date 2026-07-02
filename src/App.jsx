@@ -19,7 +19,7 @@ import { requestStockAlert, fetchStockAlerts } from './lib/stockAlerts';
 import { supabase } from './lib/supabaseClient';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
 import { createMetaEventId } from './lib/capi';
-import { initMetaPixel, trackEvent, getMetaBrowserParams } from './lib/metaPixel';
+import { initMetaPixel, trackEvent, getMetaBrowserParams, getStoredUtm } from './lib/metaPixel';
 import { criarAtendimentoFromPedido } from './lib/crm';
 import { fetchRatingsBatch } from './lib/reviews';
 // Admin + recharts: code-split. Só baixam quando o painel abre — fora do bundle do cliente.
@@ -2002,6 +2002,7 @@ function App() {
         fbc: metaParams.fbc,
         client_ua: metaParams.client_ua,
         src_url: metaParams.src_url,
+        utm: getStoredUtm(), // de qual anúncio/campanha o cliente veio (last-touch)
       };
 
       console.log('[checkout] enviando pedido:', payload);
