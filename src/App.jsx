@@ -141,6 +141,15 @@ const COLOR_HEX = {
 };
 const colorDot = (name) => COLOR_HEX[String(name || '').toLowerCase()] || null;
 
+// Categoria vem do banco no SINGULAR (CAMISA, CALÇA…) — na vitrine exibimos o
+// PLURAL (CAMISAS, CALÇAS…). SÓ exibição: o valor do filtro/URL segue o original.
+// Regra: já termina em S (TÊNIS, ÓCULOS) fica igual; senão ganha S.
+const pluralCat = (cat) => {
+  const c = String(cat || '').trim();
+  if (!c || c === 'TODOS') return c;
+  return /s$/i.test(c) ? c : `${c}S`;
+};
+
 const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, sizes: sizesProp, fixedWidth, fullRes = false }) => {
   const [loaded, setLoaded] = React.useState(false);
   const [inView, setInView] = React.useState(priority);
@@ -2617,7 +2626,7 @@ function App() {
                 onClick={() => { setSelectedCategory(cat); setSelectedSubcategory('TODOS'); setSelectedSize('TODOS'); setSearchQuery(''); setKitsOnly(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }}
                 className={`text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-colors pb-0.5 border-b-2 ${selectedCategory === cat ? 'text-white border-white' : 'text-zinc-500 border-transparent hover:text-zinc-300 hover:border-zinc-600'}`}
               >
-                {cat}
+                {pluralCat(cat)}
               </button>
             ))}
           </nav>
@@ -2745,6 +2754,9 @@ function App() {
           );
         })()}
 
+        <div>
+        {/* Título da fileira — nem todo mundo deduz que os tiles são categorias */}
+        <p className="text-[10px] lg:text-[11px] font-black uppercase tracking-widest text-white/90 mb-3 lg:text-center">Categorias</p>
         <div id="catalog-section" className="flex gap-3 lg:gap-5 overflow-x-auto lg:overflow-x-visible lg:flex-wrap lg:justify-center no-scrollbar pb-1 lg:pb-0 mask-linear lg:[mask-image:none] native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
           {/* Botão destacado de KITS — mini-banner com a FOTO do kit de capa + selo ⚡.
               Nada de ícone solto em fundo vazio: entra na mesma família visual das
@@ -2842,11 +2854,12 @@ function App() {
                   className={`absolute bottom-2.5 left-2.5 right-2.5 text-left text-[10px] lg:text-[11px] font-black uppercase tracking-wider leading-tight transition-colors ${isActive ? 'text-emerald-400' : 'text-white'}`}
                   style={{ textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}
                 >
-                  {cat}
+                  {pluralCat(cat)}
                 </span>
               </motion.button>
             );
           })}
+        </div>
         </div>
 
 
@@ -3727,7 +3740,7 @@ function App() {
         const crumbs = [
           { label: 'início', onClick: goHome },
           selectedProduct.category && selectedProduct.category !== 'TODOS'
-            ? { label: selectedProduct.category, onClick: () => goCategory(selectedProduct.category) } : null,
+            ? { label: pluralCat(selectedProduct.category), onClick: () => goCategory(selectedProduct.category) } : null,
           selectedProduct.subcategory
             ? { label: selectedProduct.subcategory, onClick: () => goCategory(selectedProduct.category, selectedProduct.subcategory) } : null,
           { label: selectedProduct.name, current: true },
