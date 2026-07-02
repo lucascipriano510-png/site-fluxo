@@ -1,7 +1,8 @@
 // FLUXO OUTLET — /sitemap.xml (Vercel Function)
 // Sitemap gerado do Supabase: home + /p/:sku de cada produto ativo.
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://tapgnlrjhrhewqlpahvg.supabase.co';
-const ANON = process.env.VITE_SUPABASE_ANON_KEY || '';
+// Mesmo fallback do supabaseClient.js — chave PUBLICÁVEL (pública por design).
+const ANON = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_XaGrDdX2df8qolf2WocwuQ_FsVP1-kW';
 const SITE = 'https://www.fluxooutlet.com.br';
 
 export default async function handler(req, res) {
