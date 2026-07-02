@@ -1435,6 +1435,11 @@ function App() {
   const initialUrlProduto = useRef(
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('produto') : null
   );
+  // Captura ?sacola=SKU:TAM:QTD,SKU:TAM — link de sacola montada (vendedor monta o
+  // pedido e manda um link; abre com tudo na sacola). QTD é opcional (padrão 1).
+  const initialUrlSacola = useRef(
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sacola') : null
+  );
   const [activeProductImage, setActiveProductImage] = useState(null);
   useEffect(() => {
     if (selectedProduct && !selectedProduct.is_kit) {
@@ -2219,6 +2224,71 @@ function App() {
       setSelectedProduct(found);
       setSelectedSizes({});
     }
+  }, [productsLoaded, products]);
+
+  // Monta a sacola via deeplink (?sacola=SKU:TAM:QTD,...) — o vendedor fecha o
+  // pedido no WhatsApp e manda um link que já abre com tudo na sacola.
+  // Valida estoque por tamanho; item inválido/esgotado é pulado (avisa no toast).
+  useEffect(() => {
+    if (!productsLoaded || !(products || []).length) return;
+    const raw = initialUrlSacola.current;
+    if (!raw) return;
+    initialUrlSacola.current = null; // evita re-trigger
+    let added = 0, skipped = 0;
+    setCart(prev => {
+      const updated = [...(prev || [])];
+      raw.split(',').forEach(part => {
+        const [skuRaw, sizeRaw, qtyRaw] = part.split(':');
+        const sku = (skuRaw || '').trim();
+        if (!sku) return;
+        const product = products.find(p =>
+          String(p.sku || '').toUpperCase() === sku.toUpperCase() || String(p.id) === sku
+        );
+        // Kit não entra direto (as peças dele é que vão pra sacola) — pula.
+        if (!product || product.is_kit) { skipped++; return; }
+        // Resolve o tamanho contra o formato real do banco (string ou {size, stock}).
+        const sizes = product.sizes || [];
+        const sizeName = (sizeRaw || '').trim().toUpperCase() || 'U';
+        const szEntry = sizes.find(s => String(typeof s === 'string' ? s : s.size).toUpperCase() === sizeName);
+        if (!szEntry && sizes.length > 0) { skipped++; return; }
+        const maxStock = szEntry ? (typeof szEntry === 'string' ? (product.stock || 0) : (szEntry.stock || 0)) : (product.stock || 0);
+        if (maxStock <= 0) { skipped++; return; }
+        const wanted = Math.max(1, parseInt(qtyRaw, 10) || 1);
+        const itemKey = `${product.id}-${sizeName}`;
+        const existingIdx = updated.findIndex(i => i.itemKey === itemKey);
+        const already = existingIdx >= 0 ? updated[existingIdx].quantity : 0;
+        const quantity = Math.min(wanted, maxStock - already);
+        if (quantity <= 0) { skipped++; return; }
+        if (existingIdx >= 0) {
+          updated[existingIdx] = { ...updated[existingIdx], quantity: already + quantity };
+        } else {
+          const live = isOfferLive(product);
+          updated.push({
+            ...product,
+            price: live ? offerPrice(product) : product.price,
+            offer_applied: live,
+            size: sizeName,
+            quantity,
+            itemKey,
+          });
+        }
+        added++;
+      });
+      return added > 0 ? updated : prev;
+    });
+    // Limpa o param da URL (o link já cumpriu o papel; evita re-adicionar no F5).
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('sacola');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    } catch {}
+    if (added > 0) {
+      setShowCart(true);
+      showToast(skipped > 0 ? `Sacola montada ✓ (${skipped} peça(s) esgotada(s))` : 'Sacola montada pra você ✓');
+    } else if (skipped > 0) {
+      showToast('As peças desse link esgotaram 😔', 'error');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productsLoaded, products]);
 
   const sortedProducts = useMemo(() => {
@@ -4393,7 +4463,29 @@ function App() {
           <div className="max-w-md mx-auto min-h-screen flex flex-col bg-zinc-950 relative">
             <div className="sticky top-0 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-6 flex justify-between items-center h-20 z-10">
               <h2 className="text-xl font-black uppercase text-white">Sua Sacola <span className="bg-white text-zinc-950 text-[10px] px-2 py-0.5 rounded-full ml-2">{cart.length}</span></h2>
-              <button onClick={() => setShowCart(false)} className="p-2 text-zinc-400 bg-zinc-900 rounded-full touch-manipulation"><X size={18}/></button>
+              <div className="flex items-center gap-2">
+                {cart.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      // Link de sacola montada: recria esta sacola em qualquer aparelho.
+                      const parts = cart.map(i => `${i.sku || i.id}:${i.size || 'U'}${i.quantity > 1 ? `:${i.quantity}` : ''}`);
+                      const url = `https://www.fluxooutlet.com.br/?sacola=${parts.join(',')}`;
+                      try {
+                        if (navigator.share) {
+                          await navigator.share({ title: 'Sua sacola — Fluxo Outlet', text: 'Montei sua sacola, é só finalizar 👇', url });
+                        } else {
+                          await navigator.clipboard.writeText(url);
+                          showToast('Link da sacola copiado!');
+                        }
+                      } catch { /* cancelado pelo usuário — ignora */ }
+                    }}
+                    data-testid="btn-share-cart"
+                    className="p-2 text-zinc-400 bg-zinc-900 rounded-full touch-manipulation"
+                    aria-label="Compartilhar sacola"
+                  ><Share2 size={18}/></button>
+                )}
+                <button onClick={() => setShowCart(false)} className="p-2 text-zinc-400 bg-zinc-900 rounded-full touch-manipulation"><X size={18}/></button>
+              </div>
             </div>
             
             <div className="flex-1 space-y-4 px-6 py-6 pb-64">
