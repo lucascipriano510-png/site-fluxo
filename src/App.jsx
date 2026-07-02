@@ -2741,20 +2741,41 @@ function App() {
         })()}
 
         <div id="catalog-section" className="flex gap-3 lg:gap-5 overflow-x-auto lg:overflow-x-visible lg:flex-wrap lg:justify-center no-scrollbar pb-1 lg:pb-0 mask-linear lg:[mask-image:none] native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
-          {/* Botão destacado de KITS — mini-banner da mesma família das categorias */}
-          {(products || []).some(p => p.is_kit) && (
-            <button
-              key="__kits__"
-              onClick={() => { setKitsOnly(v => !v); }}
-              data-testid="category-filter-KITS"
-              className={`relative shrink-0 w-[92px] h-[115px] lg:w-[120px] lg:h-[150px] rounded-2xl overflow-hidden border-2 flex items-center justify-center transition-all duration-200 touch-manipulation ${kitsOnly
-                ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 border-amber-300 shadow-[0_0_24px_rgba(251,191,36,0.45)]'
-                : 'bg-zinc-950 border-amber-400/40 hover:border-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.15)]'}`}
-            >
-              <Zap size={30} className={`-mt-4 ${kitsOnly ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'}`} />
-              <span className={`absolute bottom-2.5 left-2.5 right-2.5 text-left text-[10px] lg:text-[11px] font-black uppercase tracking-wider leading-tight ${kitsOnly ? 'text-zinc-950' : 'text-amber-400'}`}>Kits</span>
-            </button>
-          )}
+          {/* Botão destacado de KITS — mini-banner com a FOTO do kit de capa + selo ⚡.
+              Nada de ícone solto em fundo vazio: entra na mesma família visual das
+              categorias (foto cheia + nome dentro). Sem kit com foto, cai no gradiente. */}
+          {(products || []).some(p => p.is_kit) && (() => {
+            const kitCover = (products || []).find(p => p.is_kit && p.is_active !== false && p.image)?.image;
+            return (
+              <button
+                key="__kits__"
+                onClick={() => { setKitsOnly(v => !v); }}
+                data-testid="category-filter-KITS"
+                className={`relative shrink-0 w-[92px] h-[115px] lg:w-[120px] lg:h-[150px] rounded-2xl overflow-hidden border-2 transition-all duration-200 touch-manipulation bg-zinc-950 ${kitsOnly
+                  ? 'border-amber-300 shadow-[0_0_24px_rgba(251,191,36,0.45)]'
+                  : 'border-amber-400/40 hover:border-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.15)]'}`}
+              >
+                {kitCover ? (
+                  <img src={optimizeImage(kitCover, 300, 82)} alt="Kits" className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
+                ) : (
+                  <span className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 flex items-center justify-center">
+                    <Zap size={30} className="-mt-4 text-zinc-950 fill-zinc-950" />
+                  </span>
+                )}
+                <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/85 via-black/35 to-transparent pointer-events-none" />
+                {/* Selo ⚡ — assinatura visual dos kits em todo o site */}
+                <span className="absolute top-2 left-2 w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center shadow-[0_2px_10px_rgba(251,191,36,0.5)]">
+                  <Zap size={13} className="text-zinc-950 fill-zinc-950" />
+                </span>
+                <span
+                  className={`absolute bottom-2.5 left-2.5 right-2.5 text-left text-[10px] lg:text-[11px] font-black uppercase tracking-wider leading-tight transition-colors ${kitsOnly ? 'text-amber-300' : 'text-white'}`}
+                  style={{ textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}
+                >
+                  Kits
+                </span>
+              </button>
+            );
+          })()}
           {kitsOnly && (
             <button
               onClick={() => setKitsOnly(false)}
@@ -2781,18 +2802,33 @@ function App() {
                     : 'border-white/10 hover:border-white/30'
                 }`}
               >
-                {/* Mini-banner 4:5 estilo lookbook: foto cheia + nome DENTRO sobre gradiente. */}
+                {/* Mini-banner 4:5 estilo lookbook: foto cheia + nome DENTRO sobre gradiente.
+                    TODOS sem imagem própria = COLAGEM 2×2 dos mais vendidos (o catálogo
+                    inteiro num card). Categoria sem foto cai na letra grande. */}
                 {imgUrl ? (
                   <img src={optimizeImage(imgUrl, 300, 82)} alt={cat} className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: imgPos }} loading="lazy" decoding="async" />
-                ) : (
-                  <span className="absolute inset-0 flex items-center justify-center -mt-4">
-                    {cat === 'TODOS' ? (
+                ) : cat === 'TODOS' ? (() => {
+                  const collage = [...(products || [])]
+                    .filter(p => !p.is_kit && p.is_active !== false && (p.stock || 0) > 0 && p.image)
+                    .sort((a, b) => (b.sales || 0) - (a.sales || 0))
+                    .slice(0, 4);
+                  if (collage.length < 4) return (
+                    <span className="absolute inset-0 flex items-center justify-center -mt-4">
                       <Layers size={30} className={`transition-colors ${isActive ? 'text-emerald-400/90' : 'text-white/30'}`} />
-                    ) : (
-                      <span className={`text-3xl font-black select-none transition-colors ${isActive ? 'text-emerald-400/80' : 'text-white/25'}`}>
-                        {(cat || '?').charAt(0)}
-                      </span>
-                    )}
+                    </span>
+                  );
+                  return (
+                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-zinc-950">
+                      {collage.map((p, i) => (
+                        <img key={p.id} src={optimizeImage(p.image, 160, 78)} alt="" className="w-full h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
+                      ))}
+                    </div>
+                  );
+                })() : (
+                  <span className="absolute inset-0 flex items-center justify-center -mt-4">
+                    <span className={`text-3xl font-black select-none transition-colors ${isActive ? 'text-emerald-400/80' : 'text-white/25'}`}>
+                      {(cat || '?').charAt(0)}
+                    </span>
                   </span>
                 )}
                 {/* Gradiente inferior segura o nome sobre qualquer foto */}
