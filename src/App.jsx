@@ -230,7 +230,7 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
 // SEMPRE mudo (autoplay/loop/playsInline — único jeito de tocar sozinho no
 // iPhone). Toque AMPLIA (continua mudo, nunca tem som); X fecha o quadradinho.
 // ──────────────────────────────────────────────────────────────
-const ProductVideoPip = ({ src }) => {
+const ProductVideoPip = ({ src, poster }) => {
   const [closed, setClosed] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const vidRef = useRef(null);
@@ -241,14 +241,16 @@ const ProductVideoPip = ({ src }) => {
   }, [src, expanded]);
   if (!src || closed) return null;
 
+  // poster = imagem do produto (já existe) mostrada NA HORA enquanto o vídeo baixa.
+  const posterUrl = poster ? optimizeImage(poster, 300, 72) : undefined;
   const videoEl = (cls, style) => (
-    <video ref={vidRef} src={src} muted loop autoPlay playsInline preload="auto" className={cls} style={style} />
+    <video ref={vidRef} src={src} poster={posterUrl} muted loop autoPlay playsInline preload="auto" className={cls} style={style} />
   );
 
   if (expanded) {
     return (
       <div
-        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6"
+        className="fixed inset-0 z-[210] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6"
         onClick={() => setExpanded(false)}
         role="dialog"
         aria-label="Vídeo do produto ampliado"
@@ -267,7 +269,7 @@ const ProductVideoPip = ({ src }) => {
 
   return (
     <div
-      className="fixed z-[90] left-3 bottom-[92px] lg:bottom-6 w-[108px] lg:w-[132px] aspect-[3/4] rounded-2xl overflow-hidden border border-white/15 bg-zinc-950 shadow-[0_12px_30px_rgba(0,0,0,0.55)]"
+      className="fixed z-[130] left-3 bottom-[92px] lg:bottom-6 w-[108px] lg:w-[132px] aspect-[3/4] rounded-2xl overflow-hidden border border-white/15 bg-zinc-950 shadow-[0_12px_30px_rgba(0,0,0,0.55)]"
       style={{ animation: 'pipIn 0.3s ease-out' }}
     >
       <style>{`@keyframes pipIn { from { opacity: 0; transform: translateY(12px) scale(0.92); } to { opacity: 1; transform: none; } }`}</style>
@@ -3837,6 +3839,9 @@ function App() {
       )}
 
       {selectedProduct && selectedProduct.is_kit && (
+        <ProductVideoPip key={`pip-kit-${selectedProduct.id}`} src={selectedProduct.video_url} poster={selectedProduct.image} />
+      )}
+      {selectedProduct && selectedProduct.is_kit && (
         <KitModal
           kit={selectedProduct}
           products={products}
@@ -3911,7 +3916,7 @@ function App() {
         return (
         <React.Fragment key={`product-modal-${selectedProduct.id}`}>
           {/* Pop-up flutuante de vídeo (opcional, só se o produto tiver video_url) */}
-          <ProductVideoPip key={`pip-${selectedProduct.id}`} src={selectedProduct.video_url} />
+          <ProductVideoPip key={`pip-${selectedProduct.id}`} src={selectedProduct.video_url} poster={selectedProduct.image} />
           {/* ── MOBILE: página de produto em fluxo no documento (oculto no desktop) ── */}
           {/* A barra real (hambúrguer/logo/perfil/sacola) fica sticky logo acima — barra compartilhada com o home. */}
           <motion.div
