@@ -19,11 +19,13 @@ const thumb = (src, w) =>
 
 const fmtBRL = (n) => `R$ ${Number(n || 0).toFixed(2).replace('.', ',')}`;
 
+const MAX_TILES = 12;
+
 async function fetchProducts(ids) {
-  const list = ids.slice(0, 4).map((s) => `"${s.replace(/[^\w-]/g, '')}"`).join(',');
+  const list = ids.slice(0, MAX_TILES).map((s) => `"${s.replace(/[^\w-]/g, '')}"`).join(',');
   const fields = 'sku,name,price,promotional_price,image,stock';
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/products?select=${fields}&sku=in.(${list})&limit=4`,
+    `${SUPABASE_URL}/rest/v1/products?select=${fields}&sku=in.(${list})&limit=${MAX_TILES}`,
     { headers: { apikey: ANON, Authorization: `Bearer ${ANON}` } },
   );
   if (!r.ok) return [];
@@ -36,22 +38,26 @@ async function fetchProducts(ids) {
 }
 
 // Um tile do mosaico: foto cobrindo o espaço + etiqueta de preço no rodapé.
+// A etiqueta encolhe junto com o tile pra não cobrir a foto em grades densas.
 function tile(p, w, h) {
   const promo = Number(p.promotional_price || 0);
   const price = promo > 0 && promo < p.price ? promo : p.price;
+  const fs = w >= 550 ? 26 : w >= 380 ? 21 : w >= 280 ? 17 : 14;
+  const pad = w >= 380 ? '6px 14px' : '4px 10px';
+  const off = w >= 380 ? 12 : 8;
   return {
     type: 'div',
     props: {
       style: { display: 'flex', position: 'relative', width: w, height: h, overflow: 'hidden' },
       children: [
-        { type: 'img', props: { src: thumb(p.image, Math.max(w, 400)), width: w, height: h, style: { objectFit: 'cover', width: '100%', height: '100%' } } },
+        { type: 'img', props: { src: thumb(p.image, Math.max(Math.ceil(w), 300)), width: w, height: h, style: { objectFit: 'cover', width: '100%', height: '100%' } } },
         {
           type: 'div',
           props: {
             style: {
-              display: 'flex', position: 'absolute', left: 12, bottom: 12,
-              background: '#09090b', color: '#ffffff', padding: '6px 14px',
-              borderRadius: 999, fontSize: 26, fontWeight: 700,
+              display: 'flex', position: 'absolute', left: off, bottom: off,
+              background: '#09090b', color: '#ffffff', padding: pad,
+              borderRadius: 999, fontSize: fs, fontWeight: 700,
             },
             children: fmtBRL(price),
           },
@@ -61,10 +67,20 @@ function tile(p, w, h) {
   };
 }
 
+// Quantas colunas pra N peças (linhas = ceil(N/cols)).
+function gridCols(n) {
+  if (n <= 2) return n;
+  if (n <= 4) return 2;
+  if (n <= 6) return 3;
+  if (n <= 8) return 4;
+  if (n <= 9) return 3;
+  return 4;
+}
+
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const ids = String(searchParams.get('ids') || '')
-    .split(',').map((s) => s.trim()).filter(Boolean).slice(0, 4);
+    .split(',').map((s) => s.trim()).filter(Boolean).slice(0, MAX_TILES);
 
   let products = [];
   try { products = await fetchProducts(ids); } catch { /* cai no fallback */ }
@@ -72,12 +88,12 @@ export default async function handler(req) {
   const W = 1200, H = 630, BAR = 76;
   const bodyH = H - BAR;
 
-  // Layout por quantidade: 1 = inteira; 2 = lado a lado; 3 = 1 grande + 2 empilhadas; 4 = grade 2x2.
+  // Layout por quantidade: 3 = 1 grande + 2 empilhadas (caso especial bonito);
+  // demais = grade de linhas cheias — a última linha divide a largura entre o
+  // que sobrou (5 em 3x2 vira 3 em cima + 2 maiores embaixo, sem buraco).
   let grid;
   if (products.length <= 1) {
     grid = products.length ? [tile(products[0], W, bodyH)] : [];
-  } else if (products.length === 2) {
-    grid = [tile(products[0], W / 2, bodyH), tile(products[1], W / 2, bodyH)];
   } else if (products.length === 3) {
     grid = [
       tile(products[0], W / 2, bodyH),
@@ -90,15 +106,27 @@ export default async function handler(req) {
       },
     ];
   } else {
-    grid = [
-      {
+    const cols = gridCols(products.length);
+    const rows = Math.ceil(products.length / cols);
+    const rowH = bodyH / rows;
+    const rowDivs = [];
+    for (let r = 0; r < rows; r++) {
+      const rowItems = products.slice(r * cols, (r + 1) * cols);
+      rowDivs.push({
         type: 'div',
         props: {
-          style: { display: 'flex', flexWrap: 'wrap', width: W, height: bodyH },
-          children: products.slice(0, 4).map((p) => tile(p, W / 2, bodyH / 2)),
+          style: { display: 'flex', width: W, height: rowH },
+          children: rowItems.map((p) => tile(p, W / rowItems.length, rowH)),
         },
+      });
+    }
+    grid = [{
+      type: 'div',
+      props: {
+        style: { display: 'flex', flexDirection: 'column', width: W, height: bodyH },
+        children: rowDivs,
       },
-    ];
+    }];
   }
 
   return new ImageResponse(

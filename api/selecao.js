@@ -38,7 +38,7 @@ export default async function handler(req, res) {
   const names = products.slice(0, 4).map((p) => p.name).join(' • ');
   const title = `Seleção Fluxo Outlet — ${products.length} peça(s) escolhida(s) pra você`;
   const desc = `${names}${products.length > 4 ? ' e mais…' : ''} Toca pra ver tudo e finalizar.`;
-  const ogImg = `${SITE}/api/og-selecao?ids=${encodeURIComponent(ids.slice(0, 4).join(','))}`;
+  const ogImg = `${SITE}/api/og-selecao?ids=${encodeURIComponent(ids.slice(0, 12).join(','))}`;
   const canonical = `${SITE}/s/${encodeURIComponent(idsParam)}`;
 
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
