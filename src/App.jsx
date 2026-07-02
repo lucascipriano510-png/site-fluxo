@@ -1442,6 +1442,42 @@ function App() {
     }
     setShowSizeGuide(false); // trocar/fechar produto nunca deixa o guia aberto
   }, [selectedProduct]);
+  // SEO: título da aba + JSON-LD Product do produto aberto (Google executa JS).
+  useEffect(() => {
+    const BASE_TITLE = 'FLUXO OUTLET';
+    const p = selectedProduct;
+    if (!p) { document.title = BASE_TITLE; return; }
+    document.title = `${p.name} | ${BASE_TITLE}`;
+    try {
+      let el = document.getElementById('ldjson-product');
+      if (!el) {
+        el = document.createElement('script');
+        el.type = 'application/ld+json';
+        el.id = 'ldjson-product';
+        document.head.appendChild(el);
+      }
+      const promo = Number(p.promotional_price || 0);
+      const price = promo > 0 && promo < p.price ? promo : Number(p.price || 0);
+      el.textContent = JSON.stringify({
+        '@context': 'https://schema.org', '@type': 'Product',
+        name: p.name, sku: String(p.sku || p.id),
+        image: [p.image, ...(Array.isArray(p.gallery) ? p.gallery : [])].filter(Boolean),
+        description: p.description || p.bot_description || undefined,
+        brand: { '@type': 'Brand', name: 'Fluxo Outlet' },
+        offers: {
+          '@type': 'Offer', priceCurrency: 'BRL', price: price.toFixed(2),
+          availability: (p.is_kit || (p.stock || 0) > 0) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          url: `https://www.fluxooutlet.com.br/p/${encodeURIComponent(String(p.sku || p.id))}`,
+        },
+      });
+    } catch { /* SEO é bônus, nunca quebra a loja */ }
+    return () => {
+      document.title = BASE_TITLE;
+      const el = document.getElementById('ldjson-product');
+      if (el) el.textContent = '';
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProduct?.id]);
   // 🟣 ViewContent (Pixel + CAPI com mesmo event_id) — dispara em QUALQUER abertura
   // de produto (catálogo, relacionados, deeplink). Meio do funil: sem ele a
   // Meta não tem sinal de "viu a peça" pra retargeting/otimização de catálogo.
@@ -1831,7 +1867,8 @@ function App() {
   // Usa o deep link ?produto=SKU que o site já entende.
   const handleShareProduct = async (product) => {
     if (!product) return;
-    const url = `https://www.fluxooutlet.com.br/?produto=${encodeURIComponent(product.sku || '')}`;
+    // /p/SKU = rota com OG dinâmico (api/produto.js): preview rico no WhatsApp.
+    const url = `https://www.fluxooutlet.com.br/p/${encodeURIComponent(String(product.sku || product.id))}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: `${product.name} — Fluxo Outlet`, text: 'Olha essa peça da Fluxo Outlet 👇', url });
