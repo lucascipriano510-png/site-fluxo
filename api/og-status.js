@@ -2,8 +2,8 @@
 // FLUXO OUTLET — /status/:sku (Vercel Edge Function)
 // Arte PRONTA pra Status do WhatsApp / Stories (1080x1920), com direção
 // de arte de drop de streetwear. 3 estilos no mesmo template:
-//   ?style=poster (padrão) — foto full-bleed + degradê + preço gigante
-//   ?style=drop           — bold typography + etiqueta de preço rotacionada
+//   ?style=drop (padrão)  — bold typography + etiqueta de preço rotacionada
+//   ?style=poster         — foto full-bleed + degradê + preço gigante
 //   ?style=neon           — moldura com glow esmeralda, vibe vitrine de rua
 // Uso: abrir fluxooutlet.com.br/status/0001 no celular -> salvar -> postar.
 // Rewrite em vercel.json: /status/:sku -> /api/og-status?sku=:sku
@@ -140,7 +140,7 @@ function styleNeon(p, price, sale, offerLive) {
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const sku = String(searchParams.get('sku') || '').slice(0, 64);
-  const style = String(searchParams.get('style') || 'poster');
+  const style = String(searchParams.get('style') || 'drop');
 
   let p = null;
   try { if (sku) p = await fetchProduct(sku); } catch { /* cai no 404 */ }
@@ -156,9 +156,9 @@ export default async function handler(req) {
   else if (Number(p.promotional_price || 0) > 0 && Number(p.promotional_price) < price) sale = Number(p.promotional_price);
 
   const body =
-    style === 'drop' ? styleDrop(p, price, sale, offerLive) :
+    style === 'poster' ? stylePoster(p, price, sale, offerLive) :
     style === 'neon' ? styleNeon(p, price, sale, offerLive) :
-    stylePoster(p, price, sale, offerLive);
+    styleDrop(p, price, sale, offerLive);
 
   const fontData = await getFont();
   return new ImageResponse(body, {
