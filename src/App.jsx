@@ -1725,6 +1725,27 @@ function App() {
   };
 
   const categories = useMemo(() => ['TODOS', ...new Set((products || []).filter(p => !p.is_kit).map(p => p.category))], [products]);
+
+  // ── Carrossel INFINITO de categorias (mobile) ──
+  // 3 cópias da fileira + "teleporte" invisível nas bordas: passou de 1.5x a
+  // largura de uma cópia, volta 1x; antes de 0.5x, avança 1x. Como as cópias são
+  // idênticas, o salto não aparece. Desktop (flex-wrap, sem scroll) usa 1 cópia.
+  const catRailRef = useRef(null);
+  const onCatRailScroll = () => {
+    const el = catRailRef.current;
+    if (!el || isDesktopViewport) return;
+    const W = el.scrollWidth / 3;
+    if (W <= el.clientWidth) return; // cabe tudo na tela: sem loop
+    if (el.scrollLeft < W * 0.5) el.scrollLeft += W;
+    else if (el.scrollLeft > W * 1.5) el.scrollLeft -= W;
+  };
+  useEffect(() => {
+    if (isDesktopViewport || kitsOnly) return;
+    const el = catRailRef.current;
+    if (!el) return;
+    const W = el.scrollWidth / 3;
+    if (W > el.clientWidth) el.scrollLeft = W; // começa na cópia do meio
+  }, [isDesktopViewport, kitsOnly, categories.length, productsLoaded]);
   const subtotal = useMemo(() => (cart || []).reduce((acc, item) => acc + (item.price * item.quantity), 0), [cart]);
 
   // Oferta do Dia: ao expirar um relógio, este state muda e re-renderiza a loja toda,
@@ -2757,15 +2778,19 @@ function App() {
         <div>
         {/* Título da fileira — nem todo mundo deduz que os tiles são categorias */}
         <p className="text-[10px] lg:text-[11px] font-black uppercase tracking-widest text-white/90 mb-3 lg:text-center">Categorias</p>
-        <div id="catalog-section" className="flex gap-3 lg:gap-5 overflow-x-auto lg:overflow-x-visible lg:flex-wrap lg:justify-center no-scrollbar pb-1 lg:pb-0 mask-linear lg:[mask-image:none] native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
-          {/* Botão destacado de KITS — mini-banner com a FOTO do kit de capa + selo ⚡.
-              Nada de ícone solto em fundo vazio: entra na mesma família visual das
-              categorias (foto cheia + nome dentro). Sem kit com foto, cai no gradiente. */}
-          {(products || []).some(p => p.is_kit) && (() => {
-            const kitCover = (products || []).find(p => p.is_kit && p.is_active !== false && p.image)?.image;
-            return (
+        <div id="catalog-section" ref={catRailRef} onScroll={onCatRailScroll} className="flex gap-3 lg:gap-5 overflow-x-auto lg:overflow-x-visible lg:flex-wrap lg:justify-center no-scrollbar pb-1 lg:pb-0 mask-linear lg:[mask-image:none] native-x-scroll items-start" style={{ touchAction: 'pan-x pan-y' }}>
+          {(() => {
+            // Fileira renderizada por função p/ permitir o LOOP INFINITO: no mobile
+            // são 3 cópias idênticas + teleporte nas bordas (onCatRailScroll).
+            // SEM tile "TODOS" (padrão das grandes): clicar na categoria ATIVA
+            // desmarca; voltar do Android, logo e breadcrumb também limpam.
+            const hasKits = (products || []).some(p => p.is_kit);
+            const kitCover = hasKits ? ((products || []).find(p => p.is_kit && p.is_active !== false && p.image)?.image) : null;
+            const realCats = categories.filter(c => c !== 'TODOS');
+
+            const renderKitsTile = (copy) => (
               <button
-                key="__kits__"
+                key={`__kits__${copy}`}
                 onClick={() => { setKitsOnly(v => !v); }}
                 data-testid="category-filter-KITS"
                 className={`relative shrink-0 w-[92px] h-[115px] lg:w-[120px] lg:h-[150px] rounded-2xl overflow-hidden border-2 transition-all duration-200 touch-manipulation bg-zinc-950 ${kitsOnly
@@ -2780,7 +2805,6 @@ function App() {
                   </span>
                 )}
                 <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/85 via-black/35 to-transparent pointer-events-none" />
-                {/* Selo ⚡ — assinatura visual dos kits em todo o site */}
                 <span className="absolute top-2 left-2 w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center shadow-[0_2px_10px_rgba(251,191,36,0.5)]">
                   <Zap size={13} className="text-zinc-950 fill-zinc-950" />
                 </span>
@@ -2792,73 +2816,63 @@ function App() {
                 </span>
               </button>
             );
-          })()}
-          {kitsOnly && (
-            <button
-              onClick={() => setKitsOnly(false)}
-              className="relative px-3 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation flex items-center gap-1 shrink-0 text-amber-400 border-amber-400/25 bg-amber-400/5 hover:bg-amber-400/10 hover:border-amber-400/50 active:scale-95"
-            >
-              <ChevronLeft size={12} /> Voltar
-            </button>
-          )}
-          {!kitsOnly && categories.map((cat) => {
-            const isActive = selectedCategory === cat;
-            const catImgData = getCatImgData(cat !== 'TODOS' ? (config.category_images || {})[cat] : null);
-            const imgUrl = catImgData.url;
-            const imgPos = catImgData.pos;
-            const hasLogo = !!config.logoUrl;
-            return (
-              <motion.button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                data-testid={`category-filter-${cat}`}
-                whileTap={{ scale: 0.96 }}
-                className={`relative shrink-0 w-[92px] h-[115px] lg:w-[120px] lg:h-[150px] rounded-2xl overflow-hidden border-2 transition-all duration-200 touch-manipulation bg-zinc-950 ${
-                  isActive
-                    ? 'border-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.45)]'
-                    : 'border-white/10 hover:border-white/30'
-                }`}
-              >
-                {/* Mini-banner 4:5 estilo lookbook: foto cheia + nome DENTRO sobre gradiente.
-                    TODOS sem imagem própria = COLAGEM 2×2 dos mais vendidos (o catálogo
-                    inteiro num card). Categoria sem foto cai na letra grande. */}
-                {imgUrl ? (
-                  <img src={optimizeImage(imgUrl, 300, 82)} alt={cat} className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: imgPos }} loading="lazy" decoding="async" />
-                ) : cat === 'TODOS' ? (() => {
-                  const collage = [...(products || [])]
-                    .filter(p => !p.is_kit && p.is_active !== false && (p.stock || 0) > 0 && p.image)
-                    .sort((a, b) => (b.sales || 0) - (a.sales || 0))
-                    .slice(0, 4);
-                  if (collage.length < 4) return (
-                    <span className="absolute inset-0 flex items-center justify-center -mt-4">
-                      <Layers size={30} className={`transition-colors ${isActive ? 'text-emerald-400/90' : 'text-white/30'}`} />
-                    </span>
-                  );
-                  return (
-                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-zinc-950">
-                      {collage.map((p, i) => (
-                        <img key={p.id} src={optimizeImage(p.image, 160, 78)} alt="" className="w-full h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
-                      ))}
-                    </div>
-                  );
-                })() : (
-                  <span className="absolute inset-0 flex items-center justify-center -mt-4">
-                    <span className={`text-3xl font-black select-none transition-colors ${isActive ? 'text-emerald-400/80' : 'text-white/25'}`}>
-                      {(cat || '?').charAt(0)}
-                    </span>
-                  </span>
-                )}
-                {/* Gradiente inferior segura o nome sobre qualquer foto */}
-                <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/85 via-black/35 to-transparent pointer-events-none" />
-                <span
-                  className={`absolute bottom-2.5 left-2.5 right-2.5 text-left text-[10px] lg:text-[11px] font-black uppercase tracking-wider leading-tight transition-colors ${isActive ? 'text-emerald-400' : 'text-white'}`}
-                  style={{ textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}
+
+            const renderCatTile = (cat, copy) => {
+              const isActive = selectedCategory === cat;
+              const catImgData = getCatImgData((config.category_images || {})[cat]);
+              const imgUrl = catImgData.url;
+              const imgPos = catImgData.pos;
+              return (
+                <motion.button
+                  key={`${cat}-${copy}`}
+                  onClick={() => setSelectedCategory(isActive ? 'TODOS' : cat)}
+                  data-testid={`category-filter-${cat}`}
+                  whileTap={{ scale: 0.96 }}
+                  className={`relative shrink-0 w-[92px] h-[115px] lg:w-[120px] lg:h-[150px] rounded-2xl overflow-hidden border-2 transition-all duration-200 touch-manipulation bg-zinc-950 ${
+                    isActive
+                      ? 'border-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.45)]'
+                      : 'border-white/10 hover:border-white/30'
+                  }`}
                 >
-                  {pluralCat(cat)}
-                </span>
-              </motion.button>
+                  {imgUrl ? (
+                    <img src={optimizeImage(imgUrl, 300, 82)} alt={cat} className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: imgPos }} loading="lazy" decoding="async" />
+                  ) : (
+                    <span className="absolute inset-0 flex items-center justify-center -mt-4">
+                      <span className={`text-3xl font-black select-none transition-colors ${isActive ? 'text-emerald-400/80' : 'text-white/25'}`}>
+                        {(cat || '?').charAt(0)}
+                      </span>
+                    </span>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/85 via-black/35 to-transparent pointer-events-none" />
+                  <span
+                    className={`absolute bottom-2.5 left-2.5 right-2.5 text-left text-[10px] lg:text-[11px] font-black uppercase tracking-wider leading-tight transition-colors ${isActive ? 'text-emerald-400' : 'text-white'}`}
+                    style={{ textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}
+                  >
+                    {pluralCat(cat)}
+                  </span>
+                </motion.button>
+              );
+            };
+
+            if (kitsOnly) return (
+              <>
+                {hasKits && renderKitsTile(0)}
+                <button
+                  onClick={() => setKitsOnly(false)}
+                  className="relative px-3 py-2.5 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation flex items-center gap-1 shrink-0 self-center text-amber-400 border-amber-400/25 bg-amber-400/5 hover:bg-amber-400/10 hover:border-amber-400/50 active:scale-95"
+                >
+                  <ChevronLeft size={12} /> Voltar
+                </button>
+              </>
             );
-          })}
+
+            return (isDesktopViewport ? [0] : [0, 1, 2]).map((copy) => (
+              <React.Fragment key={copy}>
+                {hasKits && renderKitsTile(copy)}
+                {realCats.map((cat) => renderCatTile(cat, copy))}
+              </React.Fragment>
+            ));
+          })()}
         </div>
         </div>
 
