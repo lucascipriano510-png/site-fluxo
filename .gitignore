@@ -69,3 +69,7 @@ credentials.json
 
 # Supabase CLI temp
 supabase/.temp/
+
+# Playwright
+test-results/
+playwright-report/
