@@ -365,7 +365,14 @@
     radial-gradient(1100px 620px at 12% -8%, rgba(245, 158, 11, 0.06), transparent 60%),
     radial-gradient(1000px 680px at 100% 4%, rgba(16, 185, 129, 0.05), transparent 55%),
     var(--bg-base) !important;
-  background-attachment: fixed;
+  /* background-attachment: fixed REMOVIDO do mobile: no Chrome Android, fundo
+     fixo com gradiente grande causa flicker/risco ao rolar (repaint por tile),
+     visível atrás de painéis translúcidos (ex.: bloco "Loja de verdade" antes
+     do rodapé). No celular o gradiente rola com a página — visual quase igual,
+     sem briga com o scroll. Desktop (mouse) mantém o efeito fixo. */
+}
+@media (pointer: fine) {
+  .brilho-ambient { background-attachment: fixed; }
 }
 
 /* 2) Cards "pegando luz": gloss diagonal sutil no topo do card. Fica ACIMA da
