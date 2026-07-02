@@ -5,6 +5,7 @@
   "rewrites": [
     { "source": "/p/:sku", "destination": "/api/produto?sku=:sku" },
     { "source": "/s/:ids", "destination": "/api/selecao?ids=:ids" },
+    { "source": "/status/:sku", "destination": "/api/og-status?sku=:sku" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/(.*)", "destination": "/" }
   ]
