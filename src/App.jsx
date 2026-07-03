@@ -413,8 +413,11 @@ const SizeRowSelector = ({ product, selectedSizes, setSelectedSizes, onPick, onA
               onClick={() => onAlert(size)}
               style={SIZE_STRIKE_STYLE}
               aria-label={`Tamanho ${size} esgotado — pedir aviso`}
-              className="h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border border-zinc-800 bg-zinc-900/40 text-zinc-600 font-black text-[13px] transition-all active:scale-95 touch-manipulation hover:border-emerald-500/40"
-            >{size}</button>
+              className="h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border border-zinc-800 bg-zinc-900/40 font-black transition-all active:scale-95 touch-manipulation hover:border-emerald-500/40 flex flex-col items-center justify-center gap-[3px] leading-none"
+            >
+              <span className="text-[12px] text-zinc-600">{size}</span>
+              <span className="text-[7px] text-emerald-400 uppercase tracking-wide flex items-center gap-0.5"><Bell size={7}/> Avise-me</span>
+            </button>
           );
           return (
             <button
