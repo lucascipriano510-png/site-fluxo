@@ -38,8 +38,10 @@ test('cliente consegue comprar: do catálogo até o pedido pronto', async ({ pag
   await firstCard.getByText('COMPRAR').click();
   await expect(page.getByText('Selecione o Tamanho').first()).toBeVisible({ timeout: 15_000 });
 
-  // ── 3. Escolhe o primeiro tamanho disponível (grid mobile de tamanhos) ──
-  const sizeBtn = page.locator('.grid.grid-cols-4 > button').first();
+  // ── 3. Escolhe o primeiro tamanho DISPONÍVEL (a grade agora mostra a grade
+  // completa da loja: esgotado vem riscado com "Avise-me" e abre modal de lead,
+  // não seleção — então pula esses) ──
+  const sizeBtn = page.locator('.grid.grid-cols-4 > button:not(:has-text("Avise-me"))').first();
   await sizeBtn.click();
 
   // ── 4. CTA fixo vira "Adicionar à Sacola" e funciona ──
