@@ -2,7 +2,8 @@
 -- FLUXO OUTLET — "Avise-me quando voltar" (estoque esgotado -> lead)
 -- Cliente deixa o telefone num tamanho/produto esgotado. O dono ve os
 -- pedidos numa aba do admin e avisa pelo WhatsApp quando repor.
--- Ja aplicado via MCP (migration add_stock_notifications). Idempotente.
+-- Ja aplicado via MCP (migrations add_stock_notifications e
+-- stock_notifications_customer_name). Idempotente.
 -- =====================================================================
 
 create table if not exists public.stock_notifications (
@@ -12,9 +13,12 @@ create table if not exists public.stock_notifications (
   product_name text,
   size text,
   phone text not null,
+  customer_name text,
   notified boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+alter table public.stock_notifications add column if not exists customer_name text;
 
 create index if not exists idx_stock_notifications_pending
   on public.stock_notifications (notified, created_at desc);
