@@ -387,6 +387,74 @@ const StockAlertModal = ({ target, onClose, showToast, whatsapp }) => {
 };
 
 // ──────────────────────────────────────────────────────────────
+// Seletor de tamanho (estilo Netshoes): UMA fileira de botões compactos com a
+// grade completa da loja. Esgotado = risco DIAGONAL no botão inteiro + toque
+// abre o avise-me. Quantidade por tamanho fica em steppers abaixo da fileira
+// (não cabe dentro de botão compacto). Usado no card mobile E desktop.
+// ──────────────────────────────────────────────────────────────
+const SIZE_STRIKE_STYLE = {
+  backgroundImage: 'linear-gradient(to top right, transparent calc(50% - 1px), rgba(113,113,122,0.9) calc(50% - 1px), rgba(113,113,122,0.9) calc(50% + 1px), transparent calc(50% + 1px))',
+};
+const SizeRowSelector = ({ product, selectedSizes, setSelectedSizes, onPick, onAlert }) => {
+  const entries = buildSizeGrid(product);
+  const anySoldOut = entries.some((e) => e.stock <= 0);
+  const picked = entries.filter((e) => (selectedSizes[e.size] || 0) > 0);
+  const removeOne = (size) => setSelectedSizes((prev) => { const n = { ...prev }; if (n[size] > 1) n[size]--; else delete n[size]; return n; });
+  const unpick = (size) => setSelectedSizes((prev) => { const n = { ...prev }; delete n[size]; return n; });
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-1.5" data-testid="size-row">
+        {entries.map(({ size, stock }) => {
+          const qty = selectedSizes[size] || 0;
+          const soldOut = stock <= 0;
+          if (soldOut) return (
+            <button
+              key={size}
+              onClick={() => onAlert(size)}
+              style={SIZE_STRIKE_STYLE}
+              aria-label={`Tamanho ${size} esgotado — pedir aviso`}
+              className="h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border border-zinc-800 bg-zinc-900/40 text-zinc-600 font-black text-[13px] transition-all active:scale-95 touch-manipulation hover:border-emerald-500/40"
+            >{size}</button>
+          );
+          return (
+            <button
+              key={size}
+              onClick={() => (qty > 0 ? unpick(size) : onPick(size, stock))}
+              aria-label={`Tamanho ${size}`}
+              className={`relative h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border font-black text-[13px] transition-all active:scale-95 touch-manipulation ${qty > 0 ? 'bg-white border-white text-zinc-950' : 'bg-zinc-900 border-zinc-700 text-zinc-200 hover:border-white hover:text-white'}`}
+            >
+              {size}
+              {qty > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-0.5 rounded-full bg-emerald-500 text-zinc-950 text-[10px] font-black grid place-items-center tabular-nums">{qty}</span>}
+              {qty === 0 && stock <= 3 && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden="true"/>}
+            </button>
+          );
+        })}
+      </div>
+      {anySoldOut && (
+        <p className="text-[9px] font-bold uppercase tracking-wide text-zinc-500 flex items-center gap-1.5">
+          <Bell size={10} className="text-emerald-400 shrink-0"/> Riscado esgotou — toca nele pra ser avisado quando voltar
+        </p>
+      )}
+      {picked.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          {picked.map(({ size, stock }) => (
+            <div key={size} className="flex items-center gap-3 bg-zinc-900 border border-white/10 rounded-xl px-3 py-2">
+              <span className="text-[11px] font-black text-white uppercase min-w-[64px]">Tam {size}</span>
+              <div className="flex items-center gap-3 bg-zinc-950 rounded-lg px-2 py-1 border border-zinc-800">
+                <button onClick={() => removeOne(size)} aria-label={`Tirar um do tamanho ${size}`} className="text-zinc-400 hover:text-white touch-manipulation p-0.5"><Minus size={12}/></button>
+                <span className="text-[12px] font-black text-white w-4 text-center tabular-nums">{selectedSizes[size]}</span>
+                <button onClick={() => onPick(size, stock)} aria-label={`Mais um do tamanho ${size}`} className="text-zinc-400 hover:text-white touch-manipulation p-0.5"><Plus size={12}/></button>
+              </div>
+              {stock <= 3 && <span className="text-[9px] font-black uppercase text-red-400 ml-auto">restam {stock}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────────────────────
 // Guia de medidas: tabela aproximada por tipo de peça (camisa/calça/calçado),
 // deduzido de categoria + formato dos tamanhos. Medidas aproximadas (±2 cm);
 // dúvida real vai pro WhatsApp — vender o tamanho certo = menos troca.
@@ -4084,36 +4152,13 @@ function App() {
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-4 gap-2.5">
-                    {/* Grade COMPLETA (padrão da loja ∪ cadastrado): esgotado fica
-                        riscado com Avise-me em vez de sumir — vira encomenda. */}
-                    {buildSizeGrid(selectedProduct).map(({ size: sz, stock }, idx) => {
-                      const isEsgotado = stock <= 0;
-                      const isLowStock = stock > 0 && stock <= 3;
-                      const qty = selectedSizes[sz] || 0;
-                      if (qty > 0) return (
-                        <div key={idx} className="py-3 rounded-xl border-2 border-white bg-zinc-900 flex flex-col items-center justify-center gap-1.5">
-                          <span className="text-sm font-black text-white">{sz}</span>
-                          <div className="flex items-center gap-2 bg-zinc-950 rounded-md px-1.5 py-1 border border-zinc-800">
-                            <button onClick={() => { const n = {...selectedSizes}; if(n[sz]>1) n[sz]--; else delete n[sz]; setSelectedSizes(n); }} className="text-zinc-400 touch-manipulation"><Minus size={11}/></button>
-                            <span className="text-[10px] font-black text-white w-3 text-center">{qty}</span>
-                            <button onClick={() => handleSizeSelect(sz, stock)} className="text-zinc-400 touch-manipulation"><Plus size={11}/></button>
-                          </div>
-                        </div>
-                      );
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => isEsgotado ? setStockAlertTarget({ product: selectedProduct, size: sz }) : handleSizeSelect(sz, stock)}
-                          className={`py-4 rounded-xl border font-black text-sm transition-all touch-manipulation flex flex-col items-center justify-center gap-0.5 ${isEsgotado ? 'bg-zinc-900/40 border-zinc-800/50 active:scale-95' : 'bg-zinc-900 border-zinc-800 text-zinc-300 active:scale-95'}`}
-                        >
-                          <span className={isEsgotado ? 'text-zinc-600 line-through text-xs' : ''}>{sz}</span>
-                          {isEsgotado && <span className="text-[7px] text-emerald-400 font-black uppercase flex items-center gap-0.5"><Bell size={7}/> Avise-me</span>}
-                          {isLowStock && !isEsgotado && <span className="text-[7px] text-red-400 font-black">Ult. {stock}</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <SizeRowSelector
+                    product={selectedProduct}
+                    selectedSizes={selectedSizes}
+                    setSelectedSizes={setSelectedSizes}
+                    onPick={handleSizeSelect}
+                    onAlert={(size) => setStockAlertTarget({ product: selectedProduct, size })}
+                  />
                 </div>
 
                 {/* ── SOBRE A PEÇA ── descrição da vitrine + material/cor (só se existir) */}
@@ -4321,24 +4366,13 @@ function App() {
                         </button>
                       )}
                     </div>
-                    <div className="grid grid-cols-5 gap-2.5">
-                      {(selectedProduct.sizes || []).filter(s => { const stock = typeof s === 'string' ? selectedProduct.stock : s.stock; return Number(stock || 0) > 0; }).map((s, idx) => {
-                        const sz = typeof s === 'string' ? s : s.size;
-                        const stock = typeof s === 'string' ? selectedProduct.stock : s.stock;
-                        const qty = selectedSizes[sz] || 0;
-                        if (qty > 0) return (
-                          <div key={idx} className="py-3 rounded-xl border-2 border-white bg-zinc-900 flex flex-col items-center justify-center gap-1.5">
-                            <span className="text-sm font-black text-white">{sz}</span>
-                            <div className="flex items-center gap-2 bg-zinc-950 rounded-md px-1.5 py-1 border border-zinc-800">
-                              <button onClick={() => { const n = {...selectedSizes}; if(n[sz]>1) n[sz]--; else delete n[sz]; setSelectedSizes(n); }} className="text-zinc-400 hover:text-white transition-colors"><Minus size={11}/></button>
-                              <span className="text-[11px] font-black text-white w-4 text-center">{qty}</span>
-                              <button onClick={() => handleSizeSelect(sz, stock)} className="text-zinc-400 hover:text-white transition-colors"><Plus size={11}/></button>
-                            </div>
-                          </div>
-                        );
-                        return <button key={idx} onClick={() => stock > 0 ? handleSizeSelect(sz, stock) : setStockAlertTarget({ product: selectedProduct, size: sz })} className={`py-4 rounded-xl border font-black text-sm transition-all flex flex-col items-center justify-center gap-0.5 ${stock > 0 ? 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-white hover:text-white hover:bg-zinc-800' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:border-emerald-500/40'}`}>{stock > 0 ? sz : <><span className="line-through text-zinc-600">{sz}</span><span className="text-[7px] text-emerald-400 font-black uppercase flex items-center gap-0.5"><Bell size={7}/> Avise-me</span></>}</button>;
-                      })}
-                    </div>
+                    <SizeRowSelector
+                      product={selectedProduct}
+                      selectedSizes={selectedSizes}
+                      setSelectedSizes={setSelectedSizes}
+                      onPick={handleSizeSelect}
+                      onAlert={(size) => setStockAlertTarget({ product: selectedProduct, size })}
+                    />
                   </div>
 
                   {/* CTA */}
