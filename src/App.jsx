@@ -8,6 +8,7 @@ import StarRatingInline from './components/StarRatingInline';
 import BannerCarousel from './components/BannerCarousel';
 import SubBanner from './components/SubBanner';
 import WaterRippleFX from './components/WaterRippleFX';
+import ThreeAtmosphere from './components/ThreeAtmosphere';
 import { useBanners } from './hooks/useBanners';
 import AdminHeader from './components/AdminHeader';
 import { optimizeImage, buildSrcSet, markWsrvFailed, getCatImgData } from './lib/images';
@@ -2797,7 +2798,12 @@ function App() {
 
   return (
     <div className="app-shell brilho-ambient min-h-screen font-sans text-white pb-0 selection:bg-emerald-500 selection:text-zinc-950">
-      
+
+      {/* Atmosfera 3D (three.js lazy): profundidade pro brilho-ambient, z -1
+          dentro do shell isolado — acima do fundo, abaixo de TODO o conteúdo.
+          Motion só com scroll; parada, não repinta nada. */}
+      <ThreeAtmosphere />
+
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
         <div className={`py-2.5 ${productPageOpen ? 'hidden lg:flex' : 'flex'} items-center justify-center border-b`} style={{ background: 'var(--bg-header)', borderColor: 'var(--border)', color: 'var(--text-secondary)', minHeight: '34px' }}>
@@ -5249,6 +5255,10 @@ function App() {
 
         .app-shell {
           min-height: 100%;
+          /* stacking context próprio: o canvas da atmosfera (z -1) fica acima
+             do brilho-ambient do shell e abaixo de todo o conteúdo — sem isso
+             o z -1 cairia atrás do fundo opaco e sumiria. */
+          isolation: isolate;
         }
 
         .native-x-scroll {
