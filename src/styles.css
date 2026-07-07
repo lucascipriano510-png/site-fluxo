@@ -395,29 +395,3 @@
 .brilho-text-glow { text-shadow: 0 0 18px rgba(255, 255, 255, 0.18); }
 .brilho-text-glow-amber { text-shadow: 0 0 20px rgba(245, 200, 100, 0.45); }
 
-/* 4) Ripple de toque no card (span criado por spawnCardRipple no App.jsx).
- *    z-index 25: acima do conteúdo do card, abaixo do X de fechar (z-30).
- *    Só transform/opacity animam — não cria camada permanente, não briga
- *    com a nitidez da imagem (a onda morre e o span sai do DOM). */
-.card-ripple-wave {
-  position: absolute;
-  border-radius: 50%;
-  /* alpha alto e borda com degrau curto (0.20→transparente em 12%): é a
-     FRENTE da onda que o olho acompanha — véu difuso (v1, 0.30 espalhado)
-     passava despercebido mesmo em movimento. */
-  background: radial-gradient(circle,
-    rgba(255, 255, 255, 0.45) 0%,
-    rgba(255, 255, 255, 0.28) 40%,
-    rgba(255, 255, 255, 0.20) 62%,
-    transparent 74%);
-  transform: scale(0);
-  animation: cardRippleWave 0.7s ease-out forwards;
-  pointer-events: none;
-  z-index: 25;
-}
-@keyframes cardRippleWave {
-  0%   { transform: scale(0); opacity: 1; }
-  60%  { opacity: 1; }
-  100% { transform: scale(1); opacity: 0; }
-}
-
