@@ -70,8 +70,8 @@ void main() {
   float spec = pow(max(dot(reflect(-light, n), vec3(0.0, 0.0, 1.0)), 0.0), 55.0);
   float tilt = dot(n, light) - dot(vec3(0.0, 0.0, 1.0), light);
 
-  float glow = spec * 0.22 + max(tilt, 0.0) * 0.10;   // crista pega luz
-  float shade = max(-tilt, 0.0) * 0.14;               // vale escurece de leve
+  float glow = spec * 0.40 + max(tilt, 0.0) * 0.16;   // crista pega luz
+  float shade = max(-tilt, 0.0) * 0.24;               // vale escurece
   float a = clamp(glow + shade, 0.0, 1.0);
   gl_FragColor = vec4(vec3(glow), a);                 // premultiplicado
 }`;
@@ -261,10 +261,10 @@ export default function WaterRippleFX() {
       const dx = e.clientX - last.x, dy = e.clientY - last.y;
       if (dx * dx + dy * dy < 9) return; // só quando anda de verdade
       last = { x: e.clientX, y: e.clientY };
-      dropAt(e.clientX, e.clientY, 0.045, 0.032); // esteira suave
+      dropAt(e.clientX, e.clientY, 0.045, 0.055); // esteira presente
     };
 
-    const onDown = (e) => dropAt(e.clientX, e.clientY, 0.09, 0.12); // tchibum leve
+    const onDown = (e) => dropAt(e.clientX, e.clientY, 0.09, 0.22); // tchibum
 
     const onLeave = () => {
       // deixa as ondas morrerem em cena, some suave e SOLTA o contexto GPU
