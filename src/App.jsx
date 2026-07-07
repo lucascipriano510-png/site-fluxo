@@ -151,6 +151,23 @@ const pluralCat = (cat) => {
   return /s$/i.test(c) ? c : `${c}S`;
 };
 
+// Ripple de toque no card — a onda nasce EXATAMENTE onde o dedo/mouse tocou
+// (por isso é JS e não :active puro: CSS não sabe a coordenada do clique).
+// O span é criado direto no DOM e se remove sozinho no fim da animação;
+// React não reconcilia nós que ele não criou, então não há conflito.
+const spawnCardRipple = (e) => {
+  const host = e.currentTarget;
+  const rect = host.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height) * 2;
+  const wave = document.createElement('span');
+  wave.className = 'card-ripple-wave';
+  wave.style.width = wave.style.height = `${size}px`;
+  wave.style.left = `${e.clientX - rect.left - size / 2}px`;
+  wave.style.top = `${e.clientY - rect.top - size / 2}px`;
+  host.appendChild(wave);
+  wave.addEventListener('animationend', () => wave.remove());
+};
+
 const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, sizes: sizesProp, fixedWidth, fullRes = false }) => {
   const [loaded, setLoaded] = React.useState(false);
   const [inView, setInView] = React.useState(priority);
@@ -3479,6 +3496,7 @@ function App() {
                     key={product.id}
                     className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
+                    onPointerDown={prefersReducedMotion || isOutOfStock ? undefined : spawnCardRipple}
                     data-testid={`product-card-${product.id}`}
                   >
                     {/* X de fechar — aparece quando este card está selecionado */}
