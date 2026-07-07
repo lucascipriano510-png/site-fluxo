@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Share2, Bell, Ruler } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Share2, Bell, Ruler, Ticket } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
@@ -9,6 +9,7 @@ import BannerCarousel from './components/BannerCarousel';
 import SubBanner from './components/SubBanner';
 import WaterRippleFX from './components/WaterRippleFX';
 import ThreeAtmosphere from './components/ThreeAtmosphere';
+import WelcomeCoupon from './components/WelcomeCoupon';
 import { useBanners } from './hooks/useBanners';
 import AdminHeader from './components/AdminHeader';
 import { optimizeImage, buildSrcSet, markWsrvFailed, getCatImgData } from './lib/images';
@@ -1965,9 +1966,93 @@ function App() {
     () => (cart || []).filter(i => !i.offer_applied).reduce((acc, i) => acc + (i.price * i.quantity), 0),
     [cart]
   );
-  const pixDiscount = useMemo(() => pixBaseSubtotal * 0.05, [pixBaseSubtotal]);
-  const totalComPix = useMemo(() => subtotal - pixDiscount, [subtotal, pixDiscount]);
+
+  // ── Cupom de desconto (NOVOFLUXO5: boas-vindas, 5%) ──────────────────
+  // Mesma regra de margem do Pix: NÃO incide sobre itens em oferta.
+  // Pix é forma de pagamento e incide sobre a base JÁ com cupom —
+  // cupom+pix compõem (0,95 × 0,95), nunca somam 10% secos.
+  // "Primeira compra" real exigiria consultar orders por telefone (RLS não
+  // deixa o anon ler) — o controle é: exige cadastro + 1 uso por dispositivo.
+  const CUPONS = {
+    NOVOFLUXO5: { pct: 0.05, precisaCadastro: true },
+  };
+  const CUPOM_USADO_KEY = '@fluxo-outlet:cupons-usados';
+  const [cupomInput, setCupomInput] = useState('');
+  const [cupomAtivo, setCupomAtivo] = useState(() => {
+    try {
+      const c = localStorage.getItem('@fluxo-outlet:cupom-ativo');
+      return c && CUPONS[c] ? c : null;
+    } catch { return null; }
+  });
+  const cupomDiscount = useMemo(
+    () => (cupomAtivo && CUPONS[cupomAtivo] ? pixBaseSubtotal * CUPONS[cupomAtivo].pct : 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cupomAtivo, pixBaseSubtotal]
+  );
+
+  const cupomJaUsado = (codigo) => {
+    try { return JSON.parse(localStorage.getItem(CUPOM_USADO_KEY) || '[]').includes(codigo); } catch { return false; }
+  };
+
+  const aplicarCupom = (codigoRaw, { silencioso = false } = {}) => {
+    const codigo = String(codigoRaw || '').trim().toUpperCase();
+    if (!codigo) return false;
+    const regra = CUPONS[codigo];
+    if (!regra) { if (!silencioso) showToast('Cupom não encontrado. Confere o código!', 'error'); return false; }
+    if (cupomJaUsado(codigo)) { if (!silencioso) showToast('Esse cupom já foi usado por aqui 😉', 'error'); return false; }
+    if (regra.precisaCadastro && !userProfile) {
+      if (!silencioso) {
+        showToast('Cadastre-se rapidinho pra liberar o cupom!', 'error');
+        setDrawerTab('profile');
+        setShowUserDrawer(true);
+      }
+      return false;
+    }
+    setCupomAtivo(codigo);
+    try { localStorage.setItem('@fluxo-outlet:cupom-ativo', codigo); } catch {}
+    if (!silencioso) showToast(`Cupom ${codigo} aplicado — 5% OFF garantido!`, 'success');
+    emitSignal('cupom_aplicado', { meta: { cupom: codigo } });
+    return true;
+  };
+
+  const removerCupom = () => {
+    setCupomAtivo(null);
+    try { localStorage.removeItem('@fluxo-outlet:cupom-ativo'); } catch {}
+  };
+
+  const pixDiscount = useMemo(() => Math.max(0, pixBaseSubtotal - cupomDiscount) * 0.05, [pixBaseSubtotal, cupomDiscount]);
+  const totalComPix = useMemo(() => subtotal - cupomDiscount - pixDiscount, [subtotal, cupomDiscount, pixDiscount]);
   const hasOfferInCart = useMemo(() => (cart || []).some(i => i.offer_applied), [cart]);
+
+  // ── Pop-up de boas-vindas (bloco: abre no MOBILE, 1x por visitante) ──
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [cupomPendentePosCadastro, setCupomPendentePosCadastro] = useState(false);
+  useEffect(() => {
+    if (isDesktopViewport) return;   // o bloco pede mobile; desktop fica de fora
+    if (userProfile) return;         // quem já é de casa não é "primeira vez"
+    try {
+      if (localStorage.getItem('@fluxo-outlet:welcome-visto')) return;
+      if (cupomJaUsado('NOVOFLUXO5')) return;
+    } catch {}
+    // Respiro de 2,6s: pop-up na cara, antes da vitrine carregar, é rejeição.
+    const t = setTimeout(() => {
+      setShowWelcome(true);
+      emitSignal('welcome_popup_visto', {});
+      try { localStorage.setItem('@fluxo-outlet:welcome-visto', '1'); } catch {}
+    }, 2600);
+    return () => clearTimeout(t);
+    // só na montagem: girar o celular depois não deve reabrir
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Veio do pop-up, terminou o cadastro → cupom entra sozinho (sem pedir de novo)
+  useEffect(() => {
+    if (cupomPendentePosCadastro && userProfile) {
+      setCupomPendentePosCadastro(false);
+      aplicarCupom('NOVOFLUXO5');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile, cupomPendentePosCadastro]);
 
   const handleProductClick = (product) => {
     if (!product) return;
@@ -2088,7 +2173,9 @@ function App() {
       if (!cart || cart.length === 0) { showToast('Carrinho vazio.', 'error'); setIsLoading(false); return; }
 
       const orderNum = String(Math.floor(10000 + Math.random() * 90000));
-      const totalPedido = Number(subtotal) || 0;
+      // Total do pedido JÁ com cupom (o Pix é forma de pagamento, negociada
+      // no WhatsApp — o value gravado é o total "cheio" pós-cupom).
+      const totalPedido = Math.max(0, (Number(subtotal) || 0) - (Number(cupomDiscount) || 0));
       const itensNormalizados = (cart || []).map((item) => ({
         id: Number(item?.id) || 0,
         name: String(item?.name ?? ''),
@@ -2148,6 +2235,9 @@ function App() {
         `🧾 ITENS DO PEDIDO:`,
         itemsText,
         ``,
+        ...(cupomAtivo ? [
+          `🎟️ Cupom ${cupomAtivo}: -R$ ${cupomDiscount.toFixed(2)}`,
+        ] : []),
         `💰 Total: R$ ${totalPedido.toFixed(2)}`,
         ``,
         `⚡ Enviado via ${config.brandName}`,
@@ -2176,6 +2266,17 @@ function App() {
       // O Purchase real (deduplicável e idempotente) sai SOMENTE na confirmação
       // da venda no admin (updateLeadStatus → CONCLUÍDO). Isso elimina a
       // inflação de eventos na Meta. AddToCart e InitiateCheckout acima ficam.
+
+      // Cupom usado de verdade: queima neste dispositivo e limpa o ativo
+      if (cupomAtivo) {
+        try {
+          const usados = JSON.parse(localStorage.getItem(CUPOM_USADO_KEY) || '[]');
+          if (!usados.includes(cupomAtivo)) usados.push(cupomAtivo);
+          localStorage.setItem(CUPOM_USADO_KEY, JSON.stringify(usados));
+          localStorage.removeItem('@fluxo-outlet:cupom-ativo');
+        } catch {}
+        setCupomAtivo(null);
+      }
 
       setWhatsappLink(whatsappUrl);
       setCheckoutOrderNumber(orderNum);
@@ -4643,8 +4744,34 @@ function App() {
             </div>
             {cart.length > 0 && (
               <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 px-6 py-6 max-w-md mx-auto z-50 shadow-2xl">
+                {/* Cupom de desconto — campo aberto ou linha aplicada */}
+                {cupomAtivo ? null : (
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      value={cupomInput}
+                      onChange={e => setCupomInput(e.target.value.toUpperCase())}
+                      onKeyDown={e => { if (e.key === 'Enter' && aplicarCupom(cupomInput)) setCupomInput(''); }}
+                      placeholder="TEM CUPOM? DIGITA AQUI"
+                      className="flex-1 min-w-0 bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white placeholder:text-zinc-600 outline-none focus:border-amber-400/50"
+                      data-testid="cupom-input"
+                    />
+                    <button
+                      onClick={() => { if (aplicarCupom(cupomInput)) setCupomInput(''); }}
+                      className="px-5 rounded-xl border border-white/15 text-[10px] font-black uppercase tracking-widest text-white active:scale-95 touch-manipulation"
+                      data-testid="cupom-aplicar"
+                    >Aplicar</button>
+                  </div>
+                )}
                 <div className="space-y-2 mb-4">
                    <div className="flex justify-between items-center text-[11px] font-bold uppercase text-zinc-400"><span>Subtotal</span><span>{formatBRL(subtotal)}</span></div>
+                   {cupomAtivo && (
+                     <div className="flex justify-between items-center text-[11px] font-bold uppercase" data-testid="cupom-linha">
+                       <span className="text-amber-400 inline-flex items-center gap-1.5"><Ticket size={12} />Cupom {cupomAtivo}</span>
+                       <span className="text-amber-400 inline-flex items-center gap-2">- {formatBRL(cupomDiscount)}
+                         <button onClick={removerCupom} aria-label="Remover cupom" className="text-zinc-600 hover:text-red-500 touch-manipulation"><X size={12}/></button>
+                       </span>
+                     </div>
+                   )}
                    <div className="flex justify-between items-center text-[11px] font-bold uppercase"><span className="text-zinc-400 inline-flex items-center gap-1.5"><span style={{ color: '#32BCAD', display: 'inline-flex' }}><PixIcon size={12} /></span>Desconto Pix (5%)</span><span className="text-emerald-500">- {formatBRL(pixDiscount)}</span></div>
                    {hasOfferInCart && (
                      <div className="flex items-start gap-1.5 text-[9px] font-bold text-amber-400/90 uppercase tracking-wide leading-snug">
@@ -4655,7 +4782,7 @@ function App() {
                    <div className="flex justify-between items-end pt-3 border-t border-white/10">
                      <div className="flex flex-col">
                        <p className="text-[12px] font-black text-white uppercase tracking-widest inline-flex items-center gap-1.5"><span style={{ color: '#32BCAD', display: 'inline-flex' }}><PixIcon size={13} /></span>Total no Pix</p>
-                       <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">ou {formatBRL(subtotal)} em até 4x sem juros</span>
+                       <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">ou {formatBRL(subtotal - cupomDiscount)} em até 4x sem juros</span>
                      </div>
                      <h3 className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(totalComPix)}</h3>
                    </div>
@@ -4673,6 +4800,20 @@ function App() {
         </motion.div>
       )}
       </AnimatePresence>
+
+      {/* Pop-up de boas-vindas com cupom (bloco: mobile, 1ª visita) */}
+      <WelcomeCoupon
+        aberto={showWelcome}
+        cupom="NOVOFLUXO5"
+        onFechar={() => setShowWelcome(false)}
+        onQueroCupom={() => {
+          setShowWelcome(false);
+          if (userProfile) { aplicarCupom('NOVOFLUXO5'); return; }
+          setCupomPendentePosCadastro(true); // cadastro concluído → cupom entra sozinho
+          setDrawerTab('profile');
+          setShowUserDrawer(true);
+        }}
+      />
 
       <AnimatePresence>
       {showLeadModal && (
