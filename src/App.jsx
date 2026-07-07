@@ -3579,13 +3579,6 @@ function App() {
                        {!isOutOfStock && (
                           <div className="absolute top-3 right-3 bg-white text-zinc-950 p-2 rounded-full shadow-xl opacity-0 translate-y-[-4px] group-hover:opacity-100 group-hover:translate-y-0 transition-all pointer-events-none"><Plus size={16}/></div>
                        )}
-
-                       {/* Água WebGL: ondas 3D acompanham o mouse sobre a foto.
-                           Desktop only; canvas nasce no hover e morre depois —
-                           em repouso a imagem segue sem camada GPU (nitidez!). */}
-                       {!isOutOfStock && !prefersReducedMotion && (
-                         <WaterRippleFX src={product.image} />
-                       )}
                      </div>
                       <motion.div
                         className="p-3 flex-1 flex flex-col justify-between"
@@ -3600,6 +3593,10 @@ function App() {
                         }}
                         onClick={() => !isOutOfStock && handleProductClick(product)}
                       >
+                        {/* Água WebGL na base do card: ondas suaves de luz seguem
+                            o mouse POR BAIXO do nome/preço (conteúdo fica no z 6).
+                            Desktop only; canvas nasce no hover e morre depois. */}
+                        {!isOutOfStock && !prefersReducedMotion && <WaterRippleFX />}
                         <div style={{ position: 'relative', zIndex: 6 }}>
                           {/* Linha 1 — nome. É o que o cliente compra: legível (11.5px, quase branco),
                               2 linhas com altura RESERVADA (cards continuam alinhados no grid). */}
