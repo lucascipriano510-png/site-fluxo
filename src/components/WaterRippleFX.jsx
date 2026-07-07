@@ -76,9 +76,11 @@ void main() {
   gl_FragColor = vec4(vec3(glow), a);                 // premultiplicado
 }`;
 
+// Mobile incluído (pedido do dono): Pointer Events cobrem mouse E dedo.
+// O canvas é pointer-events:none, então o toque nunca rouba o scroll —
+// o dedo passando só deixa ondas. Só reduced-motion desliga o efeito.
 const canRun = () =>
   typeof window !== 'undefined' &&
-  window.matchMedia('(pointer: fine)').matches &&
   !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const compile = (gl, type, srcCode) => {
@@ -153,7 +155,7 @@ export default function WaterRippleFX() {
       canvas.height = Math.max(2, Math.round(host.clientHeight * dpr));
 
       const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: false });
-      if (!gl) { killed = true; return; }
+      if (!gl) { console.warn('[agua] sem WebGL — efeito desligado'); killed = true; return; }
 
       // grade da sim acompanha o formato da área (ondas isotrópicas)
       const simW = 160;
@@ -169,15 +171,16 @@ export default function WaterRippleFX() {
           a = makeSimTexture(gl, floatType, simW, simH);
         }
       }
-      if (!a || !a.ok) { killed = true; teardown(); return; }
+      if (!a || !a.ok) { console.warn('[agua] textura float não renderizável — efeito desligado'); killed = true; teardown(); return; }
       const b = makeSimTexture(gl, floatType, simW, simH);
-      if (!b.ok) { killed = true; teardown(); return; }
+      if (!b.ok) { console.warn('[agua] textura float (2ª) falhou — efeito desligado'); killed = true; teardown(); return; }
 
       let simProg, drawProg;
       try {
         simProg = link(gl, SIM_FRAG);
         drawProg = link(gl, DRAW_FRAG);
-      } catch {
+      } catch (err) {
+        console.warn('[agua] shader não compilou — efeito desligado:', err?.message);
         killed = true; teardown(); return;
       }
 
@@ -264,7 +267,10 @@ export default function WaterRippleFX() {
       dropAt(e.clientX, e.clientY, 0.045, 0.055); // esteira presente
     };
 
-    const onDown = (e) => dropAt(e.clientX, e.clientY, 0.09, 0.22); // tchibum
+    const onDown = (e) => {
+      onEnter(); // no touch não há hover: o toque em si acorda a água
+      dropAt(e.clientX, e.clientY, 0.09, 0.22); // tchibum
+    };
 
     const onLeave = () => {
       // deixa as ondas morrerem em cena, some suave e SOLTA o contexto GPU
@@ -274,16 +280,20 @@ export default function WaterRippleFX() {
       }, 900);
     };
 
-    host.addEventListener('mouseenter', onEnter);
-    host.addEventListener('mousemove', onMove);
-    host.addEventListener('mouseleave', onLeave);
+    // Pointer Events: um só código pra mouse e dedo. No touch, enter/leave
+    // acontecem no pousar/levantar do dedo; cancel = scroll assumiu.
+    host.addEventListener('pointerenter', onEnter);
+    host.addEventListener('pointermove', onMove);
+    host.addEventListener('pointerleave', onLeave);
+    host.addEventListener('pointercancel', onLeave);
     host.addEventListener('pointerdown', onDown);
 
     return () => {
       killed = true;
-      host.removeEventListener('mouseenter', onEnter);
-      host.removeEventListener('mousemove', onMove);
-      host.removeEventListener('mouseleave', onLeave);
+      host.removeEventListener('pointerenter', onEnter);
+      host.removeEventListener('pointermove', onMove);
+      host.removeEventListener('pointerleave', onLeave);
+      host.removeEventListener('pointercancel', onLeave);
       host.removeEventListener('pointerdown', onDown);
       teardown();
     };
