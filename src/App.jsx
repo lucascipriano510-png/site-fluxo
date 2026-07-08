@@ -21,6 +21,7 @@ import { fetchOrders } from './lib/orders';
 import { requestStockAlert, fetchStockAlerts } from './lib/stockAlerts';
 import { buildSizeGrid } from './lib/sizeGrid';
 import { supabase } from './lib/supabaseClient';
+import { getSessionToken, saveSession, clearSession, registerAccount, loginAccount, recoverAccount, fetchAccountOrders } from './lib/account';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
 import { createMetaEventId } from './lib/capi';
 import { initMetaPixel, trackEvent, getMetaBrowserParams, getStoredUtm } from './lib/metaPixel';
@@ -1670,7 +1671,55 @@ function App() {
   const [expandedSizeCategory, setExpandedSizeCategory] = useState(null);
   const [showUserDrawer, setShowUserDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState('profile');
-  const [profileForm, setProfileForm] = useState({ name: '', phone: '' });
+  // ── Conta com senha (telefone + senha; recuperação por código/WhatsApp) ──
+  const [accountToken, setAccountToken] = useState(() => getSessionToken());
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup' | 'recover'
+  const [authForm, setAuthForm] = useState({ phone: '', name: '', password: '', recovery: '' });
+  const [authLoading, setAuthLoading] = useState(false);
+  // Código de recuperação recém-gerado: mostrado UMA vez, até o cliente confirmar
+  const [recoveryToShow, setRecoveryToShow] = useState(null);
+
+  const entrarNaConta = ({ token, profile }) => {
+    saveSession(token);
+    setAccountToken(token);
+    saveUserProfile({ ...(userProfile || {}), name: profile.name, phone: profile.phone });
+    setAuthForm({ phone: '', name: '', password: '', recovery: '' });
+  };
+
+  const sairDaConta = () => {
+    clearSession();
+    setAccountToken(null);
+    clearUserProfile();
+  };
+
+  const handleAuthSubmit = async () => {
+    if (authLoading) return;
+    const phone = authForm.phone.replace(/\D/g, '');
+    setAuthLoading(true);
+    try {
+      if (authMode === 'signup') {
+        const data = await registerAccount({ phone, name: authForm.name.trim(), password: authForm.password });
+        entrarNaConta(data);
+        setRecoveryToShow(data.recovery); // mostrado UMA vez; cliente confirma que anotou
+        showToast('Conta criada!', 'success');
+      } else if (authMode === 'login') {
+        const data = await loginAccount({ phone, password: authForm.password });
+        entrarNaConta(data);
+        showToast(`Bem-vindo de volta, ${data.profile.name.split(' ')[0]}!`, 'success');
+        setDrawerTab('orders');
+        setTimeout(() => handleSearchMyOrders(), 150);
+      } else {
+        const data = await recoverAccount({ phone, recovery: authForm.recovery, newPassword: authForm.password });
+        entrarNaConta(data);
+        setRecoveryToShow(data.recovery); // código NOVO (o antigo morreu no uso)
+        showToast('Senha redefinida!', 'success');
+      }
+    } catch (e) {
+      showToast(e?.message || 'Erro. Tenta de novo.', 'error');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   // ── Avaliações ──
   const [ratingsMap, setRatingsMap] = useState({});
@@ -2771,20 +2820,31 @@ function App() {
     }, 300);
   }, [products]);
 
+  // Pedidos agora vêm da edge function site-account com o TOKEN da sessão:
+  // o servidor só devolve pedidos do telefone dono do token. (Antes o site
+  // consultava orders por telefone digitado — qualquer um via pedido de
+  // qualquer um. Esse furo morreu junto com a conta sem senha.)
   const handleSearchMyOrders = async () => {
-    const phone = String(myOrdersPhone || '').replace(/\D/g, '');
-    if (phone.length < 10) { showToast('Digite um WhatsApp válido com DDD.', 'error'); return; }
+    const token = getSessionToken();
+    if (!token) {
+      setMyOrdersResults([]);
+      showToast('Entre na sua conta pra ver seus pedidos.', 'error');
+      setDrawerTab('profile');
+      setAuthMode('login');
+      setShowUserDrawer(true);
+      return;
+    }
     setMyOrdersLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('phone', phone)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setMyOrdersResults(data || []);
+      const { orders } = await fetchAccountOrders(token);
+      setMyOrdersResults(orders || []);
     } catch (e) {
-      showToast('Erro ao buscar pedidos: ' + (e?.message || 'tente novamente'), 'error');
+      if (e?.status === 401) {
+        sairDaConta();
+        showToast('Sessão expirada. Entre de novo.', 'error');
+      } else {
+        showToast('Erro ao buscar pedidos: ' + (e?.message || 'tente novamente'), 'error');
+      }
       setMyOrdersResults([]);
     } finally {
       setMyOrdersLoading(false);
@@ -2807,13 +2867,18 @@ function App() {
   }, [isAdmin]);
 
   const handleOpenUserDrawer = () => {
-    if (userProfile?.phone) {
+    if (accountToken && userProfile?.phone) {
+      // logado de verdade (senha): direto pros pedidos
       setDrawerTab('orders');
-      setMyOrdersPhone(userProfile.phone);
       setTimeout(() => handleSearchMyOrders(), 100);
+    } else if (userProfile?.phone) {
+      // perfil antigo sem senha: convida a proteger a conta (cadastro pré-preenchido)
+      setDrawerTab('profile');
+      setAuthMode('signup');
+      setAuthForm(f => ({ ...f, name: userProfile.name || '', phone: userProfile.phone || '' }));
     } else {
       setDrawerTab('profile');
-      setProfileForm({ name: '', phone: '' });
+      setAuthMode('login');
     }
     setShowUserDrawer(true);
   };
@@ -3989,7 +4054,7 @@ function App() {
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em]">Ajuda</p>
               <button onClick={() => setInfoPage('trocas')} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left touch-manipulation">Política de Troca</button>
               <button onClick={() => setInfoPage('privacidade')} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left touch-manipulation">Privacidade</button>
-              <button onClick={() => setShowMyOrders(true)} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left touch-manipulation">Meus Pedidos</button>
+              <button onClick={() => { setShowMyOrders(true); if (accountToken) setTimeout(() => handleSearchMyOrders(), 100); }} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left touch-manipulation">Meus Pedidos</button>
             </div>
           </div>
 
@@ -4900,27 +4965,32 @@ function App() {
 	            <div className="text-center space-y-2 shrink-0">
 	              <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto border border-emerald-500/20"><ClipboardList size={28}/></div>
 	              <h3 className="text-2xl font-black uppercase text-white tracking-tighter">Meus Pedidos</h3>
-	              <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Digite seu WhatsApp para consultar</p>
+	              <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+	                {accountToken ? 'Pedidos da sua conta' : 'Entre na sua conta para consultar'}
+	              </p>
 	            </div>
 
-	            <div className="flex gap-2 shrink-0">
-	              <input
-	                placeholder="Ex: 34999999999"
-	                type="tel"
-	                className="flex-1 p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
-	                value={myOrdersPhone}
-	                onChange={(e) => setMyOrdersPhone(e.target.value.replace(/\D/g, ''))}
-	                onKeyDown={(e) => { if (e.key === 'Enter') handleSearchMyOrders(); }}
-	                data-testid="input-my-orders-phone"
-	              />
-	              <button onClick={handleSearchMyOrders} disabled={myOrdersLoading} className="px-5 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[10px] uppercase tracking-widest active:scale-95 disabled:opacity-50" data-testid="btn-search-my-orders">
-	                {myOrdersLoading ? '...' : 'Buscar'}
+	            {/* Consulta por telefone digitado MORREU: era qualquer um vendo pedido
+	                de qualquer um. Agora pedidos exigem a conta com senha. */}
+	            {!accountToken && (
+	              <button
+	                onClick={() => {
+	                  setShowMyOrders(false);
+	                  setDrawerTab('profile');
+	                  setAuthMode(userProfile?.phone ? 'signup' : 'login');
+	                  if (userProfile?.phone) setAuthForm(f => ({ ...f, name: userProfile.name || '', phone: userProfile.phone || '' }));
+	                  setShowUserDrawer(true);
+	                }}
+	                className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 touch-manipulation shrink-0"
+	                data-testid="btn-my-orders-login"
+	              >
+	                Entrar na minha conta
 	              </button>
-	            </div>
+	            )}
 
 	            <div className="flex-1 overflow-y-auto space-y-3 -mx-2 px-2">
 	              {myOrdersResults === null ? (
-	                <div className="text-center py-8 text-zinc-600 text-[10px] font-bold uppercase tracking-widest">Informe seu número acima</div>
+	                <div className="text-center py-8 text-zinc-600 text-[10px] font-bold uppercase tracking-widest">{accountToken ? 'Carregando...' : 'Seus pedidos aparecem aqui depois de entrar'}</div>
 	              ) : myOrdersResults.length === 0 ? (
 	                <div className="text-center py-8 text-zinc-600 text-[10px] font-bold uppercase tracking-widest">Nenhum pedido encontrado para este número</div>
 	              ) : (
@@ -4998,7 +5068,7 @@ function App() {
 
             {/* Header do drawer */}
             <div className="px-7 pt-10 pb-5 shrink-0">
-              {userProfile ? (
+              {userProfile && accountToken ? (
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-full bg-emerald-500/15 border-2 border-emerald-500/50 flex items-center justify-center shrink-0">
                     <span className="text-lg font-black text-emerald-400 leading-none select-none">
@@ -5021,14 +5091,14 @@ function App() {
                   <div>
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Bem-vindo</p>
                     <h3 className="text-lg font-black text-white uppercase leading-tight">Minha Conta</h3>
-                    <p className="text-[10px] text-zinc-600 mt-0.5 font-bold">Crie seu perfil Fluxo</p>
+                    <p className="text-[10px] text-zinc-600 mt-0.5 font-bold">Entre ou crie sua conta Fluxo</p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Tabs — só aparece se identificado */}
-            {userProfile && (
+            {/* Tabs — só aparece se LOGADO (conta com senha) */}
+            {userProfile && accountToken && (
               <div className="px-5 pb-3 shrink-0">
                 <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-900 rounded-2xl border border-white/5">
                   <button
@@ -5044,8 +5114,7 @@ function App() {
                   <button
                     onClick={() => {
                       setDrawerTab('orders');
-                      if (myOrdersResults === null && userProfile?.phone) {
-                        setMyOrdersPhone(userProfile.phone);
+                      if (myOrdersResults === null) {
                         setTimeout(() => handleSearchMyOrders(), 100);
                       }
                     }}
@@ -5064,91 +5133,184 @@ function App() {
             {/* Corpo scrollável */}
             <div className="flex-1 overflow-y-auto px-7 pb-10 pt-2 space-y-4">
 
-              {/* TAB PERFIL */}
-              {(drawerTab === 'profile' || !userProfile) && (
+              {/* TAB PERFIL / AUTENTICAÇÃO (conta com senha) */}
+              {(drawerTab === 'profile' || !(userProfile && accountToken)) && (
                 <div className="space-y-4 animate-in">
-                  {!userProfile && (
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">
-                      Salve seu nome e WhatsApp para agilizar seus próximos pedidos. Totalmente opcional.
-                    </p>
-                  )}
 
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Nome completo</label>
-                      <input
-                        placeholder="Ex: João Silva"
-                        className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
-                        value={userProfile ? userProfile.name : profileForm.name}
-                        onChange={e => {
-                          if (userProfile) {
-                            saveUserProfile({ ...userProfile, name: e.target.value });
-                          } else {
-                            setProfileForm(f => ({ ...f, name: e.target.value }));
-                          }
-                        }}
-                      />
+                  {recoveryToShow ? (
+                    /* ── Código de recuperação recém-gerado: mostrado UMA vez ── */
+                    <div className="space-y-4">
+                      <div className="rounded-2xl border-2 border-dashed border-amber-400/40 bg-amber-400/[0.06] p-5 text-center space-y-1">
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">Seu código de recuperação</p>
+                        <p className="text-2xl font-black tracking-[0.12em] text-amber-400" data-testid="recovery-code">{recoveryToShow}</p>
+                      </div>
+                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide leading-relaxed">
+                        Anota ou tira print AGORA: é ele que devolve sua conta se você esquecer a senha. Ele não aparece de novo.
+                      </p>
+                      <button
+                        onClick={() => { setRecoveryToShow(null); setDrawerTab('orders'); setTimeout(() => handleSearchMyOrders(), 100); }}
+                        className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation shadow-[0_10px_30px_rgba(16,185,129,0.2)]"
+                        data-testid="btn-recovery-ok"
+                      >
+                        Anotei — entrar na minha conta
+                      </button>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">WhatsApp (com DDD)</label>
-                      <input
-                        placeholder="Ex: 34999999999"
-                        type="tel"
-                        className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
-                        value={userProfile ? userProfile.phone : profileForm.phone}
-                        onChange={e => {
-                          const v = e.target.value.replace(/\D/g, '');
-                          if (userProfile) {
-                            saveUserProfile({ ...userProfile, phone: v });
-                          } else {
-                            setProfileForm(f => ({ ...f, phone: v }));
-                          }
+                  ) : userProfile && accountToken ? (
+                    /* ── LOGADO: perfil + sair ── */
+                    <>
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Nome completo</label>
+                          <input
+                            className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
+                            value={userProfile.name}
+                            onChange={e => saveUserProfile({ ...userProfile, name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">WhatsApp da conta</label>
+                          <input
+                            className="w-full p-4 bg-zinc-900/60 border border-white/5 rounded-xl text-[16px] font-bold text-zinc-500 outline-none client-input"
+                            value={userProfile.phone}
+                            readOnly
+                            title="O WhatsApp é a identidade da conta — pra trocar, fale com a loja."
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          sairDaConta();
+                          setMyOrdersResults(null);
+                          setMyOrdersPhone('');
+                          setCurrentLead({ name: '', phone: '' });
+                          setShowUserDrawer(false);
+                          showToast('Você saiu da conta.', 'success');
                         }}
-                      />
-                    </div>
-                  </div>
+                        className="w-full py-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation flex items-center justify-center gap-2"
+                      >
+                        <LogOut size={14} /> Sair da Conta Fluxo
+                      </button>
+                    </>
+                  ) : (
+                    /* ── DESLOGADO: entrar / criar conta / recuperar senha ── */
+                    <>
+                      {userProfile && !accountToken && (
+                        <div className="p-3 rounded-xl bg-amber-400/[0.07] border border-amber-400/20 text-[10px] font-bold text-amber-300/90 uppercase tracking-wide leading-relaxed">
+                          Novidade: sua conta Fluxo agora tem senha. Crie a sua pra proteger seus pedidos — leva 20 segundos.
+                        </div>
+                      )}
 
-                  {/* Botão salvar — só anônimo */}
-                  {!userProfile && (
-                    <button
-                      onClick={() => {
-                        const name = profileForm.name.trim();
-                        const phone = profileForm.phone.replace(/\D/g, '');
-                        if (!name) { showToast('Informe seu nome.', 'error'); return; }
-                        if (phone.length < 10) { showToast('WhatsApp inválido (mín. 10 dígitos com DDD).', 'error'); return; }
-                        saveUserProfile({ name, phone });
-                        setDrawerTab('orders');
-                        setMyOrdersPhone(phone);
-                        setTimeout(() => handleSearchMyOrders(), 150);
-                        showToast('Perfil Fluxo criado!', 'success');
-                      }}
-                      className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation shadow-[0_10px_30px_rgba(16,185,129,0.2)]"
-                    >
-                      Salvar Perfil Fluxo
-                    </button>
-                  )}
+                      {authMode !== 'recover' ? (
+                        <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-900 rounded-2xl border border-white/5">
+                          <button
+                            onClick={() => setAuthMode('login')}
+                            className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${authMode === 'login' ? 'bg-white text-zinc-950 shadow' : 'text-zinc-500 hover:text-white'}`}
+                            data-testid="auth-tab-login"
+                          >Entrar</button>
+                          <button
+                            onClick={() => setAuthMode('signup')}
+                            className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${authMode === 'signup' ? 'bg-white text-zinc-950 shadow' : 'text-zinc-500 hover:text-white'}`}
+                            data-testid="auth-tab-signup"
+                          >Criar conta</button>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-relaxed">
+                          Recuperar acesso: informe seu WhatsApp, o código de recuperação que você guardou e a senha nova.
+                        </p>
+                      )}
 
-                  {/* Botão sair — só identificado */}
-                  {userProfile && (
-                    <button
-                      onClick={() => {
-                        clearUserProfile();
-                        setMyOrdersResults(null);
-                        setMyOrdersPhone('');
-                        setCurrentLead({ name: '', phone: '' });
-                        setShowUserDrawer(false);
-                        showToast('Perfil removido.', 'success');
-                      }}
-                      className="w-full py-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation flex items-center justify-center gap-2"
-                    >
-                      <LogOut size={14} /> Sair da Conta Fluxo
-                    </button>
+                      <div className="space-y-3">
+                        {authMode === 'signup' && (
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Nome completo</label>
+                            <input
+                              placeholder="Ex: João Silva"
+                              className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
+                              value={authForm.name}
+                              onChange={e => setAuthForm(f => ({ ...f, name: e.target.value }))}
+                              data-testid="auth-name"
+                            />
+                          </div>
+                        )}
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">WhatsApp (com DDD)</label>
+                          <input
+                            placeholder="Ex: 34999999999"
+                            type="tel"
+                            className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
+                            value={authForm.phone}
+                            onChange={e => setAuthForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))}
+                            data-testid="auth-phone"
+                          />
+                        </div>
+                        {authMode === 'recover' && (
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Código de recuperação</label>
+                            <input
+                              placeholder="FLX-XXXX-XXXX"
+                              className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-black tracking-widest text-amber-400 outline-none focus:border-amber-400/40 client-input uppercase"
+                              value={authForm.recovery}
+                              onChange={e => setAuthForm(f => ({ ...f, recovery: e.target.value.toUpperCase() }))}
+                              data-testid="auth-recovery"
+                            />
+                          </div>
+                        )}
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">{authMode === 'recover' ? 'Senha nova' : 'Senha'}</label>
+                          <input
+                            placeholder={authMode === 'signup' ? 'Crie uma senha (mín. 6)' : 'Sua senha'}
+                            type="password"
+                            className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
+                            value={authForm.password}
+                            onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))}
+                            onKeyDown={e => { if (e.key === 'Enter') handleAuthSubmit(); }}
+                            data-testid="auth-password"
+                          />
+                        </div>
+                      </div>
+
+                      {authMode === 'signup' && (
+                        <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-wide leading-relaxed">
+                          Junto com a conta você recebe um código de recuperação — guarda ele, é sua chave reserva.
+                        </p>
+                      )}
+
+                      <button
+                        onClick={handleAuthSubmit}
+                        disabled={authLoading}
+                        className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation shadow-[0_10px_30px_rgba(16,185,129,0.2)] disabled:opacity-60"
+                        data-testid="auth-submit"
+                      >
+                        {authLoading ? 'Processando...' : authMode === 'login' ? 'Entrar na minha conta' : authMode === 'signup' ? 'Criar minha conta' : 'Redefinir senha e entrar'}
+                      </button>
+
+                      {authMode === 'login' && (
+                        <button onClick={() => setAuthMode('recover')} className="w-full py-1 text-[10px] font-black uppercase tracking-widest text-zinc-500 touch-manipulation" data-testid="auth-forgot">
+                          Esqueci minha senha
+                        </button>
+                      )}
+                      {authMode === 'recover' && (
+                        <>
+                          <a
+                            href={`https://wa.me/${String(config?.whatsapp || '5534984148067').replace(/\D/g, '')}?text=${encodeURIComponent('Oi! Perdi o acesso da minha conta no site da Fluxo (esqueci a senha e o código de recuperação). Podem me ajudar a recuperar?')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl border border-[#25D366] text-[#25D366] text-[10px] font-black uppercase tracking-widest touch-manipulation"
+                          >
+                            <MessageCircle size={13} /> Perdi o código — recuperar pelo WhatsApp
+                          </a>
+                          <button onClick={() => setAuthMode('login')} className="w-full py-1 text-[10px] font-black uppercase tracking-widest text-zinc-500 touch-manipulation">
+                            Voltar pro login
+                          </button>
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
               )}
 
               {/* TAB PEDIDOS */}
-              {drawerTab === 'orders' && userProfile && (
+              {drawerTab === 'orders' && userProfile && accountToken && (
                 <div className="space-y-3 animate-in">
                   {myOrdersLoading && (
                     <div className="text-center py-10 text-emerald-500 text-[10px] font-black uppercase tracking-widest animate-pulse">
