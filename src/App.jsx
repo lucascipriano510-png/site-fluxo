@@ -41,6 +41,14 @@ const AdminStockAlerts = React.lazy(() => import('./components/AdminStockAlerts'
 // ==========================================
 // 1. CONFIGURAÇÃO E DADOS INICIAIS
 // ==========================================
+// ESCALA DE Z-INDEX (respeitar ao criar camada nova):
+//   z-10..z-40  → dentro do componente (badge, sticky header interno)
+//   z-50        → barras fixas do app (bottom nav, barra da sacola)
+//   z-[60]      → CTA fixo da página de produto
+//   z-[90..130] → dropdowns/painéis acima das barras
+//   z-[150]     → overlays de página inteira (sacola, menu)
+//   z-[200..220]→ modais (220 = modal sobre modal)
+//   z-[300]     → toast (sempre por cima de tudo)
 const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'fluxo-dark-ultimate';
 const LEAD_STORAGE_KEY = '@fluxo-outlet:lead-data-v3';
 const BANNERS_STORAGE_KEY = `@${APP_ID}:banners`;
@@ -2897,7 +2905,7 @@ function App() {
 
   if (isAdmin) {
     return (
-      <div className="app-shell min-h-screen bg-zinc-950 font-sans text-zinc-100 selection:bg-emerald-500 selection:text-zinc-950">
+      <div className="app-shell min-h-dvh bg-zinc-950 font-sans text-zinc-100 selection:bg-emerald-500 selection:text-zinc-950">
         <AdminHeader handleLogout={handleLogout} handleBackToStore={handleBackToStore} newOrdersCount={newOrdersCount} onBell={() => { setAdminTab('leads'); setNewOrdersCount(0); }} />
 
         <div className="lg:flex">
@@ -2963,7 +2971,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell brilho-ambient min-h-screen font-sans text-white pb-0 selection:bg-emerald-500 selection:text-zinc-950">
+    <div className="app-shell brilho-ambient min-h-dvh font-sans text-white pb-0 selection:bg-emerald-500 selection:text-zinc-950">
 
       {/* Atmosfera 3D (three.js lazy): profundidade pro brilho-ambient, z -1
           dentro do shell isolado — acima do fundo, abaixo de TODO o conteúdo.
@@ -3148,7 +3156,7 @@ function App() {
         onCollectionFilter={setActiveCollectionFilter}
       />
 
-      <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-screen lg:max-w-[1500px] lg:mx-auto" data-testid="catalog-main">
+      <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-dvh lg:max-w-[1500px] lg:mx-auto" data-testid="catalog-main">
         <div className="relative group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
           <input id="search-input" placeholder="Busque por peça, cor, tamanho ou preço…" data-testid="input-search" className="w-full border py-4 pl-14 pr-12 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -4207,7 +4215,7 @@ function App() {
           {/* ── MOBILE: página de produto em fluxo no documento (oculto no desktop) ── */}
           {/* A barra real (hambúrguer/logo/perfil/sacola) fica sticky logo acima — barra compartilhada com o home. */}
           <motion.div
-            className="lg:hidden min-h-screen"
+            className="lg:hidden min-h-dvh"
             style={{ background: '#202024' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -4738,7 +4746,7 @@ function App() {
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
           className="fixed inset-x-0 z-[150] bg-zinc-950 overflow-y-auto" style={viewportOverlayStyle}>
-          <div className="max-w-md mx-auto min-h-screen flex flex-col bg-zinc-950 relative">
+          <div className="max-w-md mx-auto min-h-dvh flex flex-col bg-zinc-950 relative">
             <div className="sticky top-0 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-6 flex justify-between items-center h-20 z-10">
               <h2 className="text-xl font-black uppercase text-white">Sua Sacola <span className="bg-white text-zinc-950 text-[10px] px-2 py-0.5 rounded-full ml-2">{cart.length}</span></h2>
               <div className="flex items-center gap-2">
@@ -4762,11 +4770,11 @@ function App() {
                     aria-label="Compartilhar sacola"
                   ><Share2 size={18}/></button>
                 )}
-                <button onClick={() => setShowCart(false)} className="p-2 text-zinc-400 bg-zinc-900 rounded-full touch-manipulation"><X size={18}/></button>
+                <button onClick={() => setShowCart(false)} aria-label="Fechar sacola" className="p-2 text-zinc-400 bg-zinc-900 rounded-full touch-manipulation"><X size={18}/></button>
               </div>
             </div>
             
-            <div className="flex-1 space-y-4 px-6 py-6 pb-64">
+            <div className="flex-1 space-y-4 px-6 py-6 pb-72">
                 {cart.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 opacity-50 animate-in">
                        <ShoppingBag size={48} className="mb-4 text-zinc-600"/>
@@ -4808,7 +4816,7 @@ function App() {
                 )}
             </div>
             {cart.length > 0 && (
-              <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 px-6 py-6 max-w-md mx-auto z-50 shadow-2xl">
+              <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 px-6 py-6 max-w-md mx-auto z-50 shadow-2xl" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
                 {/* Cupom de desconto — campo aberto ou linha aplicada */}
                 {cupomAtivo ? null : (
                   <div className="flex gap-2 mb-3">
