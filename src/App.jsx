@@ -5,7 +5,8 @@ import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitIt
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
 import StarRatingInline from './components/StarRatingInline';
-import BannerCarousel from './components/BannerCarousel';
+import BannerCarousel from './components/BannerCarousel'; // eslint-disable-line no-unused-vars -- volta se o teste do herói não vingar
+import ImmersiveHero from './components/ImmersiveHero';
 import SubBanner from './components/SubBanner';
 import WaterRippleFX from './components/WaterRippleFX';
 import ThreeAtmosphere from './components/ThreeAtmosphere';
@@ -1906,12 +1907,9 @@ function App() {
         </div>
       </div>
 
-      <BannerCarousel
-        activeBanners={activeBanners}
-        bannersLoaded={bannersLoaded}
-        isAdmin={isAdmin}
-        onCollectionFilter={setActiveCollectionFilter}
-      />
+      {/* TESTE (branch fx/hero-imersivo): herói imersivo multiplane no lugar
+          do carrossel. Pra voltar: restaurar o <BannerCarousel/> abaixo. */}
+      <ImmersiveHero />
 
       <CatalogMain {...{ activeCollectionFilter, availableColors, availableSizes, availableSubcategories, bumpOffers, catRailRef, categories, config, currentPage, filteredProducts, handleProductClick, isDesktopViewport, kitsOnly, midBanner, noveltyMode, onCatRailScroll, paginatedProducts, prefersReducedMotion, priceRange, products, productsLoaded, ratingsMap, recentlyViewedProducts, searchActive, searchIntent, searchQuery, selectedCategory, selectedColor, selectedProduct, selectedSize, selectedSubcategory, selectionSkus, setActiveCollectionFilter, setCurrentPage, setDrawerTab, setKitsOnly, setNoveltyMode, setPriceRange, setRatingsMap, setSearchQuery, setSelectedCategory, setSelectedColor, setSelectedProduct, setSelectedSize, setSelectedSizes, setSelectedSubcategory, setSelectionSkus, setShowUserDrawer, setSortMode, showToast, sortMode, totalPages, userProfile }} />
 
