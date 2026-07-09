@@ -419,7 +419,7 @@ const SizeRowSelector = ({ product, selectedSizes, setSelectedSizes, onPick, onA
               aria-label={`Tamanho ${size} esgotado — pedir aviso`}
               className="h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border border-zinc-800 bg-zinc-900/40 font-black transition-all active:scale-95 touch-manipulation hover:border-emerald-500/40 flex flex-col items-center justify-center gap-[3px] leading-none"
             >
-              <span className="text-[12px] text-zinc-600">{size}</span>
+              <span className="text-[12px] text-zinc-500">{size}</span>
               <span className="text-[7px] text-emerald-400 uppercase tracking-wide flex items-center gap-0.5"><Bell size={7}/> Avise-me</span>
             </button>
           );
@@ -448,9 +448,9 @@ const SizeRowSelector = ({ product, selectedSizes, setSelectedSizes, onPick, onA
             <div key={size} className="flex items-center gap-3 bg-zinc-900 border border-white/10 rounded-xl px-3 py-2">
               <span className="text-[11px] font-black text-white uppercase min-w-[64px]">Tam {size}</span>
               <div className="flex items-center gap-3 bg-zinc-950 rounded-lg px-2 py-1 border border-zinc-800">
-                <button onClick={() => removeOne(size)} aria-label={`Tirar um do tamanho ${size}`} className="text-zinc-400 hover:text-white touch-manipulation p-0.5"><Minus size={12}/></button>
+                <button onClick={() => removeOne(size)} aria-label={`Tirar um do tamanho ${size}`} className="text-zinc-400 hover:text-white touch-manipulation p-2 -m-1"><Minus size={12}/></button>
                 <span className="text-[12px] font-black text-white w-4 text-center tabular-nums">{selectedSizes[size]}</span>
-                <button onClick={() => onPick(size, stock)} aria-label={`Mais um do tamanho ${size}`} className="text-zinc-400 hover:text-white touch-manipulation p-0.5"><Plus size={12}/></button>
+                <button onClick={() => onPick(size, stock)} aria-label={`Mais um do tamanho ${size}`} className="text-zinc-400 hover:text-white touch-manipulation p-2 -m-1"><Plus size={12}/></button>
               </div>
               {stock <= 3 && <span className="text-[9px] font-black uppercase text-red-400 ml-auto">restam {stock}</span>}
             </div>
@@ -1129,7 +1129,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className={`font-black text-[11px] uppercase leading-tight line-clamp-2 ${included ? 'text-white' : 'text-zinc-600'}`}>{c.name}</h4>
+                      <h4 className={`font-black text-[11px] uppercase leading-tight line-clamp-2 ${included ? 'text-white' : 'text-zinc-500'}`}>{c.name}</h4>
                       <button
                         onClick={() => togglePick(c.id)}
                         className={`shrink-0 w-7 h-7 rounded-lg border-2 grid place-items-center transition-all touch-manipulation ${included ? 'bg-emerald-500 border-emerald-500 text-zinc-950 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-zinc-800 border-zinc-600 text-zinc-600 hover:border-zinc-400'}`}
@@ -1138,7 +1138,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
                         {included ? <Check size={14} strokeWidth={3} /> : <Plus size={13} strokeWidth={2.5} />}
                       </button>
                     </div>
-                    <p className={`font-black text-sm mt-1 ${included ? 'text-emerald-400' : 'text-zinc-600'}`}>{formatBRL(c.price || 0)}</p>
+                    <p className={`font-black text-sm mt-1 ${included ? 'text-emerald-400' : 'text-zinc-500'}`}>{formatBRL(c.price || 0)}</p>
                     {included && (
                       <>
                         {sizes.length > 0 && (
@@ -1196,7 +1196,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
               <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Total do Kit</p>
               <p className="text-2xl font-black text-white tracking-tighter">{formatBRL(total)}</p>
               {includedItems.length < components.length && sumOriginal > total && (
-                <p className="text-[9px] text-zinc-600 line-through font-bold">{formatBRL(sumOriginal)} completo</p>
+                <p className="text-[9px] text-zinc-500 line-through font-bold">{formatBRL(sumOriginal)} completo</p>
               )}
             </div>
             <div className="text-right">
@@ -2925,7 +2925,7 @@ function App() {
           {/* CONTEÚDO PRINCIPAL */}
           <main className="flex-1 max-w-[640px] mx-auto lg:max-w-none lg:mx-0 pb-24 lg:pb-8">
             <AdminTabErrorBoundary resetKey={adminTab}>
-              <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-zinc-600 text-[11px] font-black uppercase tracking-widest">Carregando…</div>}>
+              <React.Suspense fallback={<div className="flex items-center justify-center py-20 text-zinc-400 text-[11px] font-black uppercase tracking-widest">Carregando…</div>}>
               {adminTab === 'dashboard' && <AdminDashboard leads={leads} products={products} loading={!leadsLoaded} setAdminTab={setAdminTab} />}
               {adminTab === 'inventory' && <AdminInventory products={products} setProducts={setProducts} showToast={showToast} availableCollections={availableCollections} productImageFile={productImageFile} setProductImageFile={setProductImageFile} uploadImage={uploadImage} />}
               {adminTab === 'leads' && <AdminLeads leads={leads} setLeads={setLeads} products={products} setProducts={setProducts} showToast={showToast} config={config} mapOrderRow={mapOrderRow} />}
@@ -3168,7 +3168,7 @@ function App() {
           if (chips.length === 0) return null;
           return (
             <div className="flex flex-wrap items-center gap-2 -mt-2">
-              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Filtrando:</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Filtrando:</span>
               {chips.map(c => (
                 <span key={c.k} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-amber-300 bg-amber-400/10 border border-amber-400/25 rounded-full px-2.5 py-1">
                   {c.icon}{c.label}
@@ -3319,7 +3319,7 @@ function App() {
         {!kitsOnly && availableSizes.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center">
             {availableSizes.map(sz => (
-              <button key={sz} onClick={() => setSelectedSize(sz)} data-testid={`size-filter-${sz}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSize === sz ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>{sz === 'TODOS' ? 'Todos tamanhos' : sz}</button>
+              <button key={sz} onClick={() => setSelectedSize(sz)} data-testid={`size-filter-${sz}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSize === sz ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-400 border-white/5 hover:text-white hover:border-white/20'}`}>{sz === 'TODOS' ? 'Todos tamanhos' : sz}</button>
             ))}
           </div>
         )}
@@ -3331,7 +3331,7 @@ function App() {
               const active = selectedColor === c;
               const dot = c !== 'TODOS' ? colorDot(c) : null;
               return (
-                <button key={c} onClick={() => setSelectedColor(c)} data-testid={`color-filter-${c}`} className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${active ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>
+                <button key={c} onClick={() => setSelectedColor(c)} data-testid={`color-filter-${c}`} className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${active ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-400 border-white/5 hover:text-white hover:border-white/20'}`}>
                   {c !== 'TODOS' && (
                     <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0" style={dot ? { background: dot } : { background: 'conic-gradient(from 0deg,#f87171,#fbbf24,#34d399,#60a5fa,#c084fc,#f87171)' }} />
                   )}
@@ -3345,9 +3345,9 @@ function App() {
         {/* Filtro de FAIXA DE PREÇO — só dentro de uma categoria (evita poluir o home) */}
         {!kitsOnly && selectedCategory !== 'TODOS' && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center">
-            <button onClick={() => setPriceRange('TODOS')} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${priceRange === 'TODOS' ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>Qualquer preço</button>
+            <button onClick={() => setPriceRange('TODOS')} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${priceRange === 'TODOS' ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-400 border-white/5 hover:text-white hover:border-white/20'}`}>Qualquer preço</button>
             {PRICE_RANGES.map(r => (
-              <button key={r.key} onClick={() => setPriceRange(r.key)} data-testid={`price-filter-${r.key}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${priceRange === r.key ? 'bg-emerald-500 text-zinc-950 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent text-zinc-600 border-white/5 hover:text-white hover:border-white/20'}`}>{r.label}</button>
+              <button key={r.key} onClick={() => setPriceRange(r.key)} data-testid={`price-filter-${r.key}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${priceRange === r.key ? 'bg-emerald-500 text-zinc-950 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent text-zinc-400 border-white/5 hover:text-white hover:border-white/20'}`}>{r.label}</button>
             ))}
           </div>
         )}
@@ -3636,7 +3636,7 @@ function App() {
            <div className="text-center py-20 opacity-50 animate-in">
                <Package size={48} className="mx-auto mb-4 text-zinc-600"/>
                <h3 className="font-black uppercase text-sm tracking-widest text-zinc-400">Nenhum produto encontrado</h3>
-               <p className="text-[10px] text-zinc-600 uppercase mt-2">Tente buscar por outro termo ou categoria.</p>
+               <p className="text-[10px] text-zinc-400 uppercase mt-2">Tente buscar por outro termo ou categoria.</p>
            </div>
         ) : (
            <>
@@ -4781,7 +4781,7 @@ function App() {
                         <div className="flex-1 flex flex-col justify-between py-1">
                           <div className="flex justify-between items-start">
                             <div className="overflow-hidden pr-2"><h4 className="font-black text-white text-[11px] uppercase truncate leading-tight">{item.name}</h4><span className="text-[9px] font-bold text-zinc-500 uppercase block mt-0.5">Tam: {item.size}</span></div>
-                            <button onClick={() => setCart(cart.filter(i => i.itemKey !== item.itemKey))} className="text-zinc-600 hover:text-red-500 touch-manipulation"><Trash2 size={16}/></button>
+                            <button onClick={() => setCart(cart.filter(i => i.itemKey !== item.itemKey))} aria-label="Remover peça da sacola" className="p-2 -m-2 text-zinc-500 hover:text-red-500 touch-manipulation"><Trash2 size={16}/></button>
                           </div>
                           <div className="flex justify-between items-center mt-3">
                             <span className={`font-black text-sm flex items-center gap-1.5 ${item.offer_applied ? 'text-amber-400' : 'text-emerald-500'}`}>
@@ -4789,7 +4789,7 @@ function App() {
                               {item.offer_applied && <span className="text-[7px] font-black text-zinc-950 px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-400 to-red-500 tracking-wide">OFERTA</span>}
                             </span>
                             <div className="flex items-center bg-zinc-950 rounded-lg border border-white/5 p-1">
-                              <button onClick={() => { if(item.quantity > 1) setCart(cart.map(i => i.itemKey === item.itemKey ? {...i, quantity: i.quantity - 1} : i)) }} className="text-zinc-400 p-1.5 touch-manipulation"><Minus size={12}/></button>
+                              <button onClick={() => { if(item.quantity > 1) setCart(cart.map(i => i.itemKey === item.itemKey ? {...i, quantity: i.quantity - 1} : i)) }} aria-label="Diminuir quantidade" className="text-zinc-400 p-2.5 -m-1 touch-manipulation"><Minus size={12}/></button>
                               <span className="font-black text-xs text-white w-6 text-center">{item.quantity}</span>
                               <button onClick={() => {
                                  const p = products.find(x => x.id === item.id);
@@ -4799,7 +4799,7 @@ function App() {
                                  const max = sz ? (typeof sz === 'string' ? p.stock : sz.stock) : p.stock;
                                  if (item.quantity < max) setCart(cart.map(i => i.itemKey === item.itemKey ? {...i, quantity: i.quantity + 1} : i));
                                  else showToast(`Estoque máximo!`, 'error');
-                              }} className="text-zinc-400 p-1.5 touch-manipulation"><Plus size={12}/></button>
+                              }} aria-label="Aumentar quantidade" className="text-zinc-400 p-2.5 -m-1 touch-manipulation"><Plus size={12}/></button>
                             </div>
                           </div>
                         </div>
@@ -4817,7 +4817,7 @@ function App() {
                       onChange={e => setCupomInput(e.target.value.toUpperCase())}
                       onKeyDown={e => { if (e.key === 'Enter' && aplicarCupom(cupomInput)) setCupomInput(''); }}
                       placeholder="TEM CUPOM? DIGITA AQUI"
-                      className="flex-1 min-w-0 bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white placeholder:text-zinc-600 outline-none focus:border-amber-400/50"
+                      className="flex-1 min-w-0 bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white placeholder:text-zinc-500 outline-none focus:border-amber-400/50"
                       data-testid="cupom-input"
                     />
                     <button
@@ -4833,7 +4833,7 @@ function App() {
                      <div className="flex justify-between items-center text-[11px] font-bold uppercase" data-testid="cupom-linha">
                        <span className="text-amber-400 inline-flex items-center gap-1.5"><Ticket size={12} />Cupom {cupomAtivo}</span>
                        <span className="text-amber-400 inline-flex items-center gap-2">- {formatBRL(cupomDiscount)}
-                         <button onClick={removerCupom} aria-label="Remover cupom" className="text-zinc-600 hover:text-red-500 touch-manipulation"><X size={12}/></button>
+                         <button onClick={removerCupom} aria-label="Remover cupom" className="p-2 -m-2 text-zinc-500 hover:text-red-500 touch-manipulation"><X size={12}/></button>
                        </span>
                      </div>
                    )}
@@ -4990,9 +4990,9 @@ function App() {
 
 	            <div className="flex-1 overflow-y-auto space-y-3 -mx-2 px-2">
 	              {myOrdersResults === null ? (
-	                <div className="text-center py-8 text-zinc-600 text-[10px] font-bold uppercase tracking-widest">{accountToken ? 'Carregando...' : 'Seus pedidos aparecem aqui depois de entrar'}</div>
+	                <div className="text-center py-8 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">{accountToken ? 'Carregando...' : 'Seus pedidos aparecem aqui depois de entrar'}</div>
 	              ) : myOrdersResults.length === 0 ? (
-	                <div className="text-center py-8 text-zinc-600 text-[10px] font-bold uppercase tracking-widest">Nenhum pedido encontrado para este número</div>
+	                <div className="text-center py-8 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">Nenhum pedido encontrado para este número</div>
 	              ) : (
 	                myOrdersResults.map((row) => {
 	                  const its = typeof row.items === 'string' ? (() => { try { return JSON.parse(row.items); } catch { return []; } })() : (row.items || []);
@@ -5091,7 +5091,7 @@ function App() {
                   <div>
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Bem-vindo</p>
                     <h3 className="text-lg font-black text-white uppercase leading-tight">Minha Conta</h3>
-                    <p className="text-[10px] text-zinc-600 mt-0.5 font-bold">Entre ou crie sua conta Fluxo</p>
+                    <p className="text-[10px] text-zinc-400 mt-0.5 font-bold">Entre ou crie sua conta Fluxo</p>
                   </div>
                 </div>
               )}
@@ -5270,7 +5270,7 @@ function App() {
                       </div>
 
                       {authMode === 'signup' && (
-                        <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-wide leading-relaxed">
+                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide leading-relaxed">
                           Junto com a conta você recebe um código de recuperação — guarda ele, é sua chave reserva.
                         </p>
                       )}
@@ -5318,12 +5318,12 @@ function App() {
                     </div>
                   )}
                   {!myOrdersLoading && myOrdersResults === null && (
-                    <div className="text-center py-10 text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+                    <div className="text-center py-10 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
                       Carregando...
                     </div>
                   )}
                   {!myOrdersLoading && myOrdersResults !== null && myOrdersResults.length === 0 && (
-                    <div className="text-center py-10 text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+                    <div className="text-center py-10 text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
                       Nenhum pedido encontrado para este número.
                     </div>
                   )}
