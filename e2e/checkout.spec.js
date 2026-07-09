@@ -6,6 +6,15 @@
 // =====================================================================
 import { test, expect } from '@playwright/test';
 
+// O pop-up NOVOFLUXO5 abre na 1ª visita e cobre a tela inteira — no contexto de
+// teste TODA visita é a primeira. Semear a flag "já visto" antes do load mantém
+// o teste no caminho do dinheiro (o pop-up tem lógica própria, não é o alvo aqui).
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try { localStorage.setItem('@fluxo-outlet:welcome-visto', '1'); } catch {}
+  });
+});
+
 test('cliente consegue comprar: do catálogo até o pedido pronto', async ({ page, context }) => {
   // ── Mocks: pedido + Meta (NUNCA gravar de verdade a partir do teste) ──
   await context.route('**/rest/v1/orders*', async (route) => {
