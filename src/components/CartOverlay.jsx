@@ -16,8 +16,11 @@ const CartOverlay = ({
   pixDiscount,
   products,
   removerCupom,
+  setActiveProductImage,
   setCart,
   setCupomInput,
+  setSelectedProduct,
+  setSelectedSizes,
   setShowCart,
   setShowLeadModal,
   showCart,
@@ -64,13 +67,44 @@ const CartOverlay = ({
             </div>
             
             <div className="flex-1 space-y-4 px-6 py-6 pb-72">
-                {cart.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 opacity-50 animate-in">
-                       <ShoppingBag size={48} className="mb-4 text-zinc-600"/>
-                       <h3 className="font-black uppercase text-sm tracking-widest text-zinc-400">Sua sacola está vazia</h3>
-                       <button onClick={() => setShowCart(false)} className="mt-6 border border-white/20 text-[10px] font-black uppercase px-6 py-3 rounded-full text-white hover:bg-white hover:text-zinc-950 transition-colors">Voltar para a loja</button>
+                {cart.length === 0 ? (() => {
+                    // Sacola vazia não é beco sem saída: mostra 4 peças (destaques
+                    // primeiro) pra puxar a visita de volta pro catálogo.
+                    const sugestoes = (products || [])
+                      .filter(p => !p.is_kit && p.is_active !== false && p.stock > 0)
+                      .sort((a, b) => (b.featured === true) - (a.featured === true))
+                      .slice(0, 4);
+                    return (
+                    <div className="animate-in">
+                      <div className="flex flex-col items-center justify-center pt-10 pb-8 opacity-50">
+                         <ShoppingBag size={48} className="mb-4 text-zinc-600"/>
+                         <h3 className="font-black uppercase text-sm tracking-widest text-zinc-400">Sua sacola está vazia</h3>
+                         <button onClick={() => setShowCart(false)} className="mt-6 border border-white/20 text-[10px] font-black uppercase px-6 py-3 rounded-full text-white hover:bg-white hover:text-zinc-950 transition-colors">Voltar para a loja</button>
+                      </div>
+                      {sugestoes.length > 0 && (
+                        <div className="pt-2">
+                          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-1.5"><Flame size={11} className="text-amber-400"/> Peças em alta</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            {sugestoes.map(p => (
+                              <motion.button
+                                key={p.id}
+                                whileTap={{ scale: 0.96 }}
+                                onClick={() => { setSelectedProduct(p); setSelectedSizes({}); setActiveProductImage(p.image); setShowCart(false); }}
+                                className="text-left group"
+                              >
+                                <div className="aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 relative mb-2">
+                                  <img src={optimizeImage(p.image, 400, 80)} className="w-full h-full object-cover group-active:scale-105 transition-transform duration-300" alt={p.name} loading="lazy" decoding="async" />
+                                </div>
+                                <p className="text-[10px] font-black text-zinc-300 uppercase truncate">{p.name}</p>
+                                <p className="text-[11px] font-black text-emerald-500">{formatBRL(p.promotional_price || p.price || 0)}</p>
+                              </motion.button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                ) : (
+                    );
+                })() : (
                     cart.map(item => (
                       <div key={item.itemKey} className="bg-zinc-900/50 p-3 rounded-[24px] border border-white/5 flex gap-4 shadow-sm animate-in">
                         {/* Thumb via wsrv: sem isso o original cru (1–5 MB) desce pra um thumb de 80px */}

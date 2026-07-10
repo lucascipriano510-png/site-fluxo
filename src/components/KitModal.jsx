@@ -218,7 +218,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
             {/* Hint de scroll */}
             <div className="flex flex-col items-center py-3 gap-0.5 pointer-events-none select-none">
               <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Role para selecionar as peças</span>
-              <span className="text-zinc-600 text-base animate-bounce leading-none">↓</span>
+              <span className="text-zinc-600 text-base animate-pulse leading-none">↓</span>
             </div>
           </div>
 

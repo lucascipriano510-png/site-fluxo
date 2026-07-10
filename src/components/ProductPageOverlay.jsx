@@ -10,7 +10,23 @@ import { colorDot, pluralCat } from '../lib/catalogUi';
 import { formatBRL } from '../lib/format';
 import { hasSizeGuide } from './SizeGuideModal';
 import { isOfferLive, offerEndsAt, offerPercent, offerPrice } from '../lib/offers';
-import { optimizeImage } from '../lib/images';
+import { optimizeImage, warmImages } from '../lib/images';
+
+// Pré-carrega a galeria assim que o produto abre: thumbs (300px) na hora e as
+// versões grandes (1600px) 1,5s depois, pra não disputar banda com o hero que
+// está baixando. Resolve o "quadrado escuro" nas miniaturas e deixa o swipe
+// entre fotos instantâneo.
+const GalleryPreload = ({ gallery }) => {
+  const key = (gallery || []).join('|');
+  React.useEffect(() => {
+    const urls = key ? key.split('|') : [];
+    if (urls.length <= 1) return;
+    warmImages(urls.map((g) => optimizeImage(g, 300, 80)));
+    const t = setTimeout(() => warmImages(urls.map((g) => optimizeImage(g, 1600, 90))), 1500);
+    return () => clearTimeout(t);
+  }, [key]);
+  return null;
+};
 
 // Extraído do App.jsx (verbatim) — recebe estado/handlers do App por props.
 const ProductPageOverlay = ({
@@ -91,7 +107,7 @@ const ProductPageOverlay = ({
                   : <button
                       onClick={c.onClick}
                       className="text-[13px] font-black uppercase tracking-[0.18em] leading-none transition-colors hover:text-white active:text-white touch-manipulation"
-                      style={{ color: 'var(--text-muted)' }}
+                      style={{ color: 'var(--text-secondary)' }}
                     >{c.label}</button>}
               </React.Fragment>
             ))}
@@ -101,6 +117,7 @@ const ProductPageOverlay = ({
         <React.Fragment key={`product-modal-${selectedProduct.id}`}>
           {/* Pop-up flutuante de vídeo (opcional, só se o produto tiver video_url) */}
           <ProductVideoPip key={`pip-${selectedProduct.id}`} src={selectedProduct.video_url} poster={selectedProduct.image} />
+          <GalleryPreload gallery={productGallery} />
           {/* ── MOBILE: página de produto em fluxo no documento (oculto no desktop) ── */}
           {/* A barra real (hambúrguer/logo/perfil/sacola) fica sticky logo acima — barra compartilhada com o home. */}
           <motion.div
@@ -161,8 +178,8 @@ const ProductPageOverlay = ({
                 {productGallery.length > 1 && (
                   <div className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar bg-zinc-950 border-b border-white/5" style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
                     {productGallery.map((g, i) => (
-                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all touch-manipulation ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}>
-                        <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} loading="lazy" decoding="async" />
+                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-zinc-800 border-2 transition-all touch-manipulation ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}>
+                        <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} decoding="async" />
                       </button>
                     ))}
                   </div>
@@ -187,7 +204,7 @@ const ProductPageOverlay = ({
                         setDrawerTab={setDrawerTab}
                         showToast={showToast}
                       />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--text-muted)' }}>Ref. {selectedProduct.sku}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>Ref. {selectedProduct.sku}</span>
                     </div>
                   </div>
 
@@ -358,8 +375,8 @@ const ProductPageOverlay = ({
                 {productGallery.length > 1 && (
                   <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar" style={{ touchAction: 'pan-x pan-y' }}>
                     {productGallery.map((g, i) => (
-                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
-                        <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
+                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-zinc-800 border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
+                        <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" decoding="async" />
                       </button>
                     ))}
                   </div>
@@ -403,7 +420,7 @@ const ProductPageOverlay = ({
                       setDrawerTab={setDrawerTab}
                       showToast={showToast}
                     />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--text-muted)' }}>Ref. {selectedProduct.sku}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>Ref. {selectedProduct.sku}</span>
                   </div>
 
                   {/* Preço */}

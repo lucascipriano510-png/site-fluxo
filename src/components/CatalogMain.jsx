@@ -8,7 +8,7 @@ import SubBanner from './SubBanner';
 import WaterRippleFX from './WaterRippleFX';
 import { ArrowRight, ChevronLeft, Flame, Package, Plus, Search, Truck, X, Zap } from 'lucide-react';
 import { CAMPAIGN_LABELS, OFFER_CAMPAIGNS, isOfferLive, offerCampaign, offerEndsAt, offerPercent, offerPrice } from '../lib/offers';
-import { PRICE_RANGES, colorDot, pluralCat } from '../lib/catalogUi';
+import { PRICE_RANGES, colorDot, pluralCat, shineDelay } from '../lib/catalogUi';
 import { emitSignal } from '../lib/leadSignals';
 import { formatBRL } from '../lib/format';
 import { getCatImgData, optimizeImage } from '../lib/images';
@@ -651,7 +651,7 @@ const CatalogMain = ({
                                    }
                                  `}</style>
                                  <span className="pointer-events-none absolute inset-0 overflow-hidden">
-                                   <span className="absolute top-0 left-0 h-full w-[28%]" style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.13), transparent)', animation: 'shineSize 6s ease-in-out infinite' }} />
+                                   <span className="absolute top-0 left-0 h-full w-[28%]" style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.13), transparent)', animation: 'shineSize 6s ease-in-out infinite', animationDelay: shineDelay(product.id) }} />
                                  </span>
                                  {visible.map(s => (
                                    <span
@@ -754,6 +754,7 @@ const CatalogMain = ({
                                               width: '28%', height: '100%',
                                               background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.13), transparent)',
                                               animation: 'shineBuy 6s ease-in-out infinite',
+                                              animationDelay: shineDelay(product.id),
                                             }} />
                                           </span>
                                         </>

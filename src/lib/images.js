@@ -54,6 +54,20 @@ export const buildSrcSet = (src, widths = [400, 600, 900, 1200, 1600], quality =
   return widths.map((w) => `${optimizeImage(src, w, quality)} ${w}w`).join(', ');
 };
 
+// Pré-aquece imagens no cache do navegador (galeria da página de produto):
+// trocar de foto ou olhar as miniaturas nunca mostra quadrado escuro carregando.
+// Set dedupe: aquecer duas vezes a mesma URL não dispara request de novo.
+const warmedUrls = new Set();
+export const warmImages = (urls) => {
+  (urls || []).forEach((u) => {
+    if (!u || typeof u !== 'string' || warmedUrls.has(u)) return;
+    warmedUrls.add(u);
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = u;
+  });
+};
+
 // Normaliza o dado de imagem de categoria: aceita string (url) ou { url, pos }.
 export const getCatImgData = (val) => {
   if (!val) return { url: null, pos: '50% 50%' };

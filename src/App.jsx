@@ -2073,7 +2073,7 @@ function App() {
         </div>
       )}
 
-      <CartOverlay {...{ aplicarCupom, cart, cupomAtivo, cupomDiscount, cupomInput, hasOfferInCart, pixDiscount, products, removerCupom, setCart, setCupomInput, setShowCart, setShowLeadModal, showCart, showToast, subtotal, totalComPix, viewportOverlayStyle }} />
+      <CartOverlay {...{ aplicarCupom, cart, cupomAtivo, cupomDiscount, cupomInput, hasOfferInCart, pixDiscount, products, removerCupom, setActiveProductImage, setCart, setCupomInput, setSelectedProduct, setSelectedSizes, setShowCart, setShowLeadModal, showCart, showToast, subtotal, totalComPix, viewportOverlayStyle }} />
 
       {/* Pop-up de boas-vindas com cupom (bloco: mobile, 1ª visita) */}
       <WelcomeCoupon

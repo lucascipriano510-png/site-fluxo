@@ -15,6 +15,14 @@ export const COLOR_HEX = {
 };
 export const colorDot = (name) => COLOR_HEX[String(name || '').toLowerCase()] || null;
 
+// Delay negativo (0 a -5.9s) derivado do id: dessincroniza o "shine" dos cards.
+// Sem isso o brilho de 6s pisca AO MESMO TEMPO em toda a grade e vira ruído de
+// fundo constante; com fase própria por produto vira detalhe, não movimento.
+export const shineDelay = (id) => {
+  const sum = [...String(id ?? '')].reduce((a, c) => a + c.charCodeAt(0), 0);
+  return `-${((sum % 60) / 10).toFixed(1)}s`;
+};
+
 // Categoria vem do banco no SINGULAR (CAMISA, CALÇA…) — na vitrine exibimos o
 // PLURAL (CAMISAS, CALÇAS…). SÓ exibição: o valor do filtro/URL segue o original.
 // Regra: já termina em S (TÊNIS, ÓCULOS) fica igual; senão ganha S.
