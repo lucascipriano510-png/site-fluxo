@@ -323,7 +323,7 @@ const ProductPageOverlay = ({
               </div>
 
               {/* CTA fixo no rodapé do viewport (mobile) */}
-              <div className="fixed bottom-0 left-0 right-0 px-7 py-4 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 z-[60] lg:hidden" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+              <div className="fixed bottom-0 left-0 right-0 px-7 py-4 liquid-glass z-[60] lg:hidden" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
                 <button
                   onClick={handleCommitToCart}
                   disabled={Object.keys(selectedSizes).length === 0}

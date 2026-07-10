@@ -139,7 +139,7 @@ const CartOverlay = ({
                 )}
             </div>
             {cart.length > 0 && (
-              <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 px-6 py-6 max-w-md mx-auto z-50 shadow-2xl" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+              <div className="fixed bottom-0 left-0 right-0 liquid-glass px-6 py-6 max-w-md mx-auto z-50" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
                 {/* Cupom de desconto — campo aberto ou linha aplicada */}
                 {cupomAtivo ? null : (
                   <div className="flex gap-2 mb-3">
