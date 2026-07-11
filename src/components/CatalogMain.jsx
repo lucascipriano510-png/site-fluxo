@@ -8,7 +8,7 @@ import SubBanner from './SubBanner';
 import WaterRippleFX from './WaterRippleFX';
 import { ArrowRight, ChevronLeft, Flame, Package, Plus, Search, Truck, X, Zap } from 'lucide-react';
 import { CAMPAIGN_LABELS, OFFER_CAMPAIGNS, isOfferLive, offerCampaign, offerEndsAt, offerPercent, offerPrice } from '../lib/offers';
-import { PRICE_RANGES, colorDot, pluralCat, shineDelay } from '../lib/catalogUi';
+import { colorDot, pluralCat, shineDelay } from '../lib/catalogUi';
 import { emitSignal } from '../lib/leadSignals';
 import { formatBRL } from '../lib/format';
 import { getCatImgData, optimizeImage } from '../lib/images';
@@ -264,15 +264,9 @@ const CatalogMain = ({
           </div>
         )}
 
-        {/* Filtro de FAIXA DE PREÇO — só dentro de uma categoria (evita poluir o home) */}
-        {!kitsOnly && selectedCategory !== 'TODOS' && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center">
-            <button onClick={() => setPriceRange('TODOS')} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${priceRange === 'TODOS' ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-400 border-white/5 hover:text-white hover:border-white/20'}`}>Qualquer preço</button>
-            {PRICE_RANGES.map(r => (
-              <button key={r.key} onClick={() => setPriceRange(r.key)} data-testid={`price-filter-${r.key}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${priceRange === r.key ? 'bg-emerald-500 text-zinc-950 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent text-zinc-400 border-white/5 hover:text-white hover:border-white/20'}`}>{r.label}</button>
-            ))}
-          </div>
-        )}
+        {/* Filtro de FAIXA DE PREÇO removido a pedido do dono (2026-07-11):
+            loja não é caça-oferta, preços padronizados — a busca ainda entende
+            "até 100" etc. via searchIntent, que cobre quem pensa em preço. */}
 
         {/* OFERTAS — carrosséis por campanha (Dia/Semana/Mês), na ordem do Setup */}
         {(() => {
@@ -589,9 +583,10 @@ const CatalogMain = ({
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                const hasMultipleImages = [product.image, ...(Array.isArray(product.gallery) ? product.gallery : [])].filter(Boolean).length > 1;
-                // GRADE VIVA (só touch): ao filtrar/buscar/paginar, cada card
-                // DESLIZA pra nova posição (FLIP, layout='position') em vez de
-                // teleportar — o catálogo se reorganiza como organismo.
+                // GRADE VIVA (só touch): ao filtrar/buscar, card que PERMANECE
+                // desliza pra nova posição (FLIP, layout='position') e card
+                // NOVO entra em onda (spring + stagger) — categoria→categoria
+                // troca 100% dos cards, então sem entrada animada nada aparece.
                 const gradeViva = !isDesktopViewport && !prefersReducedMotion;
                 const CardShell = gradeViva ? motion.div : 'div';
                 return (
@@ -600,7 +595,7 @@ const CatalogMain = ({
                   // will-change:transform sempre ligado = downscale ruim do Chrome).
                   <CardShell
                     key={product.id}
-                    {...(gradeViva ? { layout: 'position', transition: { layout: { type: 'spring', stiffness: 320, damping: 32, delay: Math.min(idx * 0.035, 0.28) } } } : {})}
+                    {...(gradeViva ? { layout: 'position', initial: { opacity: 0, y: 18, scale: 0.98 }, animate: { opacity: 1, y: 0, scale: 1 }, transition: { type: 'spring', stiffness: 320, damping: 32, delay: Math.min(idx * 0.035, 0.28) } } : {})}
                     className={`cv-card sda-rise group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
