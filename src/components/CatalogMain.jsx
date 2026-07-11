@@ -589,12 +589,18 @@ const CatalogMain = ({
              {paginatedProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                const hasMultipleImages = [product.image, ...(Array.isArray(product.gallery) ? product.gallery : [])].filter(Boolean).length > 1;
+                // GRADE VIVA (só touch): ao filtrar/buscar/paginar, cada card
+                // DESLIZA pra nova posição (FLIP, layout='position') em vez de
+                // teleportar — o catálogo se reorganiza como organismo.
+                const gradeViva = !isDesktopViewport && !prefersReducedMotion;
+                const CardShell = gradeViva ? motion.div : 'div';
                 return (
-                  // div puro + hover via CSS: transform só existe ao passar o mouse →
-                  // em repouso NÃO há camada GPU → imagem nítida (framer mantinha
+                  // Desktop segue no div puro + hover via CSS: transform persistente
+                  // em card no desktop = imagem borrada (framer mantinha
                   // will-change:transform sempre ligado = downscale ruim do Chrome).
-                  <div
+                  <CardShell
                     key={product.id}
+                    {...(gradeViva ? { layout: 'position', transition: { layout: { type: 'spring', stiffness: 320, damping: 32, delay: Math.min(idx * 0.035, 0.28) } } } : {})}
                     className={`cv-card sda-rise group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
@@ -854,7 +860,7 @@ const CatalogMain = ({
                           </div>
                         </div>
                       </motion.div>
-                  </div>
+                  </CardShell>
                 )
              })}
            </div>
