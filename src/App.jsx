@@ -1096,14 +1096,32 @@ function App() {
           document.body.appendChild(ghost);
           const dx = (b.left + b.width / 2) - (a.left + a.width / 2);
           const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+          // Voo em ARCO e mais lento (1s): "pega" a peça (cresce um tico),
+          // desvia lateral no meio do caminho e pousa no ícone — trajetória
+          // curva é o que o olho consegue rastrear; reta rápida vira borrão.
           const voo = ghost.animate(
             [
-              { transform: 'translate(0, 0) scale(1)', opacity: 1 },
-              { transform: `translate(${dx}px, ${dy}px) scale(0.05)`, opacity: 0.35 },
+              { transform: 'translate(0, 0) scale(1)', opacity: 1, offset: 0 },
+              { transform: 'translate(0, -14px) scale(1.05)', opacity: 1, offset: 0.12 },
+              { transform: `translate(${dx * 0.62}px, ${dy * 0.45}px) scale(0.45)`, opacity: 0.95, offset: 0.55 },
+              { transform: `translate(${dx}px, ${dy}px) scale(0.07)`, opacity: 0.4, offset: 1 },
             ],
-            { duration: 650, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+            { duration: 1000, easing: 'cubic-bezier(0.3, 0.8, 0.3, 1)' }
           );
-          voo.onfinish = () => ghost.remove();
+          const pousar = () => {
+            ghost.remove();
+            // POUSO: a sacola "recebe" a peça — pulso no ícone + tique tátil.
+            alvo.animate(
+              [
+                { transform: 'scale(1)' },
+                { transform: 'scale(1.4)' },
+                { transform: 'scale(1)' },
+              ],
+              { duration: 320, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+            );
+            hapticTick(10);
+          };
+          voo.onfinish = pousar;
           voo.oncancel = () => ghost.remove();
         }
       }
