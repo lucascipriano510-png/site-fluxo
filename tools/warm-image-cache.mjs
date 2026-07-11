@@ -35,16 +35,15 @@ const isWarmable = (src) =>
 // Tamanhos que o site realmente pede (fonte: ProductImage, ProductPageOverlay,
 // CatalogMain, CartOverlay). Atualizar se os componentes mudarem.
 const MAIN_SIZES = [
-  [320, 88], [480, 88], [640, 88], [900, 88], [1200, 88], [1600, 88], // srcset do card
+  [320, 88], [480, 88], [640, 88], [900, 88], [1200, 88], [1600, 88], // srcset do card E do hero (q88 unificado 2026-07-11)
   [32, 35], [40, 35],   // LQIPs (blur-up do card e do hero)
-  [1600, 90],           // hero da página de produto
   [300, 78],            // vistos recentemente
   [400, 80],            // relacionados + sugestões da sacola
 ];
 const GALLERY_SIZES = [
-  [300, 80],  // miniaturas
-  [1600, 90], // hero ao trocar de foto
-  [40, 35],   // LQIP do hero
+  [300, 80],                                     // miniaturas
+  [640, 88], [900, 88], [1200, 88], [1600, 88],  // hero ao trocar de foto (srcset q88)
+  [40, 35],                                      // LQIP do hero
 ];
 
 async function fetchProducts() {

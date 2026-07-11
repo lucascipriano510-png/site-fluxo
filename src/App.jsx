@@ -22,6 +22,7 @@ import { isOfferLive, offerPrice, offerPercent, offerEndsAt, offerCampaign, OFFE
 import { parseQueryIntent, productMatchesIntent, scoreProductForSearch, hasActiveQuery } from './lib/search';
 import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
 import { hapticTick } from './lib/haptics';
+import { isLowEndDevice } from './lib/deviceTier';
 import { fetchOrders } from './lib/orders';
 import { requestStockAlert, fetchStockAlerts } from './lib/stockAlerts';
 import { buildSizeGrid } from './lib/sizeGrid';
@@ -1018,7 +1019,7 @@ function App() {
     // do callback: nome duplicado no mesmo frame desliga a transição inteira.
     const cardEl = document.querySelector(`[data-vt-card="${product.id}"]`);
     const motionReduzido = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    if (document.startViewTransition && cardEl && !product.is_kit && !motionReduzido && !productPageOpen) {
+    if (document.startViewTransition && cardEl && !product.is_kit && !motionReduzido && !productPageOpen && !isLowEndDevice()) {
       cardEl.style.viewTransitionName = 'produto-hero';
       const vt = document.startViewTransition(() => {
         cardEl.style.viewTransitionName = '';

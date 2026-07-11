@@ -22,12 +22,16 @@ const reduced = () =>
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+import { isLowEndDevice } from '../lib/deviceTier';
+
 export default function ThreeAtmosphere() {
   const mountRef = React.useRef(null);
 
   React.useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+    // Aparelho fraco/economia de dados: nem baixa o chunk do three (~190 KB gz).
+    if (isLowEndDevice()) return;
 
     let disposed = false;
     let cleanup = null;
@@ -80,12 +84,11 @@ export default function ThreeAtmosphere() {
       sctx.fillRect(0, 0, 64, 64);
       const sprite = new THREE.CanvasTexture(spriteCanvas);
 
-      // Paleta do GALPÃO do hero de vídeo (neon vermelho/azul): a home é a
-      // continuação da cena — o cliente não "sai" do galpão ao rolar.
-      // (era âmbar/esmeralda; trocado em 2026-07-11 junto com o HeroVideo)
+      // Paleta da casa (mesmos acentos do brilho-ambient do styles.css).
+      // Neon vermelho/azul do vídeo foi testado e RECUSADO pelo dono (2026-07-11).
       const zinc    = new THREE.Color(0x9a9aa4);
-      const amber   = new THREE.Color(0xef4444); // neon vermelho (tubo esq. do vídeo)
-      const emerald = new THREE.Color(0x60a5fa); // neon azul (tubo dir. do vídeo)
+      const amber   = new THREE.Color(0xf59e0b);
+      const emerald = new THREE.Color(0x10b981);
 
       const spreadX = 16 * Math.max(1, window.innerWidth / window.innerHeight);
       const base = new Float32Array(N * 3);   // posição de nascença

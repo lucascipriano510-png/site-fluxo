@@ -10,19 +10,28 @@ import { colorDot, pluralCat } from '../lib/catalogUi';
 import { formatBRL } from '../lib/format';
 import { hasSizeGuide } from './SizeGuideModal';
 import { isOfferLive, offerEndsAt, offerPercent, offerPrice } from '../lib/offers';
-import { optimizeImage, warmImages } from '../lib/images';
+import { buildSrcSet, optimizeImage, warmImages } from '../lib/images';
+
+// Larguras do HERO da página de produto — mesmas do srcset do card (q88), que
+// o warm-image-cache já mantém quentes. O navegador escolhe pelo DPR real:
+// celular baixa ~900-1200px em vez do 1600 fixo de antes (≈metade dos pixels
+// = abre e troca de foto bem mais rápido, mesma nitidez por pixel exibido).
+const HERO_WIDTHS = [640, 900, 1200, 1600];
+const HERO_Q = 88;
 
 // Pré-carrega a galeria assim que o produto abre: thumbs (300px) na hora e as
-// versões grandes (1600px) 1,5s depois, pra não disputar banda com o hero que
-// está baixando. Resolve o "quadrado escuro" nas miniaturas e deixa o swipe
-// entre fotos instantâneo.
+// versões grandes 300ms depois (só o fôlego do hero começar a baixar).
+// Resolve o "quadrado escuro" nas miniaturas e deixa o swipe instantâneo.
 const GalleryPreload = ({ gallery }) => {
   const key = (gallery || []).join('|');
   React.useEffect(() => {
     const urls = key ? key.split('|') : [];
     if (urls.length <= 1) return;
     warmImages(urls.map((g) => optimizeImage(g, 300, 80)));
-    const t = setTimeout(() => warmImages(urls.map((g) => optimizeImage(g, 1600, 90))), 1500);
+    const t = setTimeout(() => {
+      // 900 e 1200 cobrem o que o srcset escolhe na esmagadora maioria dos DPRs
+      warmImages(urls.flatMap((g) => [optimizeImage(g, 900, HERO_Q), optimizeImage(g, 1200, HERO_Q)]));
+    }, 300);
     return () => clearTimeout(t);
   }, [key]);
   return null;
@@ -157,7 +166,9 @@ const ProductPageOverlay = ({
                   <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url("${optimizeImage(heroImg, 40, 35)}")`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(12px)', transform: 'scale(1.06)' }} />
                   {/* Troca a foto por SWIPE lateral (handlers no container) ou toque nas miniaturas/pontos */}
                   <img
-                    src={optimizeImage(heroImg, 1600, 90)}
+                    src={optimizeImage(heroImg, 1200, HERO_Q)}
+                    srcSet={buildSrcSet(heroImg, HERO_WIDTHS, HERO_Q)}
+                    sizes="100vw"
                     className="relative z-[1] w-full h-full object-cover"
                     style={{ viewTransitionName: 'produto-hero' }}
                     alt={selectedProduct.name}
@@ -362,7 +373,9 @@ const ProductPageOverlay = ({
                   {/* LQIP blur-up atrás do hero pesado (1600px): preview instantâneo */}
                   <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url("${optimizeImage(heroImg, 40, 35)}")`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', filter: 'blur(12px)', transform: 'scale(1.04)' }} />
                   <img
-                    src={optimizeImage(heroImg, 1600, 90)}
+                    src={optimizeImage(heroImg, 1200, HERO_Q)}
+                    srcSet={buildSrcSet(heroImg, HERO_WIDTHS, HERO_Q)}
+                    sizes="(min-width: 1024px) 640px, 100vw"
                     className="relative z-[1] w-full object-contain"
                     style={{ maxHeight: '640px', viewTransitionName: 'produto-hero' }}
                     alt={selectedProduct.name}
