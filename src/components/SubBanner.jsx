@@ -27,7 +27,7 @@ export default function SubBanner({ banner, whatsapp }) {
   const waUrl = waMsg && waNumber ? `https://wa.me/${waNumber}?text=${encodeURIComponent(waMsg)}` : null;
 
   return (
-    <section className="relative -mx-6 lg:mx-0 lg:rounded-3xl overflow-hidden" aria-label={banner.title || 'Destaque'}>
+    <section className="relative -mx-6 lg:mx-auto lg:max-w-[760px] lg:rounded-3xl overflow-hidden" aria-label={banner.title || 'Destaque'}>
       <div className="relative w-full aspect-[2/1] bg-zinc-950">
         {!loaded && (
           <div
