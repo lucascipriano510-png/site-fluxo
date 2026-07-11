@@ -69,11 +69,28 @@ const CatalogMain = ({
   sortMode,
   totalPages,
   userProfile,
-}) => (
+}) => {
+  // DOCK DA BUSCA: ao focar, as seções entre a barra e a grade somem e a
+  // barra ancora sob o header — os cards (FLIP) sobem fisicamente até ela.
+  const [searchFocused, setSearchFocused] = React.useState(false);
+  const searchBlurTimer = React.useRef(null);
+  const handleSearchFocus = () => {
+    if (searchBlurTimer.current) clearTimeout(searchBlurTimer.current);
+    setSearchFocused(true);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.getElementById('search-dock')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+  };
+  const handleSearchBlur = () => {
+    // blur dispara ANTES do toque num card: restaurar as seções na hora
+    // empurraria o card debaixo do dedo (misclick). 350ms deixa o toque pousar.
+    searchBlurTimer.current = setTimeout(() => setSearchFocused(false), 350);
+  };
+  return (
 <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-dvh lg:max-w-[1500px] lg:mx-auto" data-testid="catalog-main">
-        <div className="relative group">
+        <div id="search-dock" className="relative group" style={{ scrollMarginTop: '88px' }}>
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-          <input id="search-input" placeholder="Busque por peça, cor, tamanho ou preço…" data-testid="input-search" className="w-full border py-4 pl-14 pr-12 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <input id="search-input" placeholder="Busque por peça, cor, tamanho ou preço…" data-testid="input-search" className="w-full border py-4 pl-14 pr-12 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={handleSearchFocus} onBlur={handleSearchBlur} />
           {searchQuery && (
             <button onClick={() => setSearchQuery('')} aria-label="Limpar busca" className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white bg-zinc-800/60 rounded-full p-1.5 touch-manipulation active:scale-90 transition-all"><X size={13} /></button>
           )}
@@ -270,7 +287,7 @@ const CatalogMain = ({
 
         {/* OFERTAS — carrosséis por campanha (Dia/Semana/Mês), na ordem do Setup */}
         {(() => {
-          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1;
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1 && !searchFocused;
           if (!isDefaultView) return null;
           const orderCfg = Array.isArray(config?.offerCampaignOrder) && config.offerCampaignOrder.length > 0 ? config.offerCampaignOrder : OFFER_CAMPAIGNS;
           const campaignsOrdered = [...orderCfg.filter(c => OFFER_CAMPAIGNS.includes(c)), ...OFFER_CAMPAIGNS.filter(c => !orderCfg.includes(c))];
@@ -380,7 +397,7 @@ const CatalogMain = ({
 
         {/* DESTAQUES */}
         {(() => {
-          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1;
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1 && !searchFocused;
           if (!isDefaultView) return null;
           const featured = (products || [])
             .filter(p => p.featured && (p.is_kit || (p.stock || 0) > 0))
@@ -488,7 +505,7 @@ const CatalogMain = ({
 
         {/* SUB-BANNER (meio) — faixa decorativa 2:1 entre Destaques e Peças */}
         {(() => {
-          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1;
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1 && !searchFocused;
           if (!isDefaultView || !midBanner) return null;
           return <SubBanner banner={midBanner} whatsapp={config?.whatsapp} />;
         })()}
@@ -497,7 +514,7 @@ const CatalogMain = ({
             (O spotlight "A mais pedida" foi removido em 2026-07-11: brigava
             com a seção "Em Destaque", que já faz o papel de vitrine premium.) */}
         {(() => {
-          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1;
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1 && !searchFocused;
           if (!isDefaultView) return null;
           return (
             <div className="-mx-6 lg:mx-0 marquee-wrap" aria-hidden="true">
@@ -517,7 +534,7 @@ const CatalogMain = ({
         })()}
 
         {/* Vistos recentemente — trilha horizontal (só fora de busca, p/ não poluir) */}
-        {recentlyViewedProducts.length > 0 && !searchActive && (
+        {recentlyViewedProducts.length > 0 && !searchActive && !searchFocused && (
           <div className="pt-1 animate-in">
             <p className="text-[10px] font-black uppercase tracking-widest text-white/90 mb-3">Vistos recentemente</p>
             <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5 lg:mx-0 lg:px-0" style={{ touchAction: 'pan-x pan-y' }}>
@@ -907,6 +924,7 @@ const CatalogMain = ({
            </>
         )}
       </main>
-);
+  );
+};
 
 export default CatalogMain;
