@@ -216,8 +216,6 @@
 .mq-outline { color: transparent; -webkit-text-stroke: 1.5px rgba(247, 247, 249, 0.38); }
 .mq-sep { color: var(--gold); font-size: 0.5em; }
 @keyframes marquee-roll { to { transform: translateX(-50%); } }
-/* Barra de progresso do Stories (StoriesViewer) */
-@keyframes sv-progress { to { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
 /* ── Reveals por scroll (CSS puro, roda no compositor — zero JS) ──────────

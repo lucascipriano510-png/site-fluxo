@@ -32,7 +32,6 @@ const CatalogMain = ({
   midBanner,
   noveltyMode,
   onCatRailScroll,
-  onOpenStories,
   paginatedProducts,
   prefersReducedMotion,
   priceRange,
@@ -68,7 +67,6 @@ const CatalogMain = ({
   setSortMode,
   showToast,
   sortMode,
-  storiesProducts,
   totalPages,
   userProfile,
 }) => (
@@ -101,31 +99,6 @@ const CatalogMain = ({
             </div>
           );
         })()}
-
-        {/* ── DROPS DA SEMANA (stories) — círculos estilo Instagram; toque abre
-            a vitrine fullscreen. Só fora de busca, pra não poluir. */}
-        {!searchActive && (storiesProducts?.length || 0) > 0 && (
-          <div>
-            <p className="text-[10px] lg:text-[11px] font-black uppercase tracking-widest text-white/90 mb-3 lg:text-center">Drops da semana</p>
-            <div className="flex gap-4 overflow-x-auto no-scrollbar mask-linear native-x-scroll lg:justify-center" style={{ touchAction: 'pan-x pan-y' }}>
-              {storiesProducts.map((p, i) => (
-                <button
-                  key={p.id}
-                  onClick={() => onOpenStories(i)}
-                  className="shrink-0 flex flex-col items-center gap-1.5 touch-manipulation active:scale-95 transition-transform"
-                  aria-label={`Ver drop: ${p.name}`}
-                >
-                  <span className="p-[2.5px] rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-500">
-                    <span className="block p-[2.5px] rounded-full bg-zinc-950">
-                      <img src={optimizeImage(p.image, 300, 78)} alt="" className="w-16 h-16 rounded-full object-cover" loading="lazy" decoding="async" draggable={false} />
-                    </span>
-                  </span>
-                  <span className="text-[8px] font-black uppercase tracking-wider text-zinc-400 max-w-[72px] truncate">{p.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div>
         {/* Título da fileira — nem todo mundo deduz que os tiles são categorias */}

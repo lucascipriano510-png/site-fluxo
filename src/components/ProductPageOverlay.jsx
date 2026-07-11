@@ -1,5 +1,6 @@
 import OfferCountdown from './OfferCountdown';
 import ProductReviewsList from './ProductReviewsList';
+import HoloTilt from './HoloTilt';
 import ProductVideoPip from './ProductVideoPip';
 import React from 'react';
 import SizeRowSelector from './SizeRowSelector';
@@ -168,21 +169,24 @@ const ProductPageOverlay = ({
                   {/* GALERIA EMPILHADA: todas as fotos ficam montadas (decodificadas
                       uma vez) e a troca é só opacidade no compositor — swipe/thumb
                       vira instantâneo. Trocar src de um único <img> obrigava o
-                      navegador a rebaixar+decodificar a cada seleção (a "demora"). */}
-                  {productGallery.map((g) => (
-                    <img
-                      key={g}
-                      src={optimizeImage(g, 1200, HERO_Q)}
-                      srcSet={buildSrcSet(g, HERO_WIDTHS, HERO_Q)}
-                      sizes="100vw"
-                      className={`absolute inset-0 z-[1] w-full h-full object-cover transition-opacity duration-200 ${heroImg === g ? 'opacity-100' : 'opacity-0'}`}
-                      style={heroImg === g ? { viewTransitionName: 'produto-hero' } : undefined}
-                      alt={heroImg === g ? selectedProduct.name : ''}
-                      fetchPriority={heroImg === g ? 'high' : 'auto'}
-                      decoding="async"
-                      draggable={false}
-                    />
-                  ))}
+                      navegador a rebaixar+decodificar a cada seleção (a "demora").
+                      HoloTilt: a pilha inteira reage à inclinação do celular. */}
+                  <HoloTilt className="absolute inset-0 z-[1]">
+                    {productGallery.map((g) => (
+                      <img
+                        key={g}
+                        src={optimizeImage(g, 1200, HERO_Q)}
+                        srcSet={buildSrcSet(g, HERO_WIDTHS, HERO_Q)}
+                        sizes="100vw"
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${heroImg === g ? 'opacity-100' : 'opacity-0'}`}
+                        style={heroImg === g ? { viewTransitionName: 'produto-hero' } : undefined}
+                        alt={heroImg === g ? selectedProduct.name : ''}
+                        fetchPriority={heroImg === g ? 'high' : 'auto'}
+                        decoding="async"
+                        draggable={false}
+                      />
+                    ))}
+                  </HoloTilt>
                   {/* Dot indicators */}
                   {productGallery.length > 1 && (
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 z-10">

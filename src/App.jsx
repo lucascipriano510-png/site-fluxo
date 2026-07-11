@@ -13,7 +13,6 @@ import SubBanner from './components/SubBanner';
 import WaterRippleFX from './components/WaterRippleFX';
 import ThreeAtmosphere from './components/ThreeAtmosphere';
 import TouchGlow from './components/TouchGlow';
-import StoriesViewer from './components/StoriesViewer';
 import WelcomeCoupon from './components/WelcomeCoupon';
 import { useBanners } from './hooks/useBanners';
 import AdminHeader from './components/AdminHeader';
@@ -1039,18 +1038,6 @@ function App() {
     });
   };
 
-  // ── VITRINE STORIES: novidades (30 dias) em tela cheia, estilo Instagram ──
-  const [storiesIndex, setStoriesIndex] = useState(null); // null = fechado; número = índice inicial
-  const storiesProducts = useMemo(() => {
-    const trintaDias = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const elegiveis = (products || []).filter(p => p.image && p.is_active !== false && (p.is_kit || (p.stock || 0) > 0));
-    const recentes = elegiveis.filter(p => p.created_at && new Date(p.created_at).getTime() > trintaDias);
-    // Mesmo fallback do filtro "novidades": sem peça de 30 dias, mostra as mais novas.
-    return (recentes.length > 0 ? recentes : elegiveis)
-      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-      .slice(0, 10);
-  }, [products]);
-
   // Compartilhar a peça: usa o share nativo do celular; sem suporte, copia o link.
   // Usa o deep link ?produto=SKU que o site já entende.
   const handleShareProduct = async (product) => {
@@ -1086,6 +1073,41 @@ function App() {
       return;
     }
     hapticTick(18); // confirmação tátil: peça entrando na sacola
+
+    // A PEÇA VOA PRA SACOLA: clona a foto ativa do hero e anima até o ícone
+    // do header (WAAPI, só transform/opacity no compositor). Decorativo puro:
+    // qualquer falha é engolida e a compra segue.
+    try {
+      const reduzido = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      const heroEl = document.querySelector('img[style*="produto-hero"]');
+      const alvo = document.querySelector('[data-testid="btn-header-cart"]');
+      if (!reduzido && heroEl && alvo) {
+        const a = heroEl.getBoundingClientRect();
+        const b = alvo.getBoundingClientRect();
+        if (a.width > 0 && b.width > 0) {
+          const ghost = document.createElement('img');
+          ghost.src = heroEl.currentSrc || heroEl.src;
+          Object.assign(ghost.style, {
+            position: 'fixed', left: `${a.left}px`, top: `${a.top}px`,
+            width: `${a.width}px`, height: `${a.height}px`,
+            objectFit: 'cover', borderRadius: '18px', zIndex: 290,
+            pointerEvents: 'none', willChange: 'transform, opacity',
+          });
+          document.body.appendChild(ghost);
+          const dx = (b.left + b.width / 2) - (a.left + a.width / 2);
+          const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+          const voo = ghost.animate(
+            [
+              { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+              { transform: `translate(${dx}px, ${dy}px) scale(0.05)`, opacity: 0.35 },
+            ],
+            { duration: 650, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+          );
+          voo.onfinish = () => ghost.remove();
+          voo.oncancel = () => ghost.remove();
+        }
+      }
+    } catch { /* efeito decorativo — nunca trava a compra */ }
 
     let updatedCart = [...cart];
     entries.forEach(([sizeName, qty]) => {
@@ -1957,7 +1979,7 @@ function App() {
           Pra voltar: <BannerCarousel activeBanners={activeBanners} bannersLoaded={bannersLoaded} isAdmin={isAdmin} onCollectionFilter={setActiveCollectionFilter} /> */}
       <HeroVideo />
 
-      <CatalogMain {...{ activeCollectionFilter, availableColors, availableSizes, availableSubcategories, bumpOffers, catRailRef, categories, config, currentPage, filteredProducts, handleProductClick, isDesktopViewport, kitsOnly, midBanner, noveltyMode, onCatRailScroll, onOpenStories: setStoriesIndex, paginatedProducts, prefersReducedMotion, priceRange, products, productsLoaded, ratingsMap, recentlyViewedProducts, searchActive, searchIntent, searchQuery, selectedCategory, selectedColor, selectedProduct, selectedSize, selectedSubcategory, selectionSkus, setActiveCollectionFilter, setCurrentPage, setDrawerTab, setKitsOnly, setNoveltyMode, setPriceRange, setRatingsMap, setSearchQuery, setSelectedCategory, setSelectedColor, setSelectedProduct, setSelectedSize, setSelectedSizes, setSelectedSubcategory, setSelectionSkus, setShowUserDrawer, setSortMode, showToast, sortMode, storiesProducts, totalPages, userProfile }} />
+      <CatalogMain {...{ activeCollectionFilter, availableColors, availableSizes, availableSubcategories, bumpOffers, catRailRef, categories, config, currentPage, filteredProducts, handleProductClick, isDesktopViewport, kitsOnly, midBanner, noveltyMode, onCatRailScroll, paginatedProducts, prefersReducedMotion, priceRange, products, productsLoaded, ratingsMap, recentlyViewedProducts, searchActive, searchIntent, searchQuery, selectedCategory, selectedColor, selectedProduct, selectedSize, selectedSubcategory, selectionSkus, setActiveCollectionFilter, setCurrentPage, setDrawerTab, setKitsOnly, setNoveltyMode, setPriceRange, setRatingsMap, setSearchQuery, setSelectedCategory, setSelectedColor, setSelectedProduct, setSelectedSize, setSelectedSizes, setSelectedSubcategory, setSelectionSkus, setShowUserDrawer, setSortMode, showToast, sortMode, totalPages, userProfile }} />
 
       {/* ── BLOCO DE CONFIANÇA — loja real e local (reforço antes do rodapé) ── */}
       <TrustBadges {...{ config }} />
@@ -2118,16 +2140,6 @@ function App() {
       )}
 
       <CartOverlay {...{ aplicarCupom, cart, cupomAtivo, cupomDiscount, cupomInput, hasOfferInCart, pixDiscount, products, removerCupom, setActiveProductImage, setCart, setCupomInput, setSelectedProduct, setSelectedSizes, setShowCart, setShowLeadModal, showCart, showToast, subtotal, totalComPix, viewportOverlayStyle }} />
-
-      {/* Vitrine Stories — novidades fullscreen (rail "Drops da semana" abre) */}
-      {storiesIndex !== null && storiesProducts.length > 0 && (
-        <StoriesViewer
-          products={storiesProducts}
-          startIndex={Math.min(storiesIndex, storiesProducts.length - 1)}
-          onClose={() => setStoriesIndex(null)}
-          onOpenProduct={(p) => { setStoriesIndex(null); handleProductClick(p); }}
-        />
-      )}
 
       {/* Pop-up de boas-vindas com cupom (bloco: mobile, 1ª visita) */}
       <WelcomeCoupon
