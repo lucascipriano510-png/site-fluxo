@@ -159,6 +159,7 @@ const ProductPageOverlay = ({
                   <img
                     src={optimizeImage(heroImg, 1600, 90)}
                     className="relative z-[1] w-full h-full object-cover"
+                    style={{ viewTransitionName: 'produto-hero' }}
                     alt={selectedProduct.name}
                     fetchPriority="high"
                     draggable={false}
@@ -363,7 +364,7 @@ const ProductPageOverlay = ({
                   <img
                     src={optimizeImage(heroImg, 1600, 90)}
                     className="relative z-[1] w-full object-contain"
-                    style={{ maxHeight: '640px' }}
+                    style={{ maxHeight: '640px', viewTransitionName: 'produto-hero' }}
                     alt={selectedProduct.name}
                     fetchPriority="high"
                   />

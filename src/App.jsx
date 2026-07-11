@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Share2, Bell, Ruler, Ticket } from 'lucide-react';
 import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitItems } from './lib/supabase';
@@ -997,8 +998,27 @@ function App() {
       const root = document.getElementById('root');
       catalogScrollRef.current = root ? root.scrollTop : (window.scrollY || 0);
     }
-    setSelectedProduct(product);
-    setSelectedSizes({});
+    const abrir = () => {
+      setSelectedProduct(product);
+      setSelectedSizes({});
+    };
+    // Morph nativo card→hero (View Transitions API): a foto do card se
+    // transforma no hero da página do produto, estilo app. Progressivo: sem
+    // suporte do navegador, sem card na vitrine, kit (abre modal, não página)
+    // ou motion reduzido → abre como sempre abriu. O nome sai do card DENTRO
+    // do callback: nome duplicado no mesmo frame desliga a transição inteira.
+    const cardEl = document.querySelector(`[data-vt-card="${product.id}"]`);
+    const motionReduzido = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    if (document.startViewTransition && cardEl && !product.is_kit && !motionReduzido && !productPageOpen) {
+      cardEl.style.viewTransitionName = 'produto-hero';
+      const vt = document.startViewTransition(() => {
+        cardEl.style.viewTransitionName = '';
+        flushSync(abrir);
+      });
+      vt.finished.finally(() => { cardEl.style.viewTransitionName = ''; });
+    } else {
+      abrir();
+    }
     emitSignal('produto_visto', { product }); // sinal: lead olhou esta peça
     // Histórico "vistos recentemente" (id no topo, único, máx 12).
     setRecentlyViewed(prev => {
