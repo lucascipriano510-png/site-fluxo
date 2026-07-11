@@ -512,14 +512,15 @@ const CatalogMain = ({
           return (
             <>
               <div className="-mx-6 lg:mx-0 marquee-wrap" aria-hidden="true">
+                {/* Só IDENTIDADE aqui — as promessas de compra (frete, 4x,
+                    retire) já vivem na faixa do topo; repetir = redundância. */}
                 <div className="marquee-track">
                   {[0, 1].map(i => (
                     <span key={i} className="marquee-seg">
                       <span className="mq-solid">Fluxo Outlet</span><span className="mq-sep">✦</span>
-                      <span className="mq-outline">Frete grátis em Uberaba</span><span className="mq-sep">✦</span>
-                      <span className="mq-solid">5% off no Pix</span><span className="mq-sep">✦</span>
-                      <span className="mq-outline">Até 4x sem juros</span><span className="mq-sep">✦</span>
+                      <span className="mq-outline">Streetwear premium</span><span className="mq-sep">✦</span>
                       <span className="mq-solid">Loja de verdade</span><span className="mq-sep">✦</span>
+                      <span className="mq-outline">Uberaba</span><span className="mq-sep">✦</span>
                     </span>
                   ))}
                 </div>
