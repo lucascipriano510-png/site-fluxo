@@ -6,7 +6,9 @@ import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitIt
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
 import StarRatingInline from './components/StarRatingInline';
+// eslint-disable-next-line no-unused-vars -- carrossel guardado; ver comentário no hero
 import BannerCarousel from './components/BannerCarousel';
+import HeroVideo from './components/HeroVideo';
 import SubBanner from './components/SubBanner';
 import WaterRippleFX from './components/WaterRippleFX';
 import ThreeAtmosphere from './components/ThreeAtmosphere';
@@ -1931,12 +1933,9 @@ function App() {
         </div>
       </div>
 
-      <BannerCarousel
-        activeBanners={activeBanners}
-        bannersLoaded={bannersLoaded}
-        isAdmin={isAdmin}
-        onCollectionFilter={setActiveCollectionFilter}
-      />
+      {/* Hero de vídeo da marca no lugar do carrossel (dono, 2026-07-11).
+          Pra voltar: <BannerCarousel activeBanners={activeBanners} bannersLoaded={bannersLoaded} isAdmin={isAdmin} onCollectionFilter={setActiveCollectionFilter} /> */}
+      <HeroVideo />
 
       <CatalogMain {...{ activeCollectionFilter, availableColors, availableSizes, availableSubcategories, bumpOffers, catRailRef, categories, config, currentPage, filteredProducts, handleProductClick, isDesktopViewport, kitsOnly, midBanner, noveltyMode, onCatRailScroll, paginatedProducts, prefersReducedMotion, priceRange, products, productsLoaded, ratingsMap, recentlyViewedProducts, searchActive, searchIntent, searchQuery, selectedCategory, selectedColor, selectedProduct, selectedSize, selectedSubcategory, selectionSkus, setActiveCollectionFilter, setCurrentPage, setDrawerTab, setKitsOnly, setNoveltyMode, setPriceRange, setRatingsMap, setSearchQuery, setSelectedCategory, setSelectedColor, setSelectedProduct, setSelectedSize, setSelectedSizes, setSelectedSubcategory, setSelectionSkus, setShowUserDrawer, setSortMode, showToast, sortMode, totalPages, userProfile }} />
 
