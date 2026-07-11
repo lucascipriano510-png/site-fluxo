@@ -64,7 +64,7 @@ export default function WelcomeCoupon({ aberto, cupom = 'NOVOFLUXO5', onFechar, 
               </h2>
 
               <p className="text-[12px] leading-relaxed font-medium text-zinc-400">
-                É essa sensação que a Fluxo entrega: caimento certo, conforto de verdade —
+                É essa sensação que a Fluxo entrega: caimento certo, tecido bom —
                 e a confiança de sair sabendo que tá bem vestido.
               </p>
 

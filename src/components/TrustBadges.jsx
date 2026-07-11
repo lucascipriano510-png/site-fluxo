@@ -11,7 +11,7 @@ const TrustBadges = ({
         <div className="rounded-3xl border border-white/10 p-5 lg:p-7" style={{ background: '#202024' }}>
           <div className="flex items-center gap-2 mb-5">
             <ShieldCheck size={15} className="text-emerald-500 shrink-0" />
-            <span className="text-[10px] lg:text-[11px] font-black uppercase tracking-[0.22em] text-white">Loja de verdade, daqui de {(config.location || 'Uberaba, MG').split(',')[0]}</span>
+            <span className="text-[10px] lg:text-[11px] font-black uppercase tracking-[0.22em] text-white">Daqui de {(config.location || 'Uberaba, MG').split(',')[0]}</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
@@ -32,8 +32,8 @@ const TrustBadges = ({
             <div className="flex items-start gap-3 rounded-2xl bg-zinc-950/40 border border-white/5 p-4">
               <MessageCircle size={18} className="text-emerald-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-[11px] font-black uppercase tracking-wide text-white leading-tight">Atendimento real</p>
-                <p className="text-[10px] font-medium text-zinc-400 mt-1 leading-snug">Fale com gente de verdade no WhatsApp, antes e depois da compra.</p>
+                <p className="text-[11px] font-black uppercase tracking-wide text-white leading-tight">Atendimento humano</p>
+                <p className="text-[10px] font-medium text-zinc-400 mt-1 leading-snug">No WhatsApp, antes e depois da compra.</p>
               </div>
             </div>
           </div>

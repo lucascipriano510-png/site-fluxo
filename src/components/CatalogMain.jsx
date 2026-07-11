@@ -519,8 +519,7 @@ const CatalogMain = ({
                     <span key={i} className="marquee-seg">
                       <span className="mq-solid">Fluxo Outlet</span><span className="mq-sep">✦</span>
                       <span className="mq-outline">Streetwear premium</span><span className="mq-sep">✦</span>
-                      <span className="mq-solid">Loja de verdade</span><span className="mq-sep">✦</span>
-                      <span className="mq-outline">Uberaba</span><span className="mq-sep">✦</span>
+                      <span className="mq-solid">Uberaba</span><span className="mq-sep">✦</span>
                     </span>
                   ))}
                 </div>

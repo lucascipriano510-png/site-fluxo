@@ -18,7 +18,7 @@ const InfoModal = ({ page, config, onClose }) => {
       title: 'Sobre a Loja',
       sections: [
         { h: 'Quem somos', p: `A ${brand} é loja física de streetwear e peças premium em ${city}. Coleções limitadas, peça selecionada uma a uma — sem atacado de qualidade duvidosa.` },
-        { h: 'Como funciona', p: 'Você escolhe no site e finaliza pelo WhatsApp, com atendimento de gente de verdade antes e depois da compra.' },
+        { h: 'Como funciona', p: 'Você escolhe no site e finaliza pelo WhatsApp, com atendimento humano antes e depois da compra.' },
         { h: 'Entrega', p: `Entrega no mesmo dia em ${cityShort} (frete grátis), retirada na loja ou envio para todo o Brasil com frete combinado no atendimento.` },
       ],
     },
