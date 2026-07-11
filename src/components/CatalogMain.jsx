@@ -499,6 +499,61 @@ const CatalogMain = ({
           return <SubBanner banner={midBanner} whatsapp={config?.whatsapp} />;
         })()}
 
+        {/* ── MARCA EDITORIAL: letreiro infinito + peça mais pedida em destaque ──
+            Tira a home do formato "grid de catálogo": material de marca grande
+            (marquee estilo streetwear) e um bloco full-bleed com tipografia
+            gigante. Só na home limpa — filtro/busca não ganham decoração. */}
+        {(() => {
+          const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1;
+          if (!isDefaultView) return null;
+          const top = (products || [])
+            .filter(p => !p.is_kit && (p.stock || 0) > 0 && p.image)
+            .sort((a, b) => (b.sales || 0) - (a.sales || 0))[0];
+          return (
+            <>
+              <div className="-mx-6 lg:mx-0 marquee-wrap" aria-hidden="true">
+                <div className="marquee-track">
+                  {[0, 1].map(i => (
+                    <span key={i} className="marquee-seg">
+                      <span className="mq-solid">Fluxo Outlet</span><span className="mq-sep">✦</span>
+                      <span className="mq-outline">Frete grátis em Uberaba</span><span className="mq-sep">✦</span>
+                      <span className="mq-solid">5% off no Pix</span><span className="mq-sep">✦</span>
+                      <span className="mq-outline">Até 4x sem juros</span><span className="mq-sep">✦</span>
+                      <span className="mq-solid">Loja de verdade</span><span className="mq-sep">✦</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              {top && (
+                <section className="relative -mx-6 lg:mx-0 lg:rounded-3xl overflow-hidden animate-in" data-testid="top-pick-spotlight">
+                  <button type="button" onClick={() => handleProductClick(top)} className="relative block w-full text-left group touch-manipulation">
+                    <div className="relative w-full aspect-[4/5] md:aspect-[16/9] lg:aspect-[21/9] overflow-hidden bg-zinc-900">
+                      <img
+                        src={optimizeImage(top.image, 1200, 88)}
+                        srcSet={`${optimizeImage(top.image, 640, 88)} 640w, ${optimizeImage(top.image, 900, 88)} 900w, ${optimizeImage(top.image, 1200, 88)} 1200w, ${optimizeImage(top.image, 1600, 88)} 1600w`}
+                        sizes="100vw"
+                        alt={top.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent pointer-events-none" />
+                      <div className="absolute inset-x-0 bottom-0 p-6 lg:p-10">
+                        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-amber-400 mb-2.5 flex items-center gap-2"><Flame size={10} /> A mais pedida</p>
+                        <h3 className="spotlight-title">{top.name}</h3>
+                        <div className="mt-4 flex items-center gap-4">
+                          <span className="text-xl font-black text-white">{formatBRL(top.promotional_price || top.price || 0)}</span>
+                          <span className="liquid-glass rounded-full px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white">Ver a peça</span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                </section>
+              )}
+            </>
+          );
+        })()}
+
         {/* Vistos recentemente — trilha horizontal (só fora de busca, p/ não poluir) */}
         {recentlyViewedProducts.length > 0 && !searchActive && (
           <div className="pt-1 animate-in">
