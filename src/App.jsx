@@ -12,6 +12,7 @@ import HeroVideo from './components/HeroVideo';
 import SubBanner from './components/SubBanner';
 import WaterRippleFX from './components/WaterRippleFX';
 import ThreeAtmosphere from './components/ThreeAtmosphere';
+import TouchGlow from './components/TouchGlow';
 import WelcomeCoupon from './components/WelcomeCoupon';
 import { useBanners } from './hooks/useBanners';
 import AdminHeader from './components/AdminHeader';
@@ -20,6 +21,7 @@ import { formatBRL } from './lib/format';
 import { isOfferLive, offerPrice, offerPercent, offerEndsAt, offerCampaign, OFFER_CAMPAIGNS, CAMPAIGN_LABELS } from './lib/offers';
 import { parseQueryIntent, productMatchesIntent, scoreProductForSearch, hasActiveQuery } from './lib/search';
 import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
+import { hapticTick } from './lib/haptics';
 import { fetchOrders } from './lib/orders';
 import { requestStockAlert, fetchStockAlerts } from './lib/stockAlerts';
 import { buildSizeGrid } from './lib/sizeGrid';
@@ -1057,6 +1059,7 @@ function App() {
       const itemKey = `${selectedProduct?.id}-${sizeName || 'U'}`;
       const qtyInCart = (cart || []).find(i => i.itemKey === itemKey)?.quantity || 0;
       if (currentQty + qtyInCart >= maxStock) { showToast(`Estoque máximo!`, 'error'); return prev; }
+      hapticTick(); // tick de aparelho ao marcar tamanho (Android; iOS ignora)
       return { ...prev, [sizeName]: currentQty + 1 };
     });
   };
@@ -1068,6 +1071,7 @@ function App() {
       showToast('Escolha um tamanho primeiro.', 'error');
       return;
     }
+    hapticTick(18); // confirmação tátil: peça entrando na sacola
 
     let updatedCart = [...cart];
     entries.forEach(([sizeName, qty]) => {
@@ -1880,6 +1884,8 @@ function App() {
           dentro do shell isolado — acima do fundo, abaixo de TODO o conteúdo.
           Motion só com scroll; parada, não repinta nada. */}
       <ThreeAtmosphere />
+      {/* Luz neon que segue o dedo/cursor — continuação do galpão do hero */}
+      <TouchGlow />
 
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (

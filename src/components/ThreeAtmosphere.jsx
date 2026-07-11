@@ -80,10 +80,12 @@ export default function ThreeAtmosphere() {
       sctx.fillRect(0, 0, 64, 64);
       const sprite = new THREE.CanvasTexture(spriteCanvas);
 
-      // Paleta da casa (mesmos acentos do brilho-ambient do styles.css)
+      // Paleta do GALPÃO do hero de vídeo (neon vermelho/azul): a home é a
+      // continuação da cena — o cliente não "sai" do galpão ao rolar.
+      // (era âmbar/esmeralda; trocado em 2026-07-11 junto com o HeroVideo)
       const zinc    = new THREE.Color(0x9a9aa4);
-      const amber   = new THREE.Color(0xf59e0b);
-      const emerald = new THREE.Color(0x10b981);
+      const amber   = new THREE.Color(0xef4444); // neon vermelho (tubo esq. do vídeo)
+      const emerald = new THREE.Color(0x60a5fa); // neon azul (tubo dir. do vídeo)
 
       const spreadX = 16 * Math.max(1, window.innerWidth / window.innerHeight);
       const base = new Float32Array(N * 3);   // posição de nascença
