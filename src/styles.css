@@ -224,7 +224,10 @@
 @supports (animation-timeline: view()) {
   @media (hover: none) and (pointer: coarse) and (prefers-reduced-motion: no-preference) {
     .sda-rise {
-      animation: sda-rise linear both;
+      /* backwards (NÃO both): fill forwards em animação de view() segura
+         transform:none pra sempre e atropela o transform inline do framer —
+         matava o FLIP da grade viva. backwards solta o card após a revelação. */
+      animation: sda-rise linear backwards;
       animation-timeline: view();
       animation-range: entry 5% entry 55%;
     }
