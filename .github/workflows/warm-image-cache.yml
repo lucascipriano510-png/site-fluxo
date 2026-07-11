@@ -1,0 +1,23 @@
+# Aquece o cache do wsrv.nl com TODAS as imagens do catálogo nos tamanhos
+# exatos que o site usa — o cliente nunca paga a transformação fria (o
+# "quadrado escuro" de segundos na primeira visualização de cada foto).
+# Detalhe honesto: o warm garante que a TRANSFORMAÇÃO nunca acontece na
+# frente do cliente; o primeiro hit por região ainda paga um hop de CDN.
+name: warm-image-cache
+
+on:
+  schedule:
+    - cron: '17 */6 * * *' # a cada 6h (17min pra fugir do pico de cron do GitHub)
+  workflow_dispatch: {}
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Aquecer cache de imagens
+        run: node tools/warm-image-cache.mjs

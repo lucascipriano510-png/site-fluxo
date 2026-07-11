@@ -109,7 +109,12 @@ function App() {
   const prefersReducedMotion = useReducedMotion();
   // ======= PRODUTOS: agora vivem no Supabase =======
   const PRODUCTS_CACHE_KEY = '@fluxo:products-cache-v1';
-  const PRODUCTS_CACHE_TTL = 60_000; // 1 min
+  // SWR (stale-while-revalidate): o snapshot local hidrata a vitrine NA HORA
+  // (visita repetida sem skeleton, 0 rede) e o fetch do Supabase, que roda já
+  // no mount, substitui os dados em ~1s. A janela só descarta snapshot de dias
+  // (preço/estoque velhos demais pra mostrar nem por 1 segundo).
+  // Era 60s — na prática TODA visita repetida encarava skeleton de novo.
+  const PRODUCTS_CACHE_TTL = 24 * 60 * 60_000; // 24h
 
   const [productsRaw, setProductsRaw] = useState(() => {
     try {
