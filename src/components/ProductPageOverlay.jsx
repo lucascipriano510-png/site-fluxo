@@ -165,16 +165,24 @@ const ProductPageOverlay = ({
                       do produto -> nunca aparece quadrado vazio ao abrir o card. */}
                   <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url("${optimizeImage(heroImg, 40, 35)}")`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(12px)', transform: 'scale(1.06)' }} />
                   {/* Troca a foto por SWIPE lateral (handlers no container) ou toque nas miniaturas/pontos */}
-                  <img
-                    src={optimizeImage(heroImg, 1200, HERO_Q)}
-                    srcSet={buildSrcSet(heroImg, HERO_WIDTHS, HERO_Q)}
-                    sizes="100vw"
-                    className="relative z-[1] w-full h-full object-cover"
-                    style={{ viewTransitionName: 'produto-hero' }}
-                    alt={selectedProduct.name}
-                    fetchPriority="high"
-                    draggable={false}
-                  />
+                  {/* GALERIA EMPILHADA: todas as fotos ficam montadas (decodificadas
+                      uma vez) e a troca é só opacidade no compositor — swipe/thumb
+                      vira instantâneo. Trocar src de um único <img> obrigava o
+                      navegador a rebaixar+decodificar a cada seleção (a "demora"). */}
+                  {productGallery.map((g) => (
+                    <img
+                      key={g}
+                      src={optimizeImage(g, 1200, HERO_Q)}
+                      srcSet={buildSrcSet(g, HERO_WIDTHS, HERO_Q)}
+                      sizes="100vw"
+                      className={`absolute inset-0 z-[1] w-full h-full object-cover transition-opacity duration-200 ${heroImg === g ? 'opacity-100' : 'opacity-0'}`}
+                      style={heroImg === g ? { viewTransitionName: 'produto-hero' } : undefined}
+                      alt={heroImg === g ? selectedProduct.name : ''}
+                      fetchPriority={heroImg === g ? 'high' : 'auto'}
+                      decoding="async"
+                      draggable={false}
+                    />
+                  ))}
                   {/* Dot indicators */}
                   {productGallery.length > 1 && (
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 z-10">

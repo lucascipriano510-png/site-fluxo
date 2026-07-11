@@ -46,7 +46,9 @@ const TouchGlow = () => {
         transition: 'opacity 0.8s ease',
         mixBlendMode: 'screen',
         transform: 'translate3d(-600px, -600px, 0)',
-        background: 'radial-gradient(circle, rgba(96,165,250,0.10) 0%, rgba(239,68,68,0.05) 38%, rgba(0,0,0,0) 68%)',
+        // Luz BRANCA neutra — a versão neon vermelho/azul foi recusada pelo dono
+        // (2026-07-11, "trem vermelho no fundo"). Não recolorir.
+        background: 'radial-gradient(circle, rgba(244,244,245,0.09) 0%, rgba(244,244,245,0.03) 40%, rgba(0,0,0,0) 68%)',
       }}
     />
   );
