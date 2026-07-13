@@ -15,10 +15,33 @@ const WEBHOOK_SECRET =
 // Pixel ID público — pode ficar no client (não é segredo).
 export const META_PIXEL_ID = '1488076836116872';
 
+// ── Trava de dono ────────────────────────────────────────────────────
+// Visita do dono (mexendo no site/painel) não pode virar evento na Meta:
+// polui a otimização do anúncio com PageView/ViewContent que nunca compram.
+// Na primeira sessão de admin detectada o navegador é marcado pra sempre
+// (localStorage) e NENHUM evento sai deste aparelho — nem o PageView inicial
+// das visitas seguintes, pois o script do Pixel nem carrega. A venda manual
+// NÃO passa por aqui (lib/capi.js) e continua indo pra Meta normalmente.
+// Pra destravar (ex.: vendeu o aparelho): localStorage.removeItem('fluxo_owner_device').
+const OWNER_KEY = 'fluxo_owner_device';
+
+export function isOwnerDevice() {
+  try { return localStorage.getItem(OWNER_KEY) === '1'; } catch { return false; }
+}
+
+export function markOwnerDevice() {
+  try {
+    if (localStorage.getItem(OWNER_KEY) === '1') return;
+    localStorage.setItem(OWNER_KEY, '1');
+    console.info('[pixel] aparelho do dono — eventos Meta travados neste navegador');
+  } catch { /* silencioso */ }
+}
+
 let pixelLoaded = false;
 
 export function initMetaPixel() {
   if (typeof window === 'undefined' || pixelLoaded) return;
+  if (isOwnerDevice()) return; // dono: nem carrega o script do Pixel
   pixelLoaded = true;
 
   // Snippet oficial do Meta Pixel
@@ -145,6 +168,7 @@ async function sendCAPIEvent(payload) {
  */
 export function trackEvent(eventName, data = {}) {
   const eventId = data.event_id || uuid();
+  if (isOwnerDevice()) return eventId; // dono: nada sai (Pixel nem CAPI)
   const value = Number(data.value || 0);
   const currency = data.currency || 'BRL';
 

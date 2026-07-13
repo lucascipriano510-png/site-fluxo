@@ -30,7 +30,7 @@ import { supabase } from './lib/supabaseClient';
 import { getSessionToken, saveSession, clearSession, registerAccount, loginAccount, recoverAccount, fetchAccountOrders } from './lib/account';
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
 import { createMetaEventId } from './lib/capi';
-import { initMetaPixel, trackEvent, getMetaBrowserParams, getStoredUtm } from './lib/metaPixel';
+import { initMetaPixel, trackEvent, getMetaBrowserParams, getStoredUtm, markOwnerDevice } from './lib/metaPixel';
 import { criarAtendimentoFromPedido } from './lib/crm';
 import { fetchRatingsBatch } from './lib/reviews';
 // Admin + recharts: code-split. Só baixam quando o painel abre — fora do bundle do cliente.
@@ -370,12 +370,14 @@ function App() {
       const logged = !!data?.session?.user;
       setIsAdmin(logged);
       isAdminRef.current = logged;
+      if (logged) markOwnerDevice(); // trava eventos Meta neste navegador
       setAuthReady(true);
     }).catch(() => setAuthReady(true));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       const logged = !!session?.user;
       setIsAdmin(logged);
       isAdminRef.current = logged;
+      if (logged) markOwnerDevice();
     });
     return () => { alive = false; sub?.subscription?.unsubscribe?.(); };
   }, []);
@@ -781,6 +783,7 @@ function App() {
         if (logged) {
           setIsAdmin(true);
           isAdminRef.current = true;
+          markOwnerDevice();
           setShowAdminLogin(false);
           return;
         }
