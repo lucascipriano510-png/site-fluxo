@@ -11,6 +11,16 @@ import { optimizeImage } from '../lib/images';
  * (opcional) e dispara o MESMO Purchase pra Meta que uma compra pelo site —
  * com event_id e a trava de idempotência (P17).
  */
+// Tamanhos com estoque > 0 — mesma leitura string/objeto da baixa de estoque.
+// Venda manual baixa o que existe na loja: peça/tamanho esgotado fica de fora
+// (diferente do card do site, onde esgotado vira "Avise-me").
+const stockedSizes = (p) => (Array.isArray(p.sizes) ? p.sizes : [])
+  .map((s) => ({
+    size: String(typeof s === 'string' ? s : s?.size ?? '').trim() || 'U',
+    stock: typeof s === 'string' ? Number(p.stock || 0) : Number(s?.stock || 0),
+  }))
+  .filter((e) => e.stock > 0);
+
 export default function ManualSale({ products, setProducts, setLeads, mapOrderRow, showToast, onClose }) {
   const [search, setSearch] = useState('');
   const [picked, setPicked] = useState([]); // {key,id,name,sku,image,price,size,qty}
@@ -25,6 +35,7 @@ export default function ManualSale({ products, setProducts, setLeads, mapOrderRo
     if (!q) return [];
     return (products || [])
       .filter((p) => !p.is_kit && p.is_active !== false)
+      .filter((p) => (Array.isArray(p.sizes) && p.sizes.length > 0 ? stockedSizes(p).length > 0 : Number(p.stock || 0) > 0))
       .filter((p) => `${p.name || ''} ${p.sku || ''} ${p.category || ''}`.toLowerCase().includes(q))
       .slice(0, 8);
   }, [products, search]);
@@ -144,7 +155,7 @@ export default function ManualSale({ products, setProducts, setLeads, mapOrderRo
             {list.length > 0 && (
               <div className="rounded-2xl border border-white/5 divide-y divide-white/5 overflow-hidden mt-1">
                 {list.map((p) => {
-                  const sizes = Array.isArray(p.sizes) ? p.sizes.map((s) => (typeof s === 'string' ? s : s.size)).filter(Boolean) : [];
+                  const sizes = stockedSizes(p).map((e) => e.size);
                   return (
                     <div key={p.id} className="flex items-center gap-2.5 p-2.5 bg-zinc-900">
                       <img src={optimizeImage(p.image, 80, 70)} alt="" className="w-9 h-11 rounded-lg object-cover bg-zinc-800 shrink-0" />
