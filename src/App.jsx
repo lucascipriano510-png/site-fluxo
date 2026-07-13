@@ -150,6 +150,22 @@ function App() {
     return () => { alive = false; clearInterval(t); };
   }, []);
 
+  // PRELOAD DAS PRIMEIRAS IMAGENS: guarda a URL exata (currentSrc — já no
+  // tamanho que ESTE aparelho escolheu do srcset) das 2 primeiras imagens do
+  // grid. O index.html injeta <link rel=preload> delas na PRÓXIMA visita,
+  // antes do bundle — corta ~2s da cascata até o primeiro pixel de produto.
+  useEffect(() => {
+    if (!productsLoaded) return;
+    const t = setTimeout(() => {
+      try {
+        const urls = [...document.querySelectorAll('[data-testid^="product-card-"] img')]
+          .map(i => i.currentSrc).filter(Boolean).slice(0, 2);
+        if (urls.length > 0) localStorage.setItem('@fluxo:preload-imgs-v1', JSON.stringify(urls));
+      } catch { /* silencioso */ }
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [productsLoaded]);
+
   // ======= KITS: relação kit_id -> [product_id] =======
   const [kitItemsByKit, setKitItemsByKit] = useState({});
   useEffect(() => {

@@ -22,6 +22,25 @@
     <link rel="dns-prefetch" href="https://wsrv.nl" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Anton&family=DM+Sans:wght@800&display=swap" rel="stylesheet" />
+    <!-- Preload das 2 PRIMEIRAS imagens do grid, com a URL EXATA que ESTE
+         aparelho renderizou na visita anterior (currentSrc salvo pelo App em
+         @fluxo:preload-imgs-v1). Começa o download junto com o JS em vez de
+         esperar a cascata JS→React→catálogo→<img> (~2,5s medidos 2026-07-13).
+         Diferente do preload de banner removido acima, aqui a URL nunca
+         "não bate": é a própria URL da última renderização. SEM crossorigin
+         de propósito — o <img> do card também não tem (par preload↔uso tem
+         que casar, senão baixa dobrado). Host preso em wsrv.nl/supabase. -->
+    <script>
+      try {
+        JSON.parse(localStorage.getItem('@fluxo:preload-imgs-v1') || '[]').slice(0, 2).forEach(function (u) {
+          if (typeof u !== 'string') return;
+          if (u.indexOf('https://wsrv.nl/') !== 0 && u.indexOf('https://tapgnlrjhrhewqlpahvg.supabase.co/') !== 0) return;
+          var l = document.createElement('link');
+          l.rel = 'preload'; l.as = 'image'; l.href = u; l.fetchPriority = 'high';
+          document.head.appendChild(l);
+        });
+      } catch (e) { /* sem localStorage/JSON ruim: segue sem preload */ }
+    </script>
     <title>FLUXO OUTLET</title>
     <meta name="description" content="⚡ Peças premium selecionadas, coleções limitadas e envio para todo o Brasil. Escolha no catálogo e finalize pelo WhatsApp. 🔥" />
     <meta name="facebook-domain-verification" content="bgaf2lgex6xoha59ns7cezhtvh147q" />
