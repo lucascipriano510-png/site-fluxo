@@ -144,6 +144,10 @@ const effectivePrice = (p) => {
 };
 
 function termMatches(term, haystack, words) {
+  // Letra única (recém-digitada após espaço: "calça j…") casa como PREFIXO de
+  // palavra — sem isso o expandTerm (mín. 2 letras) descartava o termo e a
+  // grade ZERAVA no meio da digitação de "calça jogador".
+  if (term.length === 1) return words.some(w => w.startsWith(term));
   for (const v of expandTerm(term)) {
     if (haystack.includes(v)) return true;
   }
