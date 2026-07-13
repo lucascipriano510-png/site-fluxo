@@ -646,11 +646,15 @@ const CatalogMain = ({
                       initial: { opacity: 0, y: 18, scale: 0.98 },
                       animate: { opacity: 1, y: 0, scale: 1 },
                       // exit com transition PRÓPRIA: sem ela herdaria o spring +
-                      // delay do stagger e os cards sairiam escalonados/lentos.
-                      exit: { opacity: 0, scale: 0.95, transition: { duration: 0.22, ease: 'easeOut' } },
-                      // No searchMode o re-add do backspace entra na hora (delay
-                      // fixo curto); fora dele mantém a onda da troca de categoria.
-                      transition: { type: 'spring', stiffness: 320, damping: 32, delay: searchMode ? 0.04 : Math.min(idx * 0.035, 0.28) },
+                      // delay do stagger. No searchMode o desvanecer é LENTO de
+                      // propósito (dono: rápido demais não dá pra perceber).
+                      exit: { opacity: 0, scale: 0.94, transition: { duration: searchMode ? 0.55 : 0.25, ease: 'easeOut' } },
+                      // No searchMode a mola é macia (flutuação visível, não
+                      // teleporte) e o re-add do backspace entra logo; fora dele
+                      // mantém a onda viva da troca de categoria.
+                      transition: searchMode
+                        ? { type: 'spring', stiffness: 150, damping: 26, delay: 0.08 }
+                        : { type: 'spring', stiffness: 320, damping: 32, delay: Math.min(idx * 0.035, 0.28) },
                     } : {})}
                     className={`cv-card ${searchMode ? '' : 'sda-rise'} group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}

@@ -1318,7 +1318,17 @@ function App() {
     }
   };
 
-  const searchIntent = useMemo(() => parseQueryIntent(searchQuery), [searchQuery]);
+  // BUSCA IMERSIVA: a grade reage à query com ~260ms de respiro — sem isso,
+  // cada letra dispara uma coreografia por cima da anterior e o cliente não
+  // PERCEBE os cards sumindo/flutuando. O input mostra o texto cru na hora;
+  // só a filtragem espera a pausa entre teclas.
+  const [settledQuery, setSettledQuery] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setSettledQuery(searchQuery), 260);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const searchIntent = useMemo(() => parseQueryIntent(settledQuery), [settledQuery]);
   const searchActive = hasActiveQuery(searchIntent);
 
   const filteredProducts = useMemo(() => {
