@@ -13,7 +13,8 @@ import { colorDot, pluralCat, shineDelay } from '../lib/catalogUi';
 import { emitSignal } from '../lib/leadSignals';
 import { formatBRL } from '../lib/format';
 import { getCatImgData, optimizeImage } from '../lib/images';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { isLowEndDevice } from '../lib/deviceTier';
 
 // Extraído do App.jsx (verbatim) — recebe estado/handlers do App por props.
 const CatalogMain = ({
@@ -68,6 +69,7 @@ const CatalogMain = ({
   setSortMode,
   showToast,
   sortMode,
+  sortedProducts,
   totalPages,
   userProfile,
 }) => {
@@ -88,6 +90,18 @@ const CatalogMain = ({
   };
   // A BARRA-GOTA (SearchDropBar): qualquer toque faz a barra tremer gelatina.
   const dropletRef = React.useRef(null);
+  // BUSCA IMERSIVA: focado OU com query ativa, a página limpa tudo — sobra a
+  // barra + "Produtos Disponíveis" + grade COMPLETA (sem paginação). Com o
+  // catálogo inteiro montado, digitar só REMOVE cards (fade) e reordena os
+  // sobreviventes (FLIP flutuando pra cima) — nenhum card "surge" do nada.
+  const searchMode = searchFocused || searchActive;
+  // Cap de segurança: aparelho fraco não monta o catálogo inteiro de uma vez.
+  // Acima do cap um match poderia "surgir" ao digitar — com o catálogo atual
+  // (dezenas de peças) o cap raramente ativa.
+  const searchGridCap = isLowEndDevice() ? 40 : 120;
+  const gridProducts = searchMode ? (sortedProducts || []).slice(0, searchGridCap) : paginatedProducts;
+  // GRADE VIVA só em touch — no desktop transform persistente borra a imagem.
+  const gradeViva = !isDesktopViewport && !prefersReducedMotion;
   return (
 <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-dvh lg:max-w-[1500px] lg:mx-auto" data-testid="catalog-main">
         <div id="search-dock" className="group" style={{ scrollMarginTop: '88px' }} onPointerDown={() => dropletRef.current?.wobble()}>
@@ -126,6 +140,9 @@ const CatalogMain = ({
           );
         })()}
 
+        {/* BUSCA IMERSIVA: no searchMode a mesa limpa TUDO — categorias e
+            barras de filtro inclusive. Sobra barra + rótulo + grade. */}
+        {!searchMode && (
         <div>
         {/* Título da fileira — nem todo mundo deduz que os tiles são categorias */}
         <p className="text-[10px] lg:text-[11px] font-black uppercase tracking-widest text-white/90 mb-3 lg:text-center">Categorias</p>
@@ -226,9 +243,9 @@ const CatalogMain = ({
           })()}
         </div>
         </div>
+        )}
 
-
-        {!kitsOnly && selectedCategory !== 'TODOS' && availableSubcategories.length > 1 && (
+        {!searchMode && !kitsOnly && selectedCategory !== 'TODOS' && availableSubcategories.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center" data-testid="subcategory-bar">
             {availableSubcategories.map(sub => (
               <button key={sub} onClick={() => setSelectedSubcategory(sub)} data-testid={`subcategory-filter-${sub}`} className={`px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSubcategory === sub ? 'bg-white/90 text-zinc-950 border-white' : 'bg-transparent text-zinc-500 border-white/10 hover:text-white hover:border-white/30'}`}>{sub === 'TODOS' ? 'Todas subcategorias' : sub}</button>
@@ -264,7 +281,7 @@ const CatalogMain = ({
           </div>
         )}
 
-        {!kitsOnly && availableSizes.length > 1 && (
+        {!searchMode && !kitsOnly && availableSizes.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center">
             {availableSizes.map(sz => (
               <button key={sz} onClick={() => setSelectedSize(sz)} data-testid={`size-filter-${sz}`} className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap border transition-all touch-manipulation ${selectedSize === sz ? 'bg-zinc-300 text-zinc-950 border-zinc-300 shadow-[0_0_10px_rgba(212,212,216,0.25)]' : 'bg-transparent text-zinc-400 border-white/5 hover:text-white hover:border-white/20'}`}>{sz === 'TODOS' ? 'Todos tamanhos' : sz}</button>
@@ -273,7 +290,7 @@ const CatalogMain = ({
         )}
 
         {/* Filtro de COR — só dentro de uma categoria (evita poluir o home) */}
-        {!kitsOnly && selectedCategory !== 'TODOS' && availableColors.length > 1 && (
+        {!searchMode && !kitsOnly && selectedCategory !== 'TODOS' && availableColors.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear native-x-scroll items-center">
             {availableColors.map(c => {
               const active = selectedColor === c;
@@ -561,15 +578,15 @@ const CatalogMain = ({
           </div>
         )}
 
-        {filteredProducts.length > 0 && (
+        {(filteredProducts.length > 0 || searchMode) && (
           <div className="flex items-center justify-between gap-3 pt-1 animate-in">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/90 shrink-0">Peças Disponíveis</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/90 shrink-0">{searchMode ? 'Produtos Disponíveis' : 'Peças Disponíveis'}</span>
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 flex items-center gap-1.5 shrink-0" data-testid="products-count">
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 animate-pulse"></span>
                 {filteredProducts.length} {filteredProducts.length === 1 ? 'peça' : 'peças'}
               </span>
-              <select
+              {!searchMode && <select
                 value={sortMode}
                 onChange={(e) => { setSortMode(e.target.value); setCurrentPage(1); }}
                 aria-label="Ordenar"
@@ -578,7 +595,7 @@ const CatalogMain = ({
               >
                 <option value="relevancia">Ordenar: Relevância</option>
                 <option value="novidades">Novidades</option>
-              </select>
+              </select>}
             </div>
           </div>
         )}
@@ -597,7 +614,7 @@ const CatalogMain = ({
                </div>
              ))}
            </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : filteredProducts.length === 0 && !searchMode ? (
            <div className="text-center py-20 opacity-50 animate-in">
                <Package size={48} className="mx-auto mb-4 text-zinc-600"/>
                <h3 className="font-black uppercase text-sm tracking-widest text-zinc-400">Nenhum produto encontrado</h3>
@@ -605,15 +622,18 @@ const CatalogMain = ({
            </div>
         ) : (
            <>
-           <div className="products-grid-container grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2.5 lg:gap-4 -mx-5 lg:mx-0 px-1 lg:px-0 w-[calc(100%+40px)] lg:w-full" data-testid="products-grid">
-             {paginatedProducts.map((product, idx) => {
+           {/* `relative`: popLayout tira o card que SAI do fluxo com position
+               absolute — sem ancestral posicionado ele saltaria pro lugar errado. */}
+           <div className="products-grid-container relative grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2.5 lg:gap-4 -mx-5 lg:mx-0 px-1 lg:px-0 w-[calc(100%+40px)] lg:w-full" data-testid="products-grid">
+             {(() => {
+             const cards = gridProducts.map((product, idx) => {
                const isOutOfStock = !product.is_kit && product.stock <= 0;
                const hasMultipleImages = [product.image, ...(Array.isArray(product.gallery) ? product.gallery : [])].filter(Boolean).length > 1;
                 // GRADE VIVA (só touch): ao filtrar/buscar, card que PERMANECE
-                // desliza pra nova posição (FLIP, layout='position') e card
-                // NOVO entra em onda (spring + stagger) — categoria→categoria
-                // troca 100% dos cards, então sem entrada animada nada aparece.
-                const gradeViva = !isDesktopViewport && !prefersReducedMotion;
+                // desliza pra nova posição (FLIP, layout='position'), card que
+                // SAI desvanece (exit via AnimatePresence) e card NOVO entra em
+                // onda (spring + stagger) — categoria→categoria troca 100% dos
+                // cards, então sem entrada animada nada aparece.
                 const CardShell = gradeViva ? motion.div : 'div';
                 return (
                   // Desktop segue no div puro + hover via CSS: transform persistente
@@ -621,8 +641,18 @@ const CatalogMain = ({
                   // will-change:transform sempre ligado = downscale ruim do Chrome).
                   <CardShell
                     key={product.id}
-                    {...(gradeViva ? { layout: 'position', initial: { opacity: 0, y: 18, scale: 0.98 }, animate: { opacity: 1, y: 0, scale: 1 }, transition: { type: 'spring', stiffness: 320, damping: 32, delay: Math.min(idx * 0.035, 0.28) } } : {})}
-                    className={`cv-card sda-rise group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
+                    {...(gradeViva ? {
+                      layout: 'position',
+                      initial: { opacity: 0, y: 18, scale: 0.98 },
+                      animate: { opacity: 1, y: 0, scale: 1 },
+                      // exit com transition PRÓPRIA: sem ela herdaria o spring +
+                      // delay do stagger e os cards sairiam escalonados/lentos.
+                      exit: { opacity: 0, scale: 0.95, transition: { duration: 0.22, ease: 'easeOut' } },
+                      // No searchMode o re-add do backspace entra na hora (delay
+                      // fixo curto); fora dele mantém a onda da troca de categoria.
+                      transition: { type: 'spring', stiffness: 320, damping: 32, delay: searchMode ? 0.04 : Math.min(idx * 0.035, 0.28) },
+                    } : {})}
+                    className={`cv-card ${searchMode ? '' : 'sda-rise'} group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
                   >
@@ -883,10 +913,25 @@ const CatalogMain = ({
                       </motion.div>
                   </CardShell>
                 )
-             })}
+             });
+             // Touch: AnimatePresence roda o exit fade de quem sai (popLayout
+             // tira do fluxo pros vizinhos FLIParem na hora). Desktop: cards
+             // crus, fora do AnimatePresence (mina do transform/imagem borrada).
+             return gradeViva ? <AnimatePresence mode="popLayout">{cards}</AnimatePresence> : cards;
+             })()}
            </div>
 
-           {totalPages > 1 && (
+           {/* No searchMode a grade fica montada mesmo zerada (os exits precisam
+               rodar) — o aviso aparece ABAIXO dela, nunca no lugar dela. */}
+           {searchMode && filteredProducts.length === 0 && (
+             <div className="text-center py-16 opacity-50 animate-in">
+               <Package size={40} className="mx-auto mb-3 text-zinc-600"/>
+               <h3 className="font-black uppercase text-sm tracking-widest text-zinc-400">Nenhum produto encontrado</h3>
+               <p className="text-[10px] text-zinc-400 uppercase mt-2">Tente buscar por outro termo.</p>
+             </div>
+           )}
+
+           {!searchMode && totalPages > 1 && (
              <div className="flex items-center justify-center gap-1.5 pt-8 pb-2 animate-in flex-wrap" data-testid="pagination-controls">
                <button
                  onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); requestAnimationFrame(() => (document.getElementById('root') || window).scrollTo({ top: 0, left: 0, behavior: 'auto' })); }}
