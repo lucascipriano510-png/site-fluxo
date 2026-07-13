@@ -6,7 +6,8 @@ import React from 'react';
 import StarRatingInline from './StarRatingInline';
 import SubBanner from './SubBanner';
 import WaterRippleFX from './WaterRippleFX';
-import { ArrowRight, ChevronLeft, Flame, Package, Plus, Search, Truck, X, Zap } from 'lucide-react';
+import { ArrowRight, ChevronLeft, Flame, Package, Plus, Truck, X, Zap } from 'lucide-react';
+import SearchDroplet from './SearchDroplet';
 import { CAMPAIGN_LABELS, OFFER_CAMPAIGNS, isOfferLive, offerCampaign, offerEndsAt, offerPercent, offerPrice } from '../lib/offers';
 import { colorDot, pluralCat, shineDelay } from '../lib/catalogUi';
 import { emitSignal } from '../lib/leadSignals';
@@ -86,13 +87,21 @@ const CatalogMain = ({
     // empurraria o card debaixo do dedo (misclick). 350ms deixa o toque pousar.
     searchBlurTimer.current = setTimeout(() => setSearchFocused(false), 350);
   };
+  // A GOTA (SearchDroplet): qualquer toque na barra faz a gota tremer gelatina.
+  const dropletRef = React.useRef(null);
   return (
 <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-dvh lg:max-w-[1500px] lg:mx-auto" data-testid="catalog-main">
-        <div id="search-dock" className="relative group" style={{ scrollMarginTop: '88px' }}>
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-          <input id="search-input" placeholder="Busque por peça, cor, tamanho ou preço…" data-testid="input-search" className="w-full border py-4 pl-14 pr-12 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={handleSearchFocus} onBlur={handleSearchBlur} />
+        <div id="search-dock" className="relative group" style={{ scrollMarginTop: '88px' }} onPointerDown={() => dropletRef.current?.wobble()}>
+          <SearchDroplet ref={dropletRef} focused={searchFocused} />
+          <input
+            id="search-input" placeholder="Busque por peça, cor, tamanho ou preço…" data-testid="input-search"
+            className="w-full border py-4 pl-14 pr-12 rounded-2xl text-[16px] font-bold outline-none focus:border-emerald-500/50 shadow-inner client-input"
+            // Marejado esmeralda atrás da gota: é isso que a lente dela entorta.
+            style={{ background: 'radial-gradient(150px 70px at 30px 50%, rgba(16,185,129,0.09), transparent 70%), var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={handleSearchFocus} onBlur={handleSearchBlur}
+          />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} aria-label="Limpar busca" className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white bg-zinc-800/60 rounded-full p-1.5 touch-manipulation active:scale-90 transition-all"><X size={13} /></button>
+            <button onClick={() => { setSearchQuery(''); dropletRef.current?.wobble(); }} aria-label="Limpar busca" className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white bg-zinc-800/60 rounded-full p-1.5 touch-manipulation active:scale-90 transition-all"><X size={13} /></button>
           )}
         </div>
         {/* Chips do que a busca entendeu — feedback de busca inteligente */}
