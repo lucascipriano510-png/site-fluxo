@@ -142,6 +142,7 @@ export async function upsertBanner(banner) {
     external_link: banner.external_link || null,
     placement: banner.placement === 'mid' ? 'mid' : 'hero',
     wa_message: banner.wa_message || null,
+    video_url: banner.video_url || null,
     updated_at: new Date().toISOString(),
   };
   const { data, error } = await supabase

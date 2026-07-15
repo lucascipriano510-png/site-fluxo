@@ -529,11 +529,17 @@ const CatalogMain = ({
           );
         })()}
 
-        {/* SUB-BANNER (meio) — faixa decorativa 2:1 entre Destaques e Peças */}
+        {/* SUB-BANNER (meio) — vídeo/faixa entre Destaques e Peças */}
         {(() => {
           const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1 && !searchFocused;
           if (!isDefaultView || !midBanner) return null;
-          return <SubBanner banner={midBanner} whatsapp={config?.whatsapp} />;
+          // Destino do CTA = campanha atual do sub-banner (hoje: bermudas destroyed).
+          const goToCampaign = () => {
+            setSelectedCategory('BERMUDA');
+            setSelectedSubcategory('DESTROYED');
+            document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
+          };
+          return <SubBanner banner={midBanner} whatsapp={config?.whatsapp} onCta={goToCampaign} />;
         })()}
 
         {/* ── LETREIRO DE MARCA (marquee streetwear) — só na home limpa.

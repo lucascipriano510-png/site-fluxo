@@ -1,4 +1,5 @@
 import React from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { optimizeImage, buildSrcSet, markWsrvFailed } from '../lib/images';
 
 // Logo do WhatsApp (lucide não tem ícone de marca).
@@ -10,25 +11,73 @@ const WhatsAppIcon = ({ size = 16 }) => (
 
 /**
  * Sub-banner do meio da home (entre Destaques e Peças Disponíveis).
- * Faixa larga 2:1 otimizada via wsrv e lazy — abaixo da dobra, não é o LCP.
- * A imagem é decorativa (sem clique). Se o banner tiver `wa_message` e a loja
- * tiver número, mostra um botão de WhatsApp que abre a conversa com a mensagem.
+ * Dois modos, decididos pelo banner do Supabase:
+ *  - `video_url` presente → vídeo 16:9 (poster = `image`). Toca só quando entra
+ *    na viewport; tenta com som (se o navegador barrar, cai pra mudo e o cliente
+ *    liga no botão de som). Fora da viewport = pausado e mudo, pra não atrapalhar.
+ *  - só `image` → faixa 2:1 otimizada via wsrv e lazy (modo antigo).
+ * `button_text` vira o CTA (ação vem de `onCta`, decidida por quem monta a home).
+ * `wa_message` + número da loja mostram o atalho de WhatsApp na quina.
  */
-export default function SubBanner({ banner, whatsapp }) {
+export default function SubBanner({ banner, whatsapp, onCta }) {
   const [loaded, setLoaded] = React.useState(false);
+  const [soundOn, setSoundOn] = React.useState(false);
+  const videoRef = React.useRef(null);
   const src = banner?.image;
-  if (!src) return null;
+  const videoUrl = banner?.video_url;
 
-  const imgSrc = optimizeImage(src, 1280, 90);
-  const imgSrcSet = buildSrcSet(src, [640, 900, 1280, 1600], 90);
+  // Vídeo toca quando ~metade do banner está visível; sai da tela = pausa + mudo.
+  // Autoplay com som é bloqueado pelo navegador até haver gesto na página; o
+  // catch cai pra mudo (e o toggle de som fica como saída explícita pro cliente).
+  React.useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !videoUrl) return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        v.muted = false;
+        v.play().then(() => setSoundOn(true)).catch(() => {
+          v.muted = true;
+          v.play().catch(() => {});
+          setSoundOn(false);
+        });
+      } else {
+        v.pause();
+        v.muted = true;
+        setSoundOn(false);
+      }
+    }, { threshold: 0.5 });
+    io.observe(v);
+    return () => io.disconnect();
+  }, [videoUrl]);
+
+  // Depois de todos os hooks (early return antes deles quebra as Rules of Hooks
+  // quando o banner chega depois do fetch).
+  if (!src && !videoUrl) return null;
 
   const waNumber = String(whatsapp || '5534984148067').replace(/\D/g, '');
   const waMsg = (banner.wa_message || '').trim();
   const waUrl = waMsg && waNumber ? `https://wa.me/${waNumber}?text=${encodeURIComponent(waMsg)}` : null;
+  const ctaLabel = (banner.buttonText || banner.button_text || '').trim();
+
+  const toggleSound = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.muted) {
+      v.muted = false;
+      v.play().catch(() => {});
+      setSoundOn(true);
+    } else {
+      v.muted = true;
+      setSoundOn(false);
+    }
+  };
+
+  const imgSrc = src ? optimizeImage(src, 1280, 90) : null;
+  const imgSrcSet = src ? buildSrcSet(src, [640, 900, 1280, 1600], 90) : null;
 
   return (
     <section className="relative -mx-6 lg:mx-auto lg:max-w-[760px] lg:rounded-3xl overflow-hidden" aria-label={banner.title || 'Destaque'}>
-      <div className="relative w-full aspect-[2/1] bg-zinc-950">
+      <div className={`relative w-full ${videoUrl ? 'aspect-video' : 'aspect-[2/1]'} bg-zinc-950`}>
         {!loaded && (
           <div
             className="absolute inset-0"
@@ -39,25 +88,65 @@ export default function SubBanner({ banner, whatsapp }) {
             }}
           />
         )}
-        <img
-          src={imgSrc}
-          srcSet={imgSrcSet}
-          sizes="100vw"
-          className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-          alt={banner.title || 'Destaque'}
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-          onLoad={() => setLoaded(true)}
-          onError={(e) => {
-            if (!e.target.dataset.fallback) {
-              e.target.dataset.fallback = '1';
-              markWsrvFailed();
-              e.target.src = src; // URL original sem proxy
-              e.target.srcset = '';
-            }
-          }}
-        />
+
+        {videoUrl ? (
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            poster={src || undefined}
+            className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            onLoadedData={() => setLoaded(true)}
+            data-testid="subbanner-video"
+          />
+        ) : (
+          <img
+            src={imgSrc}
+            srcSet={imgSrcSet}
+            sizes="100vw"
+            className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+            alt={banner.title || 'Destaque'}
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            onLoad={() => setLoaded(true)}
+            onError={(e) => {
+              if (!e.target.dataset.fallback) {
+                e.target.dataset.fallback = '1';
+                markWsrvFailed();
+                e.target.src = src; // URL original sem proxy
+                e.target.srcset = '';
+              }
+            }}
+          />
+        )}
+
+        {/* CTA principal — canto inferior esquerdo, mesmo lugar do botão da arte */}
+        {videoUrl && ctaLabel && onCta && (
+          <button
+            type="button"
+            onClick={onCta}
+            data-testid="subbanner-cta"
+            className="absolute bottom-4 left-4 z-10 px-5 py-2.5 rounded-lg border border-white/60 bg-black/35 backdrop-blur-sm text-white text-[11px] font-black uppercase tracking-[0.18em] touch-manipulation transition-colors hover:bg-white hover:text-zinc-950 active:scale-[0.97]"
+          >
+            {ctaLabel}
+          </button>
+        )}
+
+        {/* Toggle de som — só no modo vídeo */}
+        {videoUrl && (
+          <button
+            type="button"
+            onClick={toggleSound}
+            aria-label={soundOn ? 'Desligar som' : 'Ligar som'}
+            className="absolute bottom-4 right-4 z-10 grid place-items-center h-10 w-10 rounded-full bg-black/45 backdrop-blur-sm text-white border border-white/20 touch-manipulation"
+          >
+            {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          </button>
+        )}
 
         {/* CTA de WhatsApp — ícone na quina superior direita, pulsação interna lenta */}
         {waUrl && (
