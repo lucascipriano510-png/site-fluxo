@@ -124,18 +124,6 @@ export default function SubBanner({ banner, whatsapp, onCta }) {
           />
         )}
 
-        {/* CTA principal — canto inferior esquerdo, mesmo lugar do botão da arte */}
-        {videoUrl && ctaLabel && onCta && (
-          <button
-            type="button"
-            onClick={onCta}
-            data-testid="subbanner-cta"
-            className="absolute bottom-4 left-4 z-10 px-5 py-2.5 rounded-lg border border-white/60 bg-black/35 backdrop-blur-sm text-white text-[11px] font-black uppercase tracking-[0.18em] touch-manipulation transition-colors hover:bg-white hover:text-zinc-950 active:scale-[0.97]"
-          >
-            {ctaLabel}
-          </button>
-        )}
-
         {/* Toggle de som — só no modo vídeo */}
         {videoUrl && (
           <button
@@ -163,6 +151,19 @@ export default function SubBanner({ banner, whatsapp, onCta }) {
           </a>
         )}
       </div>
+
+      {/* CTA principal — faixa colada embaixo do vídeo (overlay em cima da arte
+          cobria o preço no mobile, onde o banner tem ~220px de altura) */}
+      {videoUrl && ctaLabel && onCta && (
+        <button
+          type="button"
+          onClick={onCta}
+          data-testid="subbanner-cta"
+          className="block w-full py-3.5 bg-zinc-900 border-t border-white/10 text-white text-[11px] font-black uppercase tracking-[0.22em] touch-manipulation transition-colors hover:bg-white hover:text-zinc-950 active:bg-zinc-200 active:text-zinc-950"
+        >
+          {ctaLabel}
+        </button>
+      )}
     </section>
   );
 }
