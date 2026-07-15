@@ -32,6 +32,7 @@ const CatalogMain = ({
   isDesktopViewport,
   kitsOnly,
   midBanner,
+  navigateToSubcategory,
   noveltyMode,
   onCatRailScroll,
   paginatedProducts,
@@ -534,11 +535,7 @@ const CatalogMain = ({
           const isDefaultView = !kitsOnly && selectedCategory === 'TODOS' && (selectedSize === 'TODOS' || !selectedSize) && selectedColor === 'TODOS' && priceRange === 'TODOS' && !searchQuery.trim() && !activeCollectionFilter && !selectionSkus && currentPage === 1 && !searchFocused;
           if (!isDefaultView || !midBanner) return null;
           // Destino do CTA = campanha atual do sub-banner (hoje: bermudas destroyed).
-          const goToCampaign = () => {
-            setSelectedCategory('BERMUDA');
-            setSelectedSubcategory('DESTROYED');
-            document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
-          };
+          const goToCampaign = () => navigateToSubcategory('BERMUDA', 'DESTROYED');
           return <SubBanner banner={midBanner} whatsapp={config?.whatsapp} onCta={goToCampaign} />;
         })()}
 

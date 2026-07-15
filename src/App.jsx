@@ -1417,10 +1417,20 @@ function App() {
   }, [availableSubcategories, selectedSubcategory, products]);
 
   // Ao trocar de categoria, sempre limpa a subcategoria — exceto no primeiro render
-  // (preserva ?sub=... da URL).
+  // (preserva ?sub=... da URL) e em navegação programática categoria+sub (abaixo).
   const _isFirstCategoryChange = React.useRef(true);
+  const _skipNextSubReset = React.useRef(false);
+  // Navegação de campanha (CTA do sub-banner): seta categoria E subcategoria de
+  // uma vez; o ref pula o reset automático que apagaria a sub logo em seguida.
+  const navigateToSubcategory = (cat, sub) => {
+    _skipNextSubReset.current = cat !== selectedCategory;
+    setSelectedCategory(cat);
+    setSelectedSubcategory(sub);
+    document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
   useEffect(() => {
     if (_isFirstCategoryChange.current) { _isFirstCategoryChange.current = false; return; }
+    if (_skipNextSubReset.current) { _skipNextSubReset.current = false; return; }
     setSelectedSubcategory('TODOS');
     // Limpa refinamentos de cor/preço ao trocar de categoria (some os chips no home).
     setSelectedColor('TODOS');
@@ -2026,7 +2036,7 @@ function App() {
           Pra voltar: <BannerCarousel activeBanners={activeBanners} bannersLoaded={bannersLoaded} isAdmin={isAdmin} onCollectionFilter={setActiveCollectionFilter} /> */}
       <HeroVideo />
 
-      <CatalogMain {...{ activeCollectionFilter, availableColors, availableSizes, availableSubcategories, bumpOffers, catRailRef, categories, config, currentPage, filteredProducts, handleProductClick, isDesktopViewport, kitsOnly, midBanner, noveltyMode, onCatRailScroll, paginatedProducts, prefersReducedMotion, priceRange, products, productsLoaded, ratingsMap, recentlyViewedProducts, searchActive, searchIntent, searchQuery, selectedCategory, selectedColor, selectedProduct, selectedSize, selectedSubcategory, selectionSkus, setActiveCollectionFilter, setCurrentPage, setDrawerTab, setKitsOnly, setNoveltyMode, setPriceRange, setRatingsMap, setSearchQuery, setSelectedCategory, setSelectedColor, setSelectedProduct, setSelectedSize, setSelectedSizes, setSelectedSubcategory, setSelectionSkus, setShowUserDrawer, setSortMode, showToast, sortMode, sortedProducts, totalPages, userProfile }} />
+      <CatalogMain {...{ activeCollectionFilter, availableColors, availableSizes, availableSubcategories, bumpOffers, catRailRef, categories, config, currentPage, filteredProducts, handleProductClick, isDesktopViewport, kitsOnly, midBanner, navigateToSubcategory, noveltyMode, onCatRailScroll, paginatedProducts, prefersReducedMotion, priceRange, products, productsLoaded, ratingsMap, recentlyViewedProducts, searchActive, searchIntent, searchQuery, selectedCategory, selectedColor, selectedProduct, selectedSize, selectedSubcategory, selectionSkus, setActiveCollectionFilter, setCurrentPage, setDrawerTab, setKitsOnly, setNoveltyMode, setPriceRange, setRatingsMap, setSearchQuery, setSelectedCategory, setSelectedColor, setSelectedProduct, setSelectedSize, setSelectedSizes, setSelectedSubcategory, setSelectionSkus, setShowUserDrawer, setSortMode, showToast, sortMode, sortedProducts, totalPages, userProfile }} />
 
       {/* ── BLOCO DE CONFIANÇA — loja real e local (reforço antes do rodapé) ── */}
       <TrustBadges {...{ config }} />
