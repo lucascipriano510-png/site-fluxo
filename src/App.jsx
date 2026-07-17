@@ -938,9 +938,13 @@ function App() {
   // Pix é forma de pagamento e incide sobre a base JÁ com cupom —
   // cupom+pix compõem (0,95 × 0,95), nunca somam 10% secos.
   // "Primeira compra" real exigiria consultar orders por telefone (RLS não
-  // deixa o anon ler) — o controle é: exige cadastro + 1 uso por dispositivo.
+  // deixa o anon ler) — o controle é 1 uso por dispositivo.
+  // REDESENHO 2026-07-17 (pesquisa mód. 2, aval do dono): o cupom NÃO exige
+  // mais cadastro — 216 exposições → 8 usos (3,7%) provaram que pedir conta
+  // na porta mata o presente. O telefone entra sozinho no checkout, onde o
+  // CRM já pega o lead. `precisaCadastro` fica pra cupons futuros.
   const CUPONS = {
-    NOVOFLUXO5: { pct: 0.05, precisaCadastro: true },
+    NOVOFLUXO5: { pct: 0.05, precisaCadastro: false },
   };
   const CUPOM_USADO_KEY = '@fluxo-outlet:cupons-usados';
   const [cupomInput, setCupomInput] = useState('');
@@ -995,7 +999,6 @@ function App() {
 
   // ── Pop-up de boas-vindas (bloco: abre no MOBILE, 1x por visitante) ──
   const [showWelcome, setShowWelcome] = useState(false);
-  const [cupomPendentePosCadastro, setCupomPendentePosCadastro] = useState(false);
   useEffect(() => {
     if (isDesktopViewport) return;   // o bloco pede mobile; desktop fica de fora
     if (userProfile) return;         // quem já é de casa não é "primeira vez"
@@ -1014,15 +1017,6 @@ function App() {
     // só na montagem: girar o celular depois não deve reabrir
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Veio do pop-up, terminou o cadastro → cupom entra sozinho (sem pedir de novo)
-  useEffect(() => {
-    if (cupomPendentePosCadastro && userProfile) {
-      setCupomPendentePosCadastro(false);
-      aplicarCupom('NOVOFLUXO5');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile, cupomPendentePosCadastro]);
 
   const handleProductClick = (product) => {
     if (!product) return;
@@ -2224,10 +2218,9 @@ function App() {
         onQueroCupom={() => {
           interacaoElemento('cupom_boas_vindas');
           setShowWelcome(false);
-          if (userProfile) { aplicarCupom('NOVOFLUXO5'); return; }
-          setCupomPendentePosCadastro(true); // cadastro concluído → cupom entra sozinho
-          setDrawerTab('profile');
-          setShowUserDrawer(true);
+          // Sem catraca: um toque e o cupom fica ativo (persistido) — aplica
+          // sozinho quando a sacola montar. Cadastro saiu da frente (3,7%!).
+          aplicarCupom('NOVOFLUXO5');
         }}
       />
 

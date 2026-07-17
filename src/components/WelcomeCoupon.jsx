@@ -80,12 +80,15 @@ export default function WelcomeCoupon({ aberto, cupom = 'NOVOFLUXO5', onFechar, 
                 </div>
               </div>
 
+              {/* Redesenho 2026-07-17: presente sem catraca — o botão APLICA o
+                  cupom (um toque), nada de criar conta antes (3,7% de uso provou
+                  que o custo do cadastro matava o presente). */}
               <button
                 onClick={onQueroCupom}
                 className="w-full py-4 min-h-[54px] rounded-2xl font-black text-[11px] uppercase tracking-widest bg-white text-zinc-950 active:scale-95 shadow-2xl flex items-center justify-center gap-2 touch-manipulation"
                 data-testid="welcome-cta"
               >
-                <Ticket size={15} /> Criar conta e pegar meus 5%
+                <Ticket size={15} /> Aplicar meus 5% na sacola
               </button>
 
               <button
@@ -96,7 +99,7 @@ export default function WelcomeCoupon({ aberto, cupom = 'NOVOFLUXO5', onFechar, 
               </button>
 
               <p className="text-center text-[9px] font-bold text-zinc-600 uppercase tracking-wide -mt-1">
-                Cadastro leva 20 segundos · o cupom aplica direto na sacola
+                Sem cadastro · um toque e ele já fica valendo na sacola
               </p>
             </div>
           </motion.div>
