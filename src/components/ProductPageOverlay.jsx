@@ -1,3 +1,4 @@
+import ComoVeste, { hasComoVeste } from './ComoVeste';
 import OfferCountdown from './OfferCountdown';
 import ProductReviewsList from './ProductReviewsList';
 import HoloTilt from './HoloTilt';
@@ -42,6 +43,7 @@ const GalleryPreload = ({ gallery }) => {
 const ProductPageOverlay = ({
   activeProductImage,
   bumpOffers,
+  config,
   handleCommitToCart,
   handleShareProduct,
   handleSizeSelect,
@@ -260,6 +262,10 @@ const ProductPageOverlay = ({
                   )}
                 </div>
 
+                {/* ── COMO ELA VESTE ── unidade explorável de caimento (só calça jogador);
+                    vem ANTES do tamanho de propósito: desarma a dúvida, aí o cliente escolhe */}
+                <ComoVeste product={selectedProduct} whatsapp={config?.whatsapp} onOpenSizeGuide={() => setShowSizeGuide(true)} />
+
                 {/* ── TAMANHO ── seção própria, separada por divisor */}
                 <div className="flex flex-col gap-4 border-t border-white/5 pt-8">
                   <div className="flex items-center justify-between gap-3">
@@ -474,6 +480,13 @@ const ProductPageOverlay = ({
                     </div>
                   ) : (
                     <p className="text-5xl font-black tracking-tighter tabular-nums mb-8" style={{ color: 'var(--text-primary)' }}>{formatBRL(selectedProduct.price || 0)}</p>
+                  )}
+
+                  {/* Como ela veste — unidade explorável de caimento (só calça jogador), antes do tamanho */}
+                  {hasComoVeste(selectedProduct) && (
+                    <div className="mb-8 [&>div]:border-white/10">
+                      <ComoVeste product={selectedProduct} whatsapp={config?.whatsapp} onOpenSizeGuide={() => setShowSizeGuide(true)} />
+                    </div>
                   )}
 
                   {/* Tamanho — seção com divisor */}

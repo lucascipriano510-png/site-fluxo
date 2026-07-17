@@ -2105,7 +2105,7 @@ function App() {
         />
       )}
 
-      <ProductPageOverlay {...{ activeProductImage, bumpOffers, handleCommitToCart, handleShareProduct, handleSizeSelect, kitItemsByKit, productSwipeRef, products, ratingsMap, selectedProduct, selectedSizes, setActiveCollectionFilter, setActiveProductImage, setDrawerTab, setRatingsMap, setSelectedCategory, setSelectedProduct, setSelectedSizes, setSelectedSubcategory, setShowSizeGuide, setShowUserDrawer, setStockAlertTarget, setZoomImage, showToast, userProfile }} />
+      <ProductPageOverlay {...{ activeProductImage, bumpOffers, config, handleCommitToCart, handleShareProduct, handleSizeSelect, kitItemsByKit, productSwipeRef, products, ratingsMap, selectedProduct, selectedSizes, setActiveCollectionFilter, setActiveProductImage, setDrawerTab, setRatingsMap, setSelectedCategory, setSelectedProduct, setSelectedSizes, setSelectedSubcategory, setShowSizeGuide, setShowUserDrawer, setStockAlertTarget, setZoomImage, showToast, userProfile }} />
 
       {/* Modal "Avise-me quando voltar" (estoque) */}
       <StockAlertModal target={stockAlertTarget} onClose={() => setStockAlertTarget(null)} showToast={showToast} whatsapp={config?.whatsapp} />

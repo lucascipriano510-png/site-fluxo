@@ -191,7 +191,7 @@ export default function AdminGrowth({ leads = [], products = [], config = {} }) 
       };
     }).filter((f) => f.sessoes > 0);
 
-    const NOME_ELEMENTO = { banner: 'Banner principal', cupom_boas_vindas: 'Cupom de boas-vindas', subbanner: 'Sub-banner' };
+    const NOME_ELEMENTO = { banner: 'Banner principal', cupom_boas_vindas: 'Cupom de boas-vindas', subbanner: 'Sub-banner', caimento: 'Caimento (calça jogador)' };
     const habituacao = Object.entries(elementos).map(([el, porBucket]) => ({
       elemento: NOME_ELEMENTO[el] || el,
       buckets: EXP_BUCKETS.map((b) => {
