@@ -11,6 +11,7 @@ create table if not exists public.site_lead_signals (
   phone         text,                          -- preenchido quando o cliente informa
   name          text,
   event         text not null,                 -- produto_visto | whatsapp_produto | carrinho_add | checkout_aberto | telefone_informado
+                                               -- + atenção (lib/attention.js): sessao | marco_sessao | exposicao_elemento | interacao_elemento
   product_id    text,
   product_sku   text,
   product_name  text,

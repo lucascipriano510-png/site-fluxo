@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { marcarEngajamento } from './attention';
 
 // ===== CAPTURA DE SINAIS DE LEAD (o "cerco") =====
 // O site emite sinais ricos de cada interação relevante — com DETALHE do produto
@@ -69,11 +70,14 @@ function throttled(key, ms = 4000) {
 /**
  * Emite um sinal de lead (fire-and-forget; nunca bloqueia/erra na UI).
  * @param {string} event - produto_visto | whatsapp_produto | carrinho_add | checkout_aberto | telefone_informado
+ *   (os eventos de atenção — sessao, marco_sessao, exposicao_elemento,
+ *   interacao_elemento — gravam direto pelo lib/attention.js, sem passar aqui)
  * @param {{product?, size?, qty?, cart?, phone?, name?, meta?}} data
  */
 export function emitSignal(event, data = {}) {
   try {
     const { product, size, qty, cart, phone, name, meta } = data;
+    marcarEngajamento(event); // funil de atenção: engajamento fecha marcos da sessão
     const known = getKnownLead();
     const ph = (phone ? String(phone).replace(/\D/g, '') : '') || known.phone || null;
     const dKey = `${event}:${product?.sku || (cart ? 'cart' : '')}:${size || ''}`;

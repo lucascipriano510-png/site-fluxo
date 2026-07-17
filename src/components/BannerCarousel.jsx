@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
 import BannerImage from './BannerImage';
+import { observarExposicao, interacaoElemento } from '../lib/attention';
 
 /**
  * Carrossel de banners da home: swipe via CSS scroll snap nativo, auto-avanço,
@@ -27,6 +28,13 @@ export default function BannerCarousel({ activeBanners, bannersLoaded, isAdmin, 
   useEffect(() => { currentBannerSlideRef.current = currentBannerSlide; }, [currentBannerSlide]);
   // Mantém o slide dentro do range quando a lista muda (ex.: troca mobile<->desktop)
   useEffect(() => { setCurrentBannerSlide(s => (s >= activeBanners.length ? 0 : s)); }, [activeBanners.length]);
+
+  // Funil de atenção: exposição conta quando o banner está visível de fato
+  // (com banner carregado — skeleton exposto não é banner exposto).
+  useEffect(() => {
+    if (!activeBanners.length) return;
+    return observarExposicao(bannerRef.current, 'banner');
+  }, [activeBanners.length]);
 
   // Navega para slide via scrollTo nativo (scroll snap cuida da animação)
   const goToBannerSlide = (idx) => {
@@ -156,6 +164,7 @@ export default function BannerCarousel({ activeBanners, bannersLoaded, isAdmin, 
                 {banner.buttonText && (
                   <button
                     onClick={() => {
+                      interacaoElemento('banner', { acao: 'cta' });
                       if (banner.external_link) {
                         window.open(banner.external_link, '_blank', 'noopener');
                       } else if (banner.collection_name) {
@@ -188,7 +197,7 @@ export default function BannerCarousel({ activeBanners, bannersLoaded, isAdmin, 
               <button
                 key={idx}
                 type="button"
-                onClick={() => goToBannerSlide(idx)}
+                onClick={() => { interacaoElemento('banner', { acao: 'navegacao' }); goToBannerSlide(idx); }}
                 aria-label={`Slide ${idx + 1}`}
                 className={`h-0.5 rounded-full transition-all duration-500 ${idx === currentBannerSlide ? 'w-8 bg-white' : 'w-2 bg-white/30'}`}
               />

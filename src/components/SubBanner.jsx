@@ -1,6 +1,7 @@
 import React from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { optimizeImage, buildSrcSet, markWsrvFailed } from '../lib/images';
+import { observarExposicao, interacaoElemento } from '../lib/attention';
 
 // Logo do WhatsApp (lucide não tem ícone de marca).
 const WhatsAppIcon = ({ size = 16 }) => (
@@ -23,8 +24,15 @@ export default function SubBanner({ banner, whatsapp, onCta }) {
   const [loaded, setLoaded] = React.useState(false);
   const [soundOn, setSoundOn] = React.useState(false);
   const videoRef = React.useRef(null);
+  const sectionRef = React.useRef(null);
   const src = banner?.image;
   const videoUrl = banner?.video_url;
+
+  // Funil de atenção: exposição vale nos dois modos (vídeo e imagem).
+  React.useEffect(() => {
+    if (!src && !videoUrl) return;
+    return observarExposicao(sectionRef.current, 'subbanner');
+  }, [src, videoUrl]);
 
   // Vídeo toca quando ~metade do banner está visível; sai da tela = pausa + mudo.
   // Autoplay com som é bloqueado pelo navegador até haver gesto na página; o
@@ -76,7 +84,7 @@ export default function SubBanner({ banner, whatsapp, onCta }) {
   const imgSrcSet = src ? buildSrcSet(src, [640, 900, 1280, 1600], 90) : null;
 
   return (
-    <section className="relative -mx-6 lg:mx-auto lg:max-w-[760px] lg:rounded-3xl overflow-hidden" aria-label={banner.title || 'Destaque'}>
+    <section ref={sectionRef} className="relative -mx-6 lg:mx-auto lg:max-w-[760px] lg:rounded-3xl overflow-hidden" aria-label={banner.title || 'Destaque'}>
       <div className={`relative w-full ${videoUrl ? 'aspect-video' : 'aspect-[2/1]'} bg-zinc-950`}>
         {!loaded && (
           <div
@@ -143,6 +151,7 @@ export default function SubBanner({ banner, whatsapp, onCta }) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Falar no WhatsApp"
+            onClick={() => interacaoElemento('subbanner', { acao: 'whatsapp' })}
             className="absolute top-1 right-1 z-10 grid place-items-center touch-manipulation"
           >
             <span className="wa-pulse grid place-items-center h-10 w-10 rounded-full bg-[#25D366] text-white shadow-[0_6px_18px_rgba(37,211,102,0.45)]">
@@ -157,7 +166,7 @@ export default function SubBanner({ banner, whatsapp, onCta }) {
       {videoUrl && ctaLabel && onCta && (
         <button
           type="button"
-          onClick={onCta}
+          onClick={() => { interacaoElemento('subbanner', { acao: 'cta' }); onCta(); }}
           data-testid="subbanner-cta"
           className="block w-full py-3.5 bg-zinc-900 border-t border-white/10 text-white text-[11px] font-black uppercase tracking-[0.22em] touch-manipulation transition-colors hover:bg-white hover:text-zinc-950 active:bg-zinc-200 active:text-zinc-950"
         >

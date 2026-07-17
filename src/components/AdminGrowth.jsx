@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Flame, Users, RotateCcw, Megaphone, Check, Send } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Flame, Users, RotateCcw, Megaphone, Check, Send, Eye } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 // ============================================================
 // VENDAS ATIVAS — máquina de recuperação, reativação e campanha
@@ -121,11 +122,97 @@ export default function AdminGrowth({ leads = [], products = [], config = {} }) 
     return [];
   }, [segment, customers, lapsed, abandoned, buyersByCategory]);
 
+  // ── ENGINE 4 — ATENÇÃO (funil da sessão + habituação por elemento) ──
+  // Lê os eventos do lib/attention.js (últimos 30 dias) e agrega no cliente.
+  // Todo evento carrega {sid, visita} no meta — agregação sem join.
+  const [attnRows, setAttnRows] = useState(null);
+  const [attnLoading, setAttnLoading] = useState(false);
+  useEffect(() => {
+    if (tab !== 'atencao' || attnRows !== null || attnLoading) return;
+    setAttnLoading(true);
+    supabase
+      .from('site_lead_signals')
+      .select('event, visitor_id, meta, created_at')
+      .in('event', ['sessao', 'marco_sessao', 'exposicao_elemento', 'interacao_elemento'])
+      .gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(20000)
+      .then(({ data, error }) => {
+        setAttnRows(error ? [] : data || []);
+        setAttnLoading(false);
+      });
+  }, [tab, attnRows, attnLoading]);
+
+  const attn = useMemo(() => {
+    if (!attnRows) return null;
+    const VISITA_BUCKETS = ['1ª visita', '2ª–3ª visita', '4ª+ visita'];
+    const EXP_BUCKETS = ['1ª', '2ª–3ª', '4ª+'];
+    const bVisita = (v) => (v <= 1 ? VISITA_BUCKETS[0] : v <= 3 ? VISITA_BUCKETS[1] : VISITA_BUCKETS[2]);
+    const bExp = (n) => (n <= 1 ? EXP_BUCKETS[0] : n <= 3 ? EXP_BUCKETS[1] : EXP_BUCKETS[2]);
+
+    const sessoes = {};   // sid -> bucket de visita
+    const marcos = {};    // sid -> Set(marco)
+    const elementos = {}; // elemento -> bucket exp -> { exp:Set, int:Set }
+    const origens = {};
+
+    attnRows.forEach((r) => {
+      const m = r.meta || {};
+      if (r.event === 'sessao' && m.sid) {
+        sessoes[m.sid] = bVisita(Number(m.visita) || 1);
+        const o = m.origem || {};
+        const fonte = o.utm_source || (o.ref !== 'direto' && o.ref) || 'direto';
+        origens[fonte] = (origens[fonte] || 0) + 1;
+      } else if (r.event === 'marco_sessao' && m.sid && m.marco) {
+        (marcos[m.sid] = marcos[m.sid] || new Set()).add(m.marco);
+      } else if ((r.event === 'exposicao_elemento' || r.event === 'interacao_elemento') && m.elemento) {
+        const porBucket = (elementos[m.elemento] = elementos[m.elemento] || {});
+        const slot = (porBucket[bExp(Number(m.exposicao_n) || 1)] ||= { exp: new Set(), int: new Set() });
+        slot[r.event === 'exposicao_elemento' ? 'exp' : 'int'].add(m.sid || r.visitor_id);
+      }
+    });
+
+    // Funil da sessão por segmento de visita (Testes 1/4/5 do módulo 1)
+    const ETAPAS = [
+      ['scroll', 'Rolou a página'],
+      ['interacao', 'Interagiu'],
+      ['produto', 'Abriu peça'],
+      ['carrinho', 'Pôs na sacola'],
+      ['whatsapp', 'Foi pro WhatsApp'],
+    ];
+    const funil = VISITA_BUCKETS.map((bucket) => {
+      const sids = Object.keys(sessoes).filter((sid) => sessoes[sid] === bucket);
+      return {
+        bucket,
+        sessoes: sids.length,
+        etapas: ETAPAS.map(([marco, label]) => ({
+          label,
+          n: sids.filter((sid) => marcos[sid]?.has(marco)).length,
+        })),
+      };
+    }).filter((f) => f.sessoes > 0);
+
+    const NOME_ELEMENTO = { banner: 'Banner principal', cupom_boas_vindas: 'Cupom de boas-vindas', subbanner: 'Sub-banner' };
+    const habituacao = Object.entries(elementos).map(([el, porBucket]) => ({
+      elemento: NOME_ELEMENTO[el] || el,
+      buckets: EXP_BUCKETS.map((b) => {
+        const slot = porBucket[b];
+        const exp = slot ? slot.exp.size : 0;
+        const int = slot ? slot.int.size : 0;
+        return { bucket: b, exp, int, taxa: exp > 0 ? int / exp : null };
+      }),
+    }));
+
+    const topOrigens = Object.entries(origens).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const totalSessoes = Object.keys(sessoes).length;
+    return { funil, habituacao, topOrigens, totalSessoes };
+  }, [attnRows]);
+
   // ── UI helpers ──
   const TABS = [
     { key: 'recuperar', label: 'Recuperar', icon: <RotateCcw size={14} />, count: abandoned.length },
     { key: 'reativar', label: 'Reativar', icon: <Users size={14} />, count: lapsed.length },
     { key: 'campanha', label: 'Campanha', icon: <Megaphone size={14} />, count: null },
+    { key: 'atencao', label: 'Atenção', icon: <Eye size={14} />, count: null },
   ];
 
   return (
@@ -265,6 +352,90 @@ export default function AdminGrowth({ leads = [], products = [], config = {} }) 
                 onSend={() => send('campanha', r.phone, r.name, msg)} />
             );
           })}
+        </div>
+      )}
+
+      {/* ===== ATENÇÃO ===== */}
+      {tab === 'atencao' && (
+        <div className="space-y-4">
+          <div className="bg-zinc-900 rounded-2xl border border-white/5 p-4">
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Funil de atenção · 30 dias</p>
+            <p className="text-2xl font-black text-emerald-400" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {attn ? attn.totalSessoes : '—'} <span className="text-[11px] text-zinc-500 uppercase">sessões</span>
+            </p>
+            <p className="text-[9px] text-zinc-600 font-bold uppercase mt-0.5">Onde a atenção morre — por visita e por exposição</p>
+          </div>
+
+          {attnLoading || !attn ? (
+            <Empty msg="Carregando sinais…" />
+          ) : attn.totalSessoes === 0 ? (
+            <Empty msg="Sem sinais ainda — começam a contar a partir de agora." />
+          ) : (
+            <>
+              {/* Funil por segmento de visita: queda entre segmentos = habituação geral */}
+              {attn.funil.map((f) => (
+                <div key={f.bucket} className="bg-zinc-900 rounded-2xl border border-white/5 p-4 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white">{f.bucket}</p>
+                    <p className="text-[9px] font-bold uppercase text-zinc-500">{f.sessoes} sessões</p>
+                  </div>
+                  {f.etapas.map((e) => {
+                    const pct = f.sessoes > 0 ? e.n / f.sessoes : 0;
+                    return (
+                      <div key={e.label} className="flex items-center gap-2">
+                        <span className="w-28 shrink-0 text-[9px] font-black uppercase tracking-wide text-zinc-400">{e.label}</span>
+                        <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+                          <div className="h-full rounded-full bg-emerald-500/70" style={{ width: `${Math.round(pct * 100)}%` }} />
+                        </div>
+                        <span className="w-12 shrink-0 text-right text-[10px] font-black text-zinc-300" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                          {Math.round(pct * 100)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+
+              {/* Habituação por elemento: taxa de interação × nº da exposição.
+                  Taxa caindo da 1ª pra 4ª+ = o elemento morreu pra quem volta. */}
+              {attn.habituacao.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 px-1">Desgaste por exposição</p>
+                  {attn.habituacao.map((h) => (
+                    <div key={h.elemento} className="bg-zinc-900 rounded-2xl border border-white/5 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-white mb-2.5">{h.elemento}</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {h.buckets.map((b) => (
+                          <div key={b.bucket} className="rounded-xl bg-white/[0.03] border border-white/5 p-2.5 text-center">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">{b.bucket} exposição</p>
+                            <p className="text-lg font-black text-white" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                              {b.taxa == null ? '—' : `${Math.round(b.taxa * 100)}%`}
+                            </p>
+                            <p className="text-[8px] font-bold text-zinc-600 uppercase" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                              {b.int}/{b.exp} interagiu
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Origens das sessões */}
+              {attn.topOrigens.length > 0 && (
+                <div className="bg-zinc-900 rounded-2xl border border-white/5 p-4 space-y-2">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">De onde as sessões vêm</p>
+                  {attn.topOrigens.map(([fonte, n]) => (
+                    <div key={fonte} className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-zinc-300 truncate">{fonte}</span>
+                      <span className="text-[10px] font-black text-zinc-400" style={{ fontVariantNumeric: 'tabular-nums' }}>{n}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

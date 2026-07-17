@@ -21,6 +21,7 @@ import { formatBRL } from './lib/format';
 import { isOfferLive, offerPrice, offerPercent, offerEndsAt, offerCampaign, OFFER_CAMPAIGNS, CAMPAIGN_LABELS } from './lib/offers';
 import { parseQueryIntent, productMatchesIntent, scoreProductForSearch, hasActiveQuery } from './lib/search';
 import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
+import { iniciarAtencao, exposicaoElemento, interacaoElemento } from './lib/attention';
 import { hapticTick } from './lib/haptics';
 import { isLowEndDevice } from './lib/deviceTier';
 import { fetchOrders } from './lib/orders';
@@ -987,6 +988,9 @@ function App() {
   const totalComPix = useMemo(() => subtotal - cupomDiscount - pixDiscount, [subtotal, cupomDiscount, pixDiscount]);
   const hasOfferInCart = useMemo(() => (cart || []).some(i => i.offer_applied), [cart]);
 
+  // ── Engenharia da Atenção: sessão + funil (lib/attention.js) ──
+  useEffect(() => { iniciarAtencao(); }, []);
+
   // ── Pop-up de boas-vindas (bloco: abre no MOBILE, 1x por visitante) ──
   const [showWelcome, setShowWelcome] = useState(false);
   const [cupomPendentePosCadastro, setCupomPendentePosCadastro] = useState(false);
@@ -1001,6 +1005,7 @@ function App() {
     const t = setTimeout(() => {
       setShowWelcome(true);
       emitSignal('welcome_popup_visto', {});
+      exposicaoElemento('cupom_boas_vindas');
       try { localStorage.setItem('@fluxo-outlet:welcome-visto', '1'); } catch {}
     }, 2600);
     return () => clearTimeout(t);
@@ -2204,6 +2209,7 @@ function App() {
         cupom="NOVOFLUXO5"
         onFechar={() => setShowWelcome(false)}
         onQueroCupom={() => {
+          interacaoElemento('cupom_boas_vindas');
           setShowWelcome(false);
           if (userProfile) { aplicarCupom('NOVOFLUXO5'); return; }
           setCupomPendentePosCadastro(true); // cadastro concluído → cupom entra sozinho
