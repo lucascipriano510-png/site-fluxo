@@ -11,7 +11,12 @@ import { test, expect } from '@playwright/test';
 // o teste no caminho do dinheiro (o pop-up tem lógica própria, não é o alvo aqui).
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    try { localStorage.setItem('@fluxo-outlet:welcome-visto', '1'); } catch {}
+    try {
+      localStorage.setItem('@fluxo-outlet:welcome-visto', '1');
+      // Trava de dono: o E2E navega produto→sacola→checkout no Supabase REAL e
+      // sem isso os sinais de lead/atenção do teste viram "dado" no banco.
+      localStorage.setItem('fluxo_owner_device', '1');
+    } catch {}
   });
 });
 

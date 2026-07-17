@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { marcarEngajamento } from './attention';
+import { isOwnerDevice } from './metaPixel';
 
 // ===== CAPTURA DE SINAIS DE LEAD (o "cerco") =====
 // O site emite sinais ricos de cada interação relevante — com DETALHE do produto
@@ -76,6 +77,9 @@ function throttled(key, ms = 4000) {
  */
 export function emitSignal(event, data = {}) {
   try {
+    // Aparelho do dono/teste não grava sinal: teste não é dado (os 350
+    // produto_visto de 2026-07 tinham dezenas de visitas do próprio dono).
+    if (isOwnerDevice()) return;
     const { product, size, qty, cart, phone, name, meta } = data;
     marcarEngajamento(event); // funil de atenção: engajamento fecha marcos da sessão
     const known = getKnownLead();
