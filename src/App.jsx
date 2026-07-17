@@ -23,6 +23,7 @@ import { parseQueryIntent, productMatchesIntent, scoreProductForSearch, hasActiv
 import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
 import { iniciarAtencao, exposicaoElemento, interacaoElemento } from './lib/attention';
 import { hapticTick } from './lib/haptics';
+import { rememberMySize, tocouCardComMeuNumero } from './lib/mySize';
 import { isLowEndDevice } from './lib/deviceTier';
 import { fetchOrders } from './lib/orders';
 import { requestStockAlert, fetchStockAlerts } from './lib/stockAlerts';
@@ -1026,6 +1027,7 @@ function App() {
     if (!product) return;
     // Kits podem ser abertos mesmo sem estoque próprio (estoque vem dos componentes)
     if (!product.is_kit && product.stock <= 0) return;
+    tocouCardComMeuNumero(product); // telemetria: card aberto tinha o chip "Seu nº"?
     // Guarda onde o catálogo estava p/ restaurar ao voltar (só quando vem da vitrine).
     // IMPORTANTE: o catálogo rola pelo #root (overflow-y:scroll), NÃO pela window.
     if (!productPageOpen) {
@@ -1097,6 +1099,7 @@ function App() {
       return;
     }
     hapticTick(18); // confirmação tátil: peça entrando na sacola
+    rememberMySize(selectedProduct, selectedSizes); // vitrine aprende o número (lib/mySize)
 
     // A PEÇA VOA PRA SACOLA: clona a foto ativa do hero e anima até o ícone
     // do header (WAAPI, só transform/opacity no compositor). Decorativo puro:

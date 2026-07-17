@@ -13,6 +13,7 @@ import { colorDot, pluralCat, shineDelay } from '../lib/catalogUi';
 import { emitSignal } from '../lib/leadSignals';
 import { formatBRL } from '../lib/format';
 import { getCatImgData, optimizeImage } from '../lib/images';
+import { hasMyNumber, marcarMeuNumeroExposto } from '../lib/mySize';
 import { AnimatePresence, motion } from 'framer-motion';
 import { isLowEndDevice } from '../lib/deviceTier';
 
@@ -725,7 +726,12 @@ const CatalogMain = ({
                              .map(s => ({ name: typeof s === 'string' ? s : s.size, stock: typeof s === 'string' ? (product.stock || 0) : Number(s.stock || 0) }))
                              .filter(s => s.name && s.stock > 0);
                            if (avail.length === 0) return null;
-                           const visible = avail.slice(0, 4);
+                           // "Seu 42": o número aprendido do cliente (lib/mySize) ganha chip
+                           // esmeralda e fura o corte dos 4 visíveis — a faixa que já existia
+                           // vira resposta pessoal da dúvida nº1 do WhatsApp ("tem no meu?").
+                           const meuNum = hasMyNumber(product);
+                           const meuIdx = meuNum ? avail.findIndex(s => s.name === meuNum) : -1;
+                           const visible = meuIdx >= 4 ? [...avail.slice(0, 3), avail[meuIdx]] : avail.slice(0, 4);
                            const extra = avail.length - visible.length;
                             return (
                                <div
@@ -741,14 +747,22 @@ const CatalogMain = ({
                                  <span className="pointer-events-none absolute inset-0 overflow-hidden">
                                    <span className="absolute top-0 left-0 h-full w-[28%]" style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.13), transparent)', animation: 'shineSize 6s ease-in-out infinite', animationDelay: shineDelay(product.id) }} />
                                  </span>
-                                 {visible.map(s => (
+                                 {visible.map(s => (s.name === meuNum ? (
+                                   <span
+                                     key={s.name}
+                                     ref={marcarMeuNumeroExposto}
+                                     className="relative h-[22px] px-1.5 flex items-center justify-center text-[9px] font-black uppercase tracking-wide bg-emerald-500 text-zinc-950 border-r border-white/10 last:border-r-0 whitespace-nowrap"
+                                   >
+                                     Seu {s.name}
+                                   </span>
+                                 ) : (
                                    <span
                                      key={s.name}
                                      className="relative w-[22px] h-[22px] flex items-center justify-center text-[10px] font-bold text-white/95 border-r border-white/10 last:border-r-0"
                                    >
                                      {s.name}
                                    </span>
-                                 ))}
+                                 )))}
                                  {extra > 0 && (
                                    <span className="relative w-[22px] h-[22px] flex items-center justify-center text-[10px] font-bold text-white/95">
                                      +{extra}

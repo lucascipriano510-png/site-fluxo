@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bell, Minus, Plus } from 'lucide-react';
 import { buildSizeGrid } from '../lib/sizeGrid';
+import { getMySize } from '../lib/mySize';
 
 // ──────────────────────────────────────────────────────────────
 // Seletor de tamanho (estilo Netshoes): UMA fileira de botões compactos com a
@@ -13,6 +14,7 @@ export const SIZE_STRIKE_STYLE = {
 };
 const SizeRowSelector = ({ product, selectedSizes, setSelectedSizes, onPick, onAlert }) => {
   const entries = buildSizeGrid(product);
+  const meu = getMySize(product); // número aprendido do cliente (lib/mySize)
   const anySoldOut = entries.some((e) => e.stock <= 0);
   const picked = entries.filter((e) => (selectedSizes[e.size] || 0) > 0);
   const removeOne = (size) => setSelectedSizes((prev) => { const n = { ...prev }; if (n[size] > 1) n[size]--; else delete n[size]; return n; });
@@ -35,14 +37,20 @@ const SizeRowSelector = ({ product, selectedSizes, setSelectedSizes, onPick, onA
               <span className="text-[7px] text-emerald-400 uppercase tracking-wide flex items-center gap-0.5"><Bell size={7}/> Avise-me</span>
             </button>
           );
+          const ehMeu = size === meu;
           return (
             <button
               key={size}
               onClick={() => (qty > 0 ? unpick(size) : onPick(size, stock))}
-              aria-label={`Tamanho ${size}`}
-              className={`relative h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border font-black text-[13px] transition-all active:scale-95 touch-manipulation ${qty > 0 ? 'bg-white border-white text-zinc-950' : 'bg-zinc-900 border-zinc-700 text-zinc-200 hover:border-white hover:text-white'}`}
+              aria-label={ehMeu ? `Tamanho ${size} — seu número` : `Tamanho ${size}`}
+              className={`relative h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border font-black text-[13px] transition-all active:scale-95 touch-manipulation ${qty > 0 ? 'bg-white border-white text-zinc-950' : ehMeu ? 'bg-zinc-900 border-emerald-500/60 text-white hover:border-emerald-400' : 'bg-zinc-900 border-zinc-700 text-zinc-200 hover:border-white hover:text-white'}`}
             >
-              {size}
+              {ehMeu && qty === 0 ? (
+                <span className="flex flex-col items-center justify-center gap-[3px] leading-none">
+                  <span className="text-[12px]">{size}</span>
+                  <span className="text-[7px] text-emerald-400 uppercase tracking-wide">seu nº</span>
+                </span>
+              ) : size}
               {qty > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-0.5 rounded-full bg-emerald-500 text-zinc-950 text-[10px] font-black grid place-items-center tabular-nums">{qty}</span>}
               {qty === 0 && stock <= 3 && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden="true"/>}
             </button>

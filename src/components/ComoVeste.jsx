@@ -2,6 +2,7 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, MessageCircle, Ruler } from 'lucide-react';
 import { interacaoElemento, observarExposicao } from '../lib/attention';
+import { getMySize } from '../lib/mySize';
 
 // ── UNIDADE EXPLORÁVEL DE CAIMENTO (pesquisa módulo 2 — item 1 da ordem de ataque) ──
 // O WhatsApp real mostrou que a conversa de calça morre na dúvida de caimento
@@ -48,6 +49,10 @@ const ComoVeste = ({ product, whatsapp, onOpenSizeGuide }) => {
   React.useEffect(() => { setAberta(null); contadas.current = new Set(); }, [product?.id]);
 
   if (!hasComoVeste(product)) return null;
+  // Se a vitrine já aprendeu o número do cliente (lib/mySize), a resposta fala
+  // com ele: "vai no seu 42" convence mais que regra genérica (módulo 3 —
+  // desejo exige que o resultado "se aplique a mim").
+  const meu = getMySize(product);
   const waNumber = String(whatsapp || '').replace(/\D/g, '');
   const waHref = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Oi! Me manda mais fotos da *${product.name}* (Ref. ${product.sku || 'N/A'})? Quero ver o caimento.`)}`;
 
@@ -88,7 +93,11 @@ const ComoVeste = ({ product, whatsapp, onOpenSizeGuide }) => {
                   className="overflow-hidden"
                 >
                   <div className="px-4 pb-4 flex flex-col gap-3">
-                    <p className="text-[13px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{p.a}</p>
+                    <p className="text-[13px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                      {p.id === 'entre_numeros' && meu
+                        ? `Vai no seu ${meu} de sempre: colada é pra ficar no corpo. Curte mais folgadinho? Sobe um número. Na dúvida, confere a cintura em cm no guia.`
+                        : p.a}
+                    </p>
                     {p.acao === 'medidas' && onOpenSizeGuide && (
                       <button
                         type="button"
