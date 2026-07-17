@@ -13,7 +13,6 @@ import SubBanner from './components/SubBanner';
 import WaterRippleFX from './components/WaterRippleFX';
 import ThreeAtmosphere from './components/ThreeAtmosphere';
 import TouchGlow from './components/TouchGlow';
-import SneakerCursor from './components/SneakerCursor';
 import WelcomeCoupon from './components/WelcomeCoupon';
 import { useBanners } from './hooks/useBanners';
 import AdminHeader from './components/AdminHeader';
@@ -56,8 +55,6 @@ const AdminStockAlerts = React.lazy(() => import('./components/AdminStockAlerts'
 //   z-[150]     → overlays de página inteira (sacola, menu)
 //   z-[200..220]→ modais (220 = modal sobre modal)
 //   z-[300]     → toast (sempre por cima de tudo)
-//   z-[350]     → acompanhante do cursor (SneakerCursor, desktop; segue o
-//                 ponteiro em qualquer camada, pointer-events-none)
 const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'fluxo-dark-ultimate';
 const LEAD_STORAGE_KEY = '@fluxo-outlet:lead-data-v3';
 const BANNERS_STORAGE_KEY = `@${APP_ID}:banners`;
@@ -1982,7 +1979,6 @@ function App() {
       <ThreeAtmosphere />
       {/* Luz neon que segue o dedo/cursor — continuação do galpão do hero */}
       <TouchGlow />
-      <SneakerCursor />
 
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
