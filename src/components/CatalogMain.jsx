@@ -6,7 +6,7 @@ import React from 'react';
 import StarRatingInline from './StarRatingInline';
 import SubBanner from './SubBanner';
 import WaterRippleFX from './WaterRippleFX';
-import { ArrowRight, ChevronLeft, Flame, Package, Plus, Search, Truck, X, Zap } from 'lucide-react';
+import { ArrowRight, ChevronLeft, Eye, Flame, Package, Plus, Search, Truck, X, Zap } from 'lucide-react';
 import SearchDropBar from './SearchDropBar';
 import { CAMPAIGN_LABELS, OFFER_CAMPAIGNS, isOfferLive, offerCampaign, offerEndsAt, offerPercent, offerPrice } from '../lib/offers';
 import { colorDot, pluralCat, shineDelay } from '../lib/catalogUi';
@@ -14,6 +14,7 @@ import { emitSignal } from '../lib/leadSignals';
 import { formatBRL } from '../lib/format';
 import { getCatImgData, optimizeImage } from '../lib/images';
 import { hasMyNumber, marcarMeuNumeroExposto } from '../lib/mySize';
+import { estaNaMira } from '../lib/intentEngine';
 import { AnimatePresence, motion } from 'framer-motion';
 import { isLowEndDevice } from '../lib/deviceTier';
 
@@ -682,6 +683,13 @@ const CatalogMain = ({
                          onClick={!hasMultipleImages ? () => !isOutOfStock && handleProductClick(product) : undefined}
                          style={!hasMultipleImages && !isOutOfStock ? { cursor: 'pointer' } : undefined}
                        >
+                         {/* "Na sua mira" — peça que ESTE visitante abriu em 2+ sessões
+                             (motor de intenção); desconto tem prioridade no canto */}
+                         {!isOutOfStock && estaNaMira(product.id) && !isOfferLive(product) && !(product.promotional_price && product.promotional_price < product.price) && (
+                           <div className="absolute top-2 left-2 z-10 bg-zinc-950/85 backdrop-blur-sm border border-emerald-500/40 text-emerald-400 text-[8px] font-black uppercase tracking-wide px-2 py-1 rounded-md flex items-center gap-1">
+                             <Eye size={9}/> Na sua mira
+                           </div>
+                         )}
                          {/* Badge de desconto % — oferta tem prioridade sobre a promo */}
                          {!isOutOfStock && (() => {
                            const live = isOfferLive(product);

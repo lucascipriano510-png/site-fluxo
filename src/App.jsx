@@ -24,6 +24,7 @@ import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
 import { iniciarAtencao, exposicaoElemento, interacaoElemento } from './lib/attention';
 import { hapticTick } from './lib/haptics';
 import { rememberMySize, tocouCardComMeuNumero } from './lib/mySize';
+import { aplicarMotor, limparRetorno, notarProdutoVisto, tocouPecaImpulsionada } from './lib/intentEngine';
 import { isLowEndDevice } from './lib/deviceTier';
 import { fetchOrders } from './lib/orders';
 import { requestStockAlert, fetchStockAlerts } from './lib/stockAlerts';
@@ -1028,6 +1029,8 @@ function App() {
     // Kits podem ser abertos mesmo sem estoque próprio (estoque vem dos componentes)
     if (!product.is_kit && product.stock <= 0) return;
     tocouCardComMeuNumero(product); // telemetria: card aberto tinha o chip "Seu nº"?
+    tocouPecaImpulsionada(product); // telemetria: card estava em posição do motor?
+    notarProdutoVisto(product);     // motor de intenção aprende a sessão
     // Guarda onde o catálogo estava p/ restaurar ao voltar (só quando vem da vitrine).
     // IMPORTANTE: o catálogo rola pelo #root (overflow-y:scroll), NÃO pela window.
     if (!productPageOpen) {
@@ -1100,6 +1103,7 @@ function App() {
     }
     hapticTick(18); // confirmação tátil: peça entrando na sacola
     rememberMySize(selectedProduct, selectedSizes); // vitrine aprende o número (lib/mySize)
+    limparRetorno(selectedProduct.id); // entrou na sacola = sai da mira do motor
 
     // A PEÇA VOA PRA SACOLA: clona a foto ativa do hero e anima até o ícone
     // do header (WAAPI, só transform/opacity no compositor). Decorativo puro:
@@ -1594,7 +1598,12 @@ function App() {
         .sort((a, b) => b.s - a.s || (b.p.sales || 0) - (a.p.sales || 0))
         .map(x => x.p);
     }
-    return [...filteredProducts].sort((a, b) => {
+    // Ordem padrão (avaliação > vendas) passa pelo MOTOR DE INTENÇÃO por cima:
+    // peças que o visitante abriu em 2+ sessões vêm primeiro ("na mira"), depois
+    // a categoria perseguida nesta sessão, depois o resto. selectedProduct na
+    // dependência = a grade se reorganiza no momento que o produto fecha (o
+    // instante natural de mudança), nunca embaixo do dedo durante o scroll.
+    return aplicarMotor([...filteredProducts].sort((a, b) => {
       const aMode  = ratingsMap[a.id]?.mode  || 0;
       const bMode  = ratingsMap[b.id]?.mode  || 0;
       if (bMode !== aMode) return bMode - aMode;
@@ -1605,8 +1614,9 @@ function App() {
       const bSales = b.sales || 0;
       if (bSales !== aSales) return bSales - aSales;
       return 0;
-    });
-  }, [filteredProducts, ratingsMap, searchActive, searchIntent, sortMode]);
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredProducts, ratingsMap, searchActive, searchIntent, sortMode, selectedProduct]);
 
   // Produtos do histórico (ids -> objetos atuais), só os que ainda existem/têm estoque
   // e excluindo o que está aberto agora.
