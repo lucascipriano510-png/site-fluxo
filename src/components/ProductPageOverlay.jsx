@@ -72,6 +72,9 @@ const ProductPageOverlay = ({
       {selectedProduct && !selectedProduct.is_kit && (() => {
         const productGallery = [selectedProduct.image, ...((Array.isArray(selectedProduct.gallery) ? selectedProduct.gallery : []) || [])].filter(Boolean);
         const heroImg = activeProductImage || selectedProduct.image;
+        // Selo local: "entrega no mesmo dia em Uberaba" é política real (InfoModal
+        // 'sobre'); a cidade vem do config pra nunca desatualizar.
+        const cityShort = String(config?.location || 'Uberaba, MG').split(',')[0].trim();
         // Kits que CONTÊM a peça atual (via kit_items) aparecem PRIMEIRO na sugestão.
         // Kit tem stock 0 por design (disponibilidade vem dos componentes), então NÃO
         // aplicamos o filtro de stock aqui — só is_active.
@@ -316,7 +319,7 @@ const ProductPageOverlay = ({
                   </div>
                   <div className="flex flex-col items-center gap-2 text-center">
                     <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={16} className="text-emerald-500"/></div>
-                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wide leading-tight">Envio Rápido</span>
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wide leading-tight">{`Entrega Hoje ${cityShort}`}</span>
                   </div>
                   <div className="flex flex-col items-center gap-2 text-center">
                     <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={16} className="text-emerald-500"/></div>
@@ -545,7 +548,7 @@ const ProductPageOverlay = ({
                     </div>
                     <div className="flex flex-col items-center gap-2 text-center">
                       <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={17} className="text-emerald-500"/></div>
-                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Envio Rápido</span>
+                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">{`Entrega Hoje ${cityShort}`}</span>
                     </div>
                     <div className="flex flex-col items-center gap-2 text-center">
                       <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={17} className="text-emerald-500"/></div>

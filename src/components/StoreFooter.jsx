@@ -48,7 +48,7 @@ const StoreFooter = ({
             <div className="space-y-3">
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em]">Institucional</p>
               <button onClick={() => setInfoPage('sobre')} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left touch-manipulation">Sobre a Loja</button>
-              <a href={`https://wa.me/${(config.whatsapp || '').replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide">Contato</a>
+              <a href={`https://wa.me/${(config.whatsapp || '').replace(/\D/g,'')}?text=${encodeURIComponent('Oi! Vim pelo site da Fluxo.')}`} target="_blank" rel="noopener noreferrer" className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide">Contato</a>
             </div>
             <div className="space-y-3">
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em]">Ajuda</p>

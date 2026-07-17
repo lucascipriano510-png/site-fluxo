@@ -151,7 +151,7 @@ const QuickMenuOverlay = ({
                 {/* Bloco D — Suporte */}
                 <div className="space-y-2">
                   <a
-                    href={`https://wa.me/${config.whatsapp}`}
+                    href={`https://wa.me/${config.whatsapp}?text=${encodeURIComponent('Oi! Tô no site da Fluxo com uma dúvida antes de comprar.')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 bg-zinc-900 border border-white/10 rounded-2xl px-4 py-3.5 touch-manipulation active:scale-[0.98] transition-transform"

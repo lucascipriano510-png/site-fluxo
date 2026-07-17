@@ -13,9 +13,12 @@ const InfoModal = ({ page, config, onClose }) => {
   const cityShort = city.split(',')[0].trim();
   const brand = config?.brandName || 'Fluxo Outlet';
   const PAGES = {
+    // `wa` = mensagem pré-escrita do botão WhatsApp: a conversa chega com o
+    // contexto da página (bastão quente) — atendente não recebe "oi" em branco.
     sobre: {
       icon: <MapPin size={16}/>,
       title: 'Sobre a Loja',
+      wa: 'Oi! Vim pelo site e queria saber mais sobre a loja.',
       sections: [
         { h: 'Quem somos', p: `A ${brand} é loja física de streetwear e peças premium em ${city}. Coleções limitadas, peça selecionada uma a uma — sem atacado de qualidade duvidosa.` },
         { h: 'Como funciona', p: 'Você escolhe no site e finaliza pelo WhatsApp, com atendimento humano antes e depois da compra.' },
@@ -25,6 +28,7 @@ const InfoModal = ({ page, config, onClose }) => {
     trocas: {
       icon: <Truck size={16}/>,
       title: 'Política de Troca',
+      wa: 'Oi! Preciso fazer uma troca 👇\nNúmero do pedido: ',
       sections: [
         { h: 'Troca de tamanho ou cor', p: 'Até 7 dias corridos após o recebimento, com a peça sem uso, sem lavagem e com etiqueta. É só chamar no WhatsApp com o número do pedido.' },
         { h: 'Arrependimento (compra online)', p: 'Você pode desistir da compra em até 7 dias corridos após receber (art. 49 do Código de Defesa do Consumidor), com devolução do valor pago.' },
@@ -35,6 +39,7 @@ const InfoModal = ({ page, config, onClose }) => {
     privacidade: {
       icon: <ShieldCheck size={16}/>,
       title: 'Privacidade',
+      wa: 'Oi! Quero falar sobre os meus dados no site (LGPD).',
       sections: [
         { h: 'O que coletamos', p: 'Nome e WhatsApp informados no pedido, itens e valores comprados, e cookies de medição de anúncios (Meta Pixel).' },
         { h: 'Para que usamos', p: 'Processar e acompanhar seu pedido, avisar quando uma peça voltar ao estoque e medir o resultado dos nossos anúncios.' },
@@ -68,7 +73,7 @@ const InfoModal = ({ page, config, onClose }) => {
           ))}
           {waNumber && (
             <a
-              href={`https://wa.me/${waNumber}`}
+              href={`https://wa.me/${waNumber}${data.wa ? `?text=${encodeURIComponent(data.wa)}` : ''}`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 bg-zinc-900 border border-white/10 text-white hover:bg-zinc-800 active:scale-[0.98] transition-all touch-manipulation"
