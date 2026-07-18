@@ -16,13 +16,17 @@ import { isOwnerDevice } from '../lib/metaPixel';
 // Frames: public/scrub-teste/f01..f33.jpg (ffmpeg xfade em cadeia).
 // Scroll da página é no #root (mina conhecida). Nada de setState no scroll.
 // GATE: isOwnerDevice() — cliente não vê até o dono aprovar.
-const TOTAL = 33;
+// v3 (feedback: "largura, não altura; mais rápido; base = iPhone"):
+// frames em PAISAGEM 780x600 (recorte peito-pra-cima com o letreiro da
+// parede), banner full-bleed de LARGURA TOTAL com ~1/3 da tela de altura
+// (iPhone 390x844 → ~300px), e a troca completa em ~meia tela de rolagem.
+const TOTAL = 26;
 const SRC = (n) => `/scrub-teste/f${String(n).padStart(2, '0')}.jpg`;
 
 // Looks e as janelas (no progresso remapeado) em que cada título aparece.
 const LOOKS = [
-  { rotulo: 'Look 01', nome: 'Conjunto A|X preto', ate: 0.30 },
-  { rotulo: 'Look 02', nome: 'Conjunto LV grafite', de: 0.38, ate: 0.62 },
+  { rotulo: 'Look 01', nome: 'Conjunto A|X preto', ate: 0.24 },
+  { rotulo: 'Look 02', nome: 'Conjunto LV grafite', de: 0.36, ate: 0.56 },
   { rotulo: 'Look 03', nome: 'Conjunto Burberry bege', de: 0.72 },
 ];
 
@@ -86,9 +90,9 @@ const ScrubBanner = () => {
       const vh = window.innerHeight;
       const rect = wrap.getBoundingClientRect();
       const bruto = (vh - rect.top) / (vh + rect.height);
-      // Janela ativa: a apresentação inteira acontece enquanto o banner está
-      // visível de verdade, não raspando as bordas da tela.
-      const p = Math.min(1, Math.max(0, (bruto - 0.12) / 0.76));
+      // Janela ativa CURTA: a apresentação inteira acontece em ~metade de uma
+      // tela de rolagem, enquanto o banner está bem visível — troca rápida.
+      const p = Math.min(1, Math.max(0, (bruto - 0.18) / 0.52));
       const alvo = 1 + Math.round(p * (TOTAL - 1));
       const n = quadroMaisProximo(alvo);
       if (n !== null && n !== ultimoDesenhado) {
@@ -147,8 +151,8 @@ const ScrubBanner = () => {
   return (
     <section
       ref={wrapRef}
-      className="relative overflow-hidden rounded-3xl border border-white/10 mx-4 my-6"
-      style={{ height: 'min(122vw, 560px)', background: '#131316' }}
+      className="relative overflow-hidden my-6 -mx-6 lg:mx-auto lg:max-w-[760px] lg:rounded-3xl"
+      style={{ height: 'min(82vw, 420px)', background: '#131316' }}
       aria-label="Troca de look pelo scroll (protótipo)"
     >
       {estatico
