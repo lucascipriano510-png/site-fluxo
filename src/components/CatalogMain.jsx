@@ -4,7 +4,6 @@ import PixIcon from './PixIcon';
 import ProductImage from './ProductImage';
 import React from 'react';
 import StarRatingInline from './StarRatingInline';
-import ScrubBanner from './ScrubBanner';
 import SubBanner from './SubBanner';
 import WaterRippleFX from './WaterRippleFX';
 import { ArrowRight, ChevronLeft, Eye, Flame, Package, Plus, Search, Truck, X, Zap } from 'lucide-react';
@@ -539,13 +538,7 @@ const CatalogMain = ({
           if (!isDefaultView || !midBanner) return null;
           // Destino do CTA = campanha atual do sub-banner (hoje: bermudas destroyed).
           const goToCampaign = () => navigateToSubcategory('BERMUDA', 'DESTROYED');
-          return (
-            <>
-              <SubBanner banner={midBanner} whatsapp={config?.whatsapp} onCta={goToCampaign} />
-              {/* PROTÓTIPO sub-banner scrub (troca de look pelo scroll) — gate interno: só o dono vê */}
-              <ScrubBanner />
-            </>
-          );
+          return <SubBanner banner={midBanner} whatsapp={config?.whatsapp} onCta={goToCampaign} />;
         })()}
 
         {/* ── LETREIRO DE MARCA (marquee streetwear) — só na home limpa.
