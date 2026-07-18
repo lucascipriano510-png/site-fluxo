@@ -24,7 +24,7 @@ import { emitSignal, setKnownLead, cartSnapshot } from './lib/leadSignals';
 import { iniciarAtencao, exposicaoElemento, interacaoElemento } from './lib/attention';
 import { hapticTick } from './lib/haptics';
 import { rememberMySize, tocouCardComMeuNumero } from './lib/mySize';
-import { aplicarMotor, limparRetorno, notarProdutoVisto, tocouPecaImpulsionada } from './lib/intentEngine';
+import { aplicarMotor, limparRetorno, notarProdutoVisto, ordenarGradePadrao, tocouPecaImpulsionada } from './lib/intentEngine';
 import { isLowEndDevice } from './lib/deviceTier';
 import { fetchOrders } from './lib/orders';
 import { requestStockAlert, fetchStockAlerts } from './lib/stockAlerts';
@@ -1592,23 +1592,12 @@ function App() {
         .sort((a, b) => b.s - a.s || (b.p.sales || 0) - (a.p.sales || 0))
         .map(x => x.p);
     }
-    // Ordem padrão (avaliação > vendas) passa pelo MOTOR DE INTENÇÃO por cima:
-    // peças que o visitante abriu em 2+ sessões vêm primeiro ("na mira"), depois
-    // a categoria perseguida nesta sessão, depois o resto. selectedProduct na
-    // dependência = a grade se reorganiza no momento que o produto fecha (o
-    // instante natural de mudança), nunca embaixo do dedo durante o scroll.
-    return aplicarMotor([...filteredProducts].sort((a, b) => {
-      const aMode  = ratingsMap[a.id]?.mode  || 0;
-      const bMode  = ratingsMap[b.id]?.mode  || 0;
-      if (bMode !== aMode) return bMode - aMode;
-      const aCount = ratingsMap[a.id]?.count || 0;
-      const bCount = ratingsMap[b.id]?.count || 0;
-      if (bCount !== aCount) return bCount - aCount;
-      const aSales = a.sales || 0;
-      const bSales = b.sales || 0;
-      if (bSales !== aSales) return bSales - aSales;
-      return 0;
-    }));
+    // Ordem padrão: régua nova em lib/intentEngine (seu número > vendas >
+    // avaliação como desempate > sorteio diário estável; resto-de-grade desce)
+    // e o MOTOR DE INTENÇÃO roda por cima (retorno "na mira" + categoria da
+    // sessão). selectedProduct na dependência = a grade se reorganiza no
+    // momento que o produto fecha, nunca embaixo do dedo durante o scroll.
+    return aplicarMotor(ordenarGradePadrao(filteredProducts, ratingsMap));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredProducts, ratingsMap, searchActive, searchIntent, sortMode, selectedProduct]);
 

@@ -1,4 +1,6 @@
 import { exposicaoElemento, interacaoElemento } from './attention';
+import { getVisitorId } from './leadSignals';
+import { hasMyNumber } from './mySize';
 
 // ── MOTOR DE INTENÇÃO (pesquisa: módulo 1 objetivo × módulo 3 wanting) ──
 // Módulo 1: atenção = saliência × OBJETIVO × histórico — o objetivo da sessão
@@ -132,6 +134,66 @@ export function aplicarMotor(list) {
 /** Card em posição impulsionada nesta sessão? (selo "Na sua mira") */
 export function estaNaMira(productId) {
   return impulsoRetorno.has(productId);
+}
+
+// ── RÉGUA DA GRADE PADRÃO (2026-07-17, regra escolhida com o dono) ──
+// Avaliação mandava primeiro, mas quase ninguém avalia → mesmos produtos
+// sempre no topo (vitrine congelada = habituação, módulo 1). Nova ordem:
+//   1. tem o NÚMERO do visitante em estoque (quando o site já o conhece);
+//   2. vendas (demanda real > estrela escassa);
+//   3. avaliação vira DESEMPATE (era o critério principal);
+//   4. sorteio diário estável: embaralhamento próprio por visitante+dia entre
+//      empatados — a vitrine de amanhã é outra, mas NUNCA muda sob o dedo.
+// Peça com UM tamanho sobrando desce pro fim (resto de grade)... a menos que
+// o tamanho seja o do visitante — aí é relevância perfeita e sobe pro topo.
+// Tamanho único de projeto (U/PADRÃO) e kit não são "resto": ficam normais.
+// "Novidades primeiro" foi VETADO pelo dono: refazer fotos re-cadastra a
+// peça e ela pareceria nova sem ser.
+const TAM_UNICO = new Set(['U', 'UNICO', 'ÚNICO', 'PADRÃO', 'PADRAO']);
+
+function bandaTamanho(p) {
+  if (p.is_kit) return 1;
+  if (hasMyNumber(p)) return 0;
+  const emEstoque = (p.sizes || []).filter((s) => {
+    const stock = typeof s === 'string' ? (p.stock || 0) : Number(s?.stock || 0);
+    return stock > 0;
+  });
+  if (emEstoque.length === 1) {
+    const nome = String(typeof emEstoque[0] === 'string' ? emEstoque[0] : emEstoque[0]?.size || '').trim().toUpperCase();
+    if (!TAM_UNICO.has(nome)) return 2;
+  }
+  return 1;
+}
+
+let jitterBase = null;
+const jitterCache = new Map();
+function jitterDiario(id) {
+  if (jitterBase === null) {
+    try { jitterBase = `${getVisitorId()}:${new Date().toISOString().slice(0, 10)}`; } catch { jitterBase = 'x'; }
+  }
+  if (jitterCache.has(id)) return jitterCache.get(id);
+  const s = `${jitterBase}:${id}`;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  jitterCache.set(id, h);
+  return h;
+}
+
+/** Ordena a grade padrão (o motor de intenção roda POR CIMA do resultado). */
+export function ordenarGradePadrao(list, ratingsMap) {
+  try {
+    return [...list].sort((a, b) => {
+      const ba = bandaTamanho(a); const bb = bandaTamanho(b);
+      if (ba !== bb) return ba - bb;
+      const sa = a.sales || 0; const sb = b.sales || 0;
+      if (sb !== sa) return sb - sa;
+      const ra = ratingsMap?.[a.id]?.mode || 0; const rb = ratingsMap?.[b.id]?.mode || 0;
+      if (rb !== ra) return rb - ra;
+      const ca = ratingsMap?.[a.id]?.count || 0; const cb = ratingsMap?.[b.id]?.count || 0;
+      if (cb !== ca) return cb - ca;
+      return jitterDiario(a.id) - jitterDiario(b.id);
+    });
+  } catch { return list; }
 }
 
 /** Chamar ao abrir produto: liga o clique à posição que o motor deu. */
