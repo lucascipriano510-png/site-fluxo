@@ -23,12 +23,30 @@ import { isOwnerDevice } from '../lib/metaPixel';
 const TOTAL = 26;
 const SRC = (n) => `/scrub-teste/f${String(n).padStart(2, '0')}.jpg`;
 
-// Looks e as janelas (no progresso remapeado) em que cada título aparece.
+// v4 — ESTADOS ANCORADOS NA TELA (spec exata do dono, 2026-07-18):
+// q = posição do CENTRO do banner na viewport (0 = borda de baixo, 0.5 =
+// meio da tela, 1 = borda de cima). Banner surge com o look 1 PRONTO (zero
+// fantasma na entrada); look 2 começa pouco antes do meio e está COMPLETO
+// no meio da tela; pouquinho depois do meio o look 3 chega a ~100%; dali
+// até sair, look 3 parado. O mapa q→timeline dos frames é a poligonal
+// abaixo (timeline: A 0–.125, fade1 .125–.375, B .375–.5, fade2 .5–.75, C .75–1).
+const MAPA_Q = [[0, 0], [0.36, 0.125], [0.50, 0.375], [0.54, 0.5], [0.68, 0.75], [1, 1]];
+
+// Looks e as janelas (em q) em que cada título aparece.
 const LOOKS = [
-  { rotulo: 'Look 01', nome: 'Conjunto A|X preto', ate: 0.24 },
-  { rotulo: 'Look 02', nome: 'Conjunto LV grafite', de: 0.36, ate: 0.56 },
-  { rotulo: 'Look 03', nome: 'Conjunto Burberry bege', de: 0.72 },
+  { rotulo: 'Look 01', nome: 'Conjunto A|X preto', ate: 0.38 },
+  { rotulo: 'Look 02', nome: 'Conjunto LV grafite', de: 0.44, ate: 0.58 },
+  { rotulo: 'Look 03', nome: 'Conjunto Burberry bege', de: 0.62 },
 ];
+
+function mapearQ(q) {
+  for (let i = 1; i < MAPA_Q.length; i++) {
+    const [qa, ta] = MAPA_Q[i - 1];
+    const [qb, tb] = MAPA_Q[i];
+    if (q <= qb) return ta + ((q - qa) / (qb - qa)) * (tb - ta);
+  }
+  return 1;
+}
 
 // Ordem de download por bisseção: pontas primeiro, depois os meios.
 function ordemBissecao(total) {
@@ -89,12 +107,14 @@ const ScrubBanner = () => {
     const aplicar = () => {
       const vh = window.innerHeight;
       const rect = wrap.getBoundingClientRect();
-      const bruto = (vh - rect.top) / (vh + rect.height);
-      // Janela ativa CURTA: a apresentação inteira acontece em ~metade de uma
-      // tela de rolagem, enquanto o banner está bem visível — troca rápida.
-      const p = Math.min(1, Math.max(0, (bruto - 0.18) / 0.52));
+      // q = onde o CENTRO do banner está na tela (0 embaixo → 0.5 meio → 1 topo).
+      const q = Math.min(1, Math.max(0, (vh - (rect.top + rect.height / 2)) / vh));
+      const p = mapearQ(q);
       const alvo = 1 + Math.round(p * (TOTAL - 1));
-      const n = quadroMaisProximo(alvo);
+      let n = quadroMaisProximo(alvo);
+      // Substituto muito longe do alvo = estado errado piscando na tela
+      // (era a "bagunça" do carregamento). Longe demais? Segura o último.
+      if (n !== null && Math.abs(n - alvo) > 4 && ultimoDesenhado !== null) n = ultimoDesenhado;
       if (n !== null && n !== ultimoDesenhado) {
         ultimoDesenhado = n;
         desenhar(imgsRef.current[n - 1]);
@@ -102,8 +122,8 @@ const ScrubBanner = () => {
       LOOKS.forEach((lk, i) => {
         const el = textoRefs.current[i];
         if (!el) return;
-        const entra = lk.de == null ? 1 : Math.min(1, Math.max(0, (p - lk.de) / 0.08));
-        const sai = lk.ate == null ? 0 : Math.min(1, Math.max(0, (p - lk.ate) / 0.08));
+        const entra = lk.de == null ? 1 : Math.min(1, Math.max(0, (q - lk.de) / 0.06));
+        const sai = lk.ate == null ? 0 : Math.min(1, Math.max(0, (q - lk.ate) / 0.06));
         const o = Math.max(0, entra - sai);
         el.style.opacity = String(o);
         el.style.transform = `translateY(${(1 - entra) * 16 - sai * 16}px)`;
@@ -152,7 +172,7 @@ const ScrubBanner = () => {
     <section
       ref={wrapRef}
       className="relative overflow-hidden my-6 -mx-6 lg:mx-auto lg:max-w-[760px] lg:rounded-3xl"
-      style={{ height: 'min(82vw, 420px)', background: '#131316' }}
+      style={{ height: 'min(72vw, 380px)', background: '#131316' }}
       aria-label="Troca de look pelo scroll (protótipo)"
     >
       {estatico
