@@ -7,12 +7,30 @@ import React from 'react';
 import SizeRowSelector from './SizeRowSelector';
 import StarRatingInline from './StarRatingInline';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, Flame, MessageCircle, Ruler, Share2, ShieldCheck, ShoppingBag, Truck, X, Zap, ZoomIn } from 'lucide-react';
+import { ChevronLeft, Flame, Gem, MessageCircle, Ruler, Share2, ShieldCheck, ShoppingBag, Truck, X, Zap, ZoomIn } from 'lucide-react';
 import { colorDot, pluralCat } from '../lib/catalogUi';
 import { formatBRL } from '../lib/format';
 import { hasSizeGuide } from './SizeGuideModal';
 import { isOfferLive, offerEndsAt, offerPercent, offerPrice } from '../lib/offers';
 import { buildSrcSet, optimizeImage, warmImages } from '../lib/images';
+import { observarExposicao } from '../lib/attention';
+
+// ── PEÇA ÚNICA (pesquisa módulo 4 — escassez estrutural) ──
+// 78% do garimpo tem estoque 1: unidade singular de verdade, não "últimas
+// unidades" de teatro. O chip só existe onde o banco sustenta (stock === 1) —
+// sinal que nunca mente treina prioridade atencional (capital do módulo 1).
+// UMA ocorrência por página, na linha do Ref: individuação sem virar papel
+// de parede (badge em 78% dos cards mataria o próprio sinal por habituação).
+const isPecaUnica = (p) => !!p && !p.is_kit && Number(p.stock) === 1;
+const PecaUnicaChip = () => {
+  const ref = React.useRef(null);
+  React.useEffect(() => observarExposicao(ref.current, 'peca_unica'), []);
+  return (
+    <span ref={ref} className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 rounded-full px-2.5 py-1">
+      <Gem size={10}/> Peça única
+    </span>
+  );
+};
 
 // Larguras do HERO da página de produto — mesmas do srcset do card (q88), que
 // o warm-image-cache já mantém quentes. O navegador escolhe pelo DPR real:
@@ -234,6 +252,7 @@ const ProductPageOverlay = ({
                         showToast={showToast}
                       />
                       <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>Ref. {selectedProduct.sku}</span>
+                    {isPecaUnica(selectedProduct) && <PecaUnicaChip />}
                     </div>
                   </div>
 
@@ -456,6 +475,7 @@ const ProductPageOverlay = ({
                       showToast={showToast}
                     />
                     <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--text-secondary)' }}>Ref. {selectedProduct.sku}</span>
+                    {isPecaUnica(selectedProduct) && <PecaUnicaChip />}
                   </div>
 
                   {/* Preço */}

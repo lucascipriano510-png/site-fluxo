@@ -191,7 +191,7 @@ export default function AdminGrowth({ leads = [], products = [], config = {} }) 
       };
     }).filter((f) => f.sessoes > 0);
 
-    const NOME_ELEMENTO = { banner: 'Banner principal', cupom_boas_vindas: 'Cupom de boas-vindas', subbanner: 'Sub-banner', caimento: 'Caimento (calça jogador)', meu_numero: 'Chip "Seu nº" no card', motor_intencao: 'Motor de intenção (grade)' };
+    const NOME_ELEMENTO = { banner: 'Banner principal', cupom_boas_vindas: 'Cupom de boas-vindas', subbanner: 'Sub-banner', caimento: 'Caimento (calça jogador)', meu_numero: 'Chip "Seu nº" no card', motor_intencao: 'Motor de intenção (grade)', peca_unica: 'Chip "Peça única" (página)' };
     const habituacao = Object.entries(elementos).map(([el, porBucket]) => ({
       elemento: NOME_ELEMENTO[el] || el,
       buckets: EXP_BUCKETS.map((b) => {

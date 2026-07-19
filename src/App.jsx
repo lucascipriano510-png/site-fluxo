@@ -74,11 +74,13 @@ const DEFAULT_CONFIG = {
   pixelId: 'PIXEL_FLUXO_001',
   logoUrl: '', 
   logoZoom: 1.5,
+  // Marquee = identidade seca (copy-e-voz): categoria, processo, cidade.
+  // Sem claim auditável — "alto padrão/autêntico/exclusivo" é a autovalidação
+  // que a pesquisa do módulo 4 derruba (afirmar luxo ≠ dar evidência).
   marqueePhrases: [
-    'ALTO PADRÃO EM CADA DETALHE',
-    'ENVIO PRIORITÁRIO',
-    'COLEÇÕES LIMITADAS',
-    'DESIGN AUTÊNTICO E EXCLUSIVO'
+    'STREETWEAR E GRIFE MASCULINA',
+    'PEÇA ESCOLHIDA A DEDO',
+    'DAQUI DE UBERABA'
   ]
 };
 
