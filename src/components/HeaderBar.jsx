@@ -1,6 +1,12 @@
 import { Menu, ShoppingBag, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { pluralCat } from '../lib/catalogUi';
+import { optimizeImage } from '../lib/images';
+
+// Logo passa pelo wsrv como toda imagem do site: upload cru de 1-5MB no
+// elemento mais visto de todos é contradição fatal (pesquisa módulo 4).
+// `&we` do proxy não amplia logo pequeno — se já for leve, nada muda.
+const LOGO_W = 540; // 180px de caixa × DPR 3
 
 // Extraído do App.jsx (verbatim) — recebe estado/handlers do App por props.
 const HeaderBar = ({
@@ -51,7 +57,7 @@ const HeaderBar = ({
                   style={{ width: '180px', maxWidth: '48vw', height: '70px', maxHeight: '70px' }}
                 >
                   <img
-                    src={config.logoUrl}
+                    src={optimizeImage(config.logoUrl, LOGO_W, 90)}
                     alt={config.brandName}
                     style={{ transform: `scale(${config.logoZoom || 1})`, maxWidth: '180px', maxHeight: '70px' }}
                     className="w-full h-full object-contain mix-blend-screen transition-transform"
@@ -60,7 +66,7 @@ const HeaderBar = ({
                 {/* DESKTOP logo — container fixo, alinhado à esquerda */}
                 <div className="hidden lg:flex w-[160px] h-[58px] overflow-hidden shrink-0 items-center justify-start">
                   <img
-                    src={config.logoUrl}
+                    src={optimizeImage(config.logoUrl, LOGO_W, 90)}
                     alt={config.brandName}
                     style={{ transform: `scale(${config.logoZoom || 1})`, transformOrigin: 'left center' }}
                     className="w-full h-full object-contain object-left mix-blend-screen transition-transform"

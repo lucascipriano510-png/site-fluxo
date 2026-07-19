@@ -1,5 +1,6 @@
 import PixIcon from './PixIcon';
 import { Award, Instagram, Lock, MapPin, ShieldCheck } from 'lucide-react';
+import { optimizeImage } from '../lib/images';
 
 // Extraído do App.jsx (verbatim) — recebe estado/handlers do App por props.
 const StoreFooter = ({
@@ -21,13 +22,15 @@ const StoreFooter = ({
                 de tela no Chrome Android durante o scroll. Visual: idêntico. */}
             <div className="h-16 w-full flex items-center justify-center relative overflow-hidden pointer-events-none" style={{ isolation: 'isolate', background: '#1f1f23' }}>
               {config.logoUrl ? (
-                <img src={config.logoUrl} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto max-w-full object-contain mix-blend-screen opacity-90 transition-transform" />
+                <img src={optimizeImage(config.logoUrl, 540, 90)} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto max-w-full object-contain mix-blend-screen opacity-90 transition-transform" />
               ) : (
                 <h2 className="text-xl font-black italic uppercase tracking-tighter text-white">{config.brandName}</h2>
               )}
             </div>
+            {/* Identidade seca (copy-e-voz): fato no lugar de autovalidação —
+                "seleção" é a competência que a Fluxo torna visível (módulo 4). */}
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] px-4">
-              Lifestyle de alto padrão e streetwear autêntico. Qualidade inegociável em cada detalhe.
+              Streetwear e grife masculina. Peça escolhida a dedo.
             </p>
             <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400">
               <MapPin size={11} className="text-emerald-500" />
