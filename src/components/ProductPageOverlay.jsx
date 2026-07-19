@@ -7,14 +7,12 @@ import React from 'react';
 import SizeRowSelector from './SizeRowSelector';
 import StarRatingInline from './StarRatingInline';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, Flame, MessageCircle, Ruler, Scan, Share2, ShieldCheck, ShoppingBag, Truck, X, Zap, ZoomIn } from 'lucide-react';
+import { ChevronLeft, Flame, MessageCircle, Ruler, Share2, ShieldCheck, ShoppingBag, Truck, X, Zap, ZoomIn } from 'lucide-react';
 import { colorDot, pluralCat } from '../lib/catalogUi';
 import { formatBRL } from '../lib/format';
 import { hasSizeGuide } from './SizeGuideModal';
 import { isOfferLive, offerEndsAt, offerPercent, offerPrice } from '../lib/offers';
 import { buildSrcSet, optimizeImage, warmImages } from '../lib/images';
-import { interacaoElemento, observarExposicao } from '../lib/attention';
-import { sizeGridKind } from '../lib/sizeGrid';
 
 // Larguras do HERO da página de produto — mesmas do srcset do card (q88), que
 // o warm-image-cache já mantém quentes. O navegador escolhe pelo DPR real:
@@ -39,69 +37,6 @@ const GalleryPreload = ({ gallery }) => {
     return () => clearTimeout(t);
   }, [key]);
   return null;
-};
-
-// ── DE PERTO — a 3ª distância da peça (pesquisa módulo 4: silhueta → construção
-// → trama; peça convincente em uma distância só é frágil). Quadro extra no fim
-// da galeria MOBILE mostrando o crop ampliado do upload full-res — a trama
-// responde "é primeira linha?" com evidência, sem adjetivo. Sentinela fora da
-// productGallery: desktop, zoom e LQIP continuam recebendo URLs cruas.
-const CLOSEUP = '__closeup__';
-const CLOSEUP_W = 2000;   // derivada própria: 2000px ÷ scale ≈ pixel real na tela, sem borrão
-const CLOSEUP_Q = 80;
-const CLOSEUP_SCALE = 2.05;
-// Onde a trama vive na foto muda com o tipo de peça (torso / pernas / cabedal).
-const CLOSEUP_ORIGIN = { roupas: '50% 30%', calcas: '50% 55%', calcados: '50% 60%' };
-
-// A pilha da galeria é eager de propósito (swipe instantâneo); a derivada de
-// 2000px só baixa quando o cliente CHEGA no quadro — e fica decodificada depois.
-const CloseupFrame = ({ src, kind, sku, active }) => {
-  const [carregar, setCarregar] = React.useState(false);
-  const contada = React.useRef(false);
-  React.useEffect(() => {
-    if (!active) return;
-    setCarregar(true);
-    if (!contada.current) {
-      contada.current = true;
-      interacaoElemento('close_trama', { sku: sku || null });
-    }
-  }, [active, sku]);
-  return (
-    <div aria-hidden={!active} className={`absolute inset-0 overflow-hidden bg-zinc-900 transition-opacity duration-200 ${active ? 'opacity-100 z-[2]' : 'opacity-0'}`}>
-      {carregar && (
-        <img
-          src={optimizeImage(src, CLOSEUP_W, CLOSEUP_Q)}
-          alt="Tecido e acabamento da peça vistos de perto"
-          className="w-full h-full object-cover"
-          style={{ transform: `scale(${CLOSEUP_SCALE})`, transformOrigin: CLOSEUP_ORIGIN[kind] || CLOSEUP_ORIGIN.roupas }}
-          decoding="async"
-          draggable={false}
-        />
-      )}
-      <span className="absolute bottom-3 left-3 flex items-center gap-1.5 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 pointer-events-none">
-        <Scan size={10}/> A trama de perto
-      </span>
-    </div>
-  );
-};
-
-// Miniatura de entrada do quadro — a ação escrita no elemento (regra da casa).
-const CloseupThumb = ({ src, active, onOpen }) => {
-  const ref = React.useRef(null);
-  React.useEffect(() => observarExposicao(ref.current, 'close_trama'), []);
-  return (
-    <button
-      ref={ref}
-      onClick={onOpen}
-      className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-zinc-800 border-2 transition-all touch-manipulation ${active ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}
-    >
-      <img src={optimizeImage(src, 300, 80)} className="w-full h-full object-cover" style={{ transform: 'scale(2.4)', transformOrigin: '50% 35%' }} alt="" draggable={false} decoding="async" />
-      <span className="absolute inset-0 bg-black/45 flex flex-col items-center justify-center gap-1">
-        <Scan size={14} className="text-white"/>
-        <span className="text-[7px] font-black text-white uppercase tracking-widest leading-none">De perto</span>
-      </span>
-    </button>
-  );
 };
 
 // Extraído do App.jsx (verbatim) — recebe estado/handlers do App por props.
@@ -137,11 +72,6 @@ const ProductPageOverlay = ({
       {selectedProduct && !selectedProduct.is_kit && (() => {
         const productGallery = [selectedProduct.image, ...((Array.isArray(selectedProduct.gallery) ? selectedProduct.gallery : []) || [])].filter(Boolean);
         const heroImg = activeProductImage || selectedProduct.image;
-        // Galeria mobile ganha o quadro "De perto" no fim; heroReal blinda todo
-        // consumidor de URL crua (zoom, LQIP, hero desktop) contra a sentinela.
-        const mobileGallery = [...productGallery, CLOSEUP];
-        const heroReal = heroImg === CLOSEUP ? productGallery[0] : heroImg;
-        const closeupKind = sizeGridKind(selectedProduct);
         // Selo local: "entrega no mesmo dia em Uberaba" é política real (InfoModal
         // 'sobre'); a cidade vem do config pra nunca desatualizar.
         const cityShort = String(config?.location || 'Uberaba, MG').split(',')[0].trim();
@@ -223,22 +153,23 @@ const ProductPageOverlay = ({
                   style={{ touchAction: 'pan-y' }}
                   onTouchStart={(e) => { const t = e.touches[0]; productSwipeRef.current = { x: t.clientX, y: t.clientY }; }}
                   onTouchEnd={(e) => {
+                    if (productGallery.length <= 1) return;
                     const t = e.changedTouches[0];
                     const dx = t.clientX - productSwipeRef.current.x;
                     const dy = t.clientY - productSwipeRef.current.y;
                     // Só conta como swipe se for horizontal o suficiente (e mais que vertical).
                     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-                      const i = Math.max(0, mobileGallery.indexOf(heroImg));
+                      const i = Math.max(0, productGallery.indexOf(heroImg));
                       const next = dx < 0
-                        ? (i + 1) % mobileGallery.length
-                        : (i - 1 + mobileGallery.length) % mobileGallery.length;
-                      setActiveProductImage(mobileGallery[next]);
+                        ? (i + 1) % productGallery.length
+                        : (i - 1 + productGallery.length) % productGallery.length;
+                      setActiveProductImage(productGallery[next]);
                     }
                   }}
                 >
                   {/* LQIP blur-up atrás do hero pesado (1600px): preview instantâneo
                       do produto -> nunca aparece quadrado vazio ao abrir o card. */}
-                  <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url("${optimizeImage(heroReal, 40, 35)}")`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(12px)', transform: 'scale(1.06)' }} />
+                  <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url("${optimizeImage(heroImg, 40, 35)}")`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(12px)', transform: 'scale(1.06)' }} />
                   {/* Troca a foto por SWIPE lateral (handlers no container) ou toque nas miniaturas/pontos */}
                   {/* GALERIA EMPILHADA: todas as fotos ficam montadas (decodificadas
                       uma vez) e a troca é só opacidade no compositor — swipe/thumb
@@ -260,28 +191,28 @@ const ProductPageOverlay = ({
                         draggable={false}
                       />
                     ))}
-                    <CloseupFrame src={productGallery[0]} kind={closeupKind} sku={selectedProduct.sku} active={heroImg === CLOSEUP} />
                   </HoloTilt>
-                  {/* Dot indicators — a galeria mobile sempre tem ≥2 quadros (fotos + De perto) */}
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 z-10">
-                    {mobileGallery.map((g, i) => (
-                      <button key={i} type="button" onClick={() => setActiveProductImage(g)} aria-label={g === CLOSEUP ? 'De perto' : `Foto ${i + 1}`} className="p-2 -m-1 touch-manipulation">
-                        <span className={`block rounded-full transition-all duration-300 ${heroImg === g ? 'w-5 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'}`} />
+                  {/* Dot indicators */}
+                  {productGallery.length > 1 && (
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 z-10">
+                      {productGallery.map((g, i) => (
+                        <button key={i} type="button" onClick={() => setActiveProductImage(g)} aria-label={`Foto ${i + 1}`} className="p-2 -m-1 touch-manipulation">
+                          <span className={`block rounded-full transition-all duration-300 ${heroImg === g ? 'w-5 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'}`} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={() => setZoomImage(heroImg)} className="absolute bottom-3 right-3 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 flex items-center gap-1.5 touch-manipulation active:scale-95"><ZoomIn size={10}/> Ampliar</button>
+                </div>
+                {productGallery.length > 1 && (
+                  <div className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar bg-zinc-950 border-b border-white/5" style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
+                    {productGallery.map((g, i) => (
+                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-zinc-800 border-2 transition-all touch-manipulation ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}>
+                        <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} decoding="async" />
                       </button>
                     ))}
                   </div>
-                  {heroImg !== CLOSEUP && (
-                    <button onClick={() => setZoomImage(heroReal)} className="absolute bottom-3 right-3 text-[9px] font-black text-white bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 uppercase tracking-widest border border-white/10 flex items-center gap-1.5 touch-manipulation active:scale-95"><ZoomIn size={10}/> Ampliar</button>
-                  )}
-                </div>
-                <div className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar bg-zinc-950 border-b border-white/5" style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
-                  {productGallery.map((g, i) => (
-                    <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-zinc-800 border-2 transition-all touch-manipulation ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}>
-                      <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} decoding="async" />
-                    </button>
-                  ))}
-                  <CloseupThumb src={productGallery[0]} active={heroImg === CLOSEUP} onOpen={() => setActiveProductImage(CLOSEUP)} />
-                </div>
+                )}
               </div>
 
               {/* Body — scroll único, com ritmo de seções generoso (cara de site grande) */}
@@ -455,16 +386,16 @@ const ProductPageOverlay = ({
               <div className="flex-1 min-w-0">
                 {/* Imagem principal: altura controlada, peça inteira visível */}
                 <button
-                  onClick={() => setZoomImage(heroReal)}
+                  onClick={() => setZoomImage(heroImg)}
                   className="block w-full bg-zinc-900 rounded-2xl overflow-hidden group relative"
                   style={{ maxHeight: '640px' }}
                   aria-label="Ampliar foto"
                 >
                   {/* LQIP blur-up atrás do hero pesado (1600px): preview instantâneo */}
-                  <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url("${optimizeImage(heroReal, 40, 35)}")`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', filter: 'blur(12px)', transform: 'scale(1.04)' }} />
+                  <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url("${optimizeImage(heroImg, 40, 35)}")`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', filter: 'blur(12px)', transform: 'scale(1.04)' }} />
                   <img
-                    src={optimizeImage(heroReal, 1200, HERO_Q)}
-                    srcSet={buildSrcSet(heroReal, HERO_WIDTHS, HERO_Q)}
+                    src={optimizeImage(heroImg, 1200, HERO_Q)}
+                    srcSet={buildSrcSet(heroImg, HERO_WIDTHS, HERO_Q)}
                     sizes="(min-width: 1024px) 640px, 100vw"
                     className="relative z-[1] w-full object-contain"
                     style={{ maxHeight: '640px', viewTransitionName: 'produto-hero' }}
