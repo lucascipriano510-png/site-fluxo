@@ -3,11 +3,13 @@ import { Barcode, Camera, Check, Clock, Edit3, Film, Flame, Home, Image as Image
 import { formatBRL } from '../lib/format';
 import { CAMPAIGN_LABELS, CAMPAIGN_SHORT, OFFER_CAMPAIGNS, formatDayMonth, todayLocalISO } from '../lib/offers';
 import { fetchKitItems, saveKitItems, upsertProduct, uploadVideo } from '../lib/supabase';
+import AdminGarimpo, { contarFilaGarimpo } from './AdminGarimpo';
 import { optimizeImage } from '../lib/images';
 
 const AdminInventory = ({ products, setProducts, showToast, availableCollections, productImageFile, setProductImageFile, uploadImage }) => {
   const [editMode, setEditMode] = useState(null);
   const [invSearch, setInvSearch] = useState('');
+  const [showGarimpo, setShowGarimpo] = useState(false);
 
   // Calcula próximo SKU sequencial com base nos SKUs puramente numéricos existentes
   const nextSku = useMemo(() => {
@@ -927,8 +929,17 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
             {isUploadingImage ? 'Salvando...' : 'Salvar Alterações'}
           </button>
         </form>
+      ) : !showScanner && showGarimpo ? (
+        <AdminGarimpo products={products} setProducts={setProducts} showToast={showToast} onClose={() => setShowGarimpo(false)} />
       ) : !showScanner && (
         <div className="space-y-4">
+          {/* Mesa de garimpo — só aparece enquanto houver peça de título genérico */}
+          {contarFilaGarimpo(products) > 0 && (
+            <button onClick={() => setShowGarimpo(true)} className="w-full flex items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl px-5 py-4 touch-manipulation active:scale-[0.98] transition-transform">
+              <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Mesa de Garimpo</span>
+              <span className="text-[10px] font-black uppercase tracking-wide text-emerald-300/80">{contarFilaGarimpo(products)} peças sem marca no título →</span>
+            </button>
+          )}
           <div className="relative group mb-6">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
             <input placeholder="Buscar produto..." className="w-full bg-zinc-900 border border-white/5 py-4 pl-14 pr-6 rounded-3xl text-sm font-bold text-white outline-none focus:border-emerald-500/50" value={invSearch} onChange={(e) => setInvSearch(e.target.value)} />
