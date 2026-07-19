@@ -15,13 +15,20 @@
          dinâmica do Supabase — o preload hardcoded nunca batia com a URL renderizada
          e baixava um PNG full-res de vários MB à toa em toda visita. O skeleton do
          BannerImage cobre o carregamento.) -->
+    <!-- Poster do hero-vídeo: LCP do 1º acesso (63 KB, asset local fixo — ao
+         contrário do banner dinâmico removido acima, esta URL nunca muda). -->
+    <link rel="preload" as="image" href="/hero-poster.jpg" fetchpriority="high" />
     <!-- Preconnect para reduzir handshake TLS nas requisições críticas -->
     <link rel="preconnect" href="https://tapgnlrjhrhewqlpahvg.supabase.co" crossorigin />
     <!-- wsrv.nl serve TODAS as imagens de produto: preconnect (TLS quente) acelera o 1º paint -->
     <link rel="preconnect" href="https://wsrv.nl" crossorigin />
     <link rel="dns-prefetch" href="https://wsrv.nl" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Anton&family=DM+Sans:wght@800&display=swap" rel="stylesheet" />
+    <!-- Fontes SEM bloquear a 1ª pintura: preload+onload vira stylesheet quando
+         chega; display=swap já garante texto visível na fonte de fallback.
+         Em 4G ruim o CSS bloqueante do Google segurava o render inteiro. -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Anton&family=DM+Sans:wght@800&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Anton&family=DM+Sans:wght@800&display=swap" /></noscript>
     <!-- Preload das 2 PRIMEIRAS imagens do grid, com a URL EXATA que ESTE
          aparelho renderizou na visita anterior (currentSrc salvo pelo App em
          @fluxo:preload-imgs-v1). Começa o download junto com o JS em vez de
@@ -40,6 +47,22 @@
           document.head.appendChild(l);
         });
       } catch (e) { /* sem localStorage/JSON ruim: segue sem preload */ }
+    </script>
+    <!-- FETCH ADIANTADO DO CATÁLOGO: a mesma query do fetchProducts()
+         (src/lib/supabase.js — mudou lá, muda AQUI) disparada no parse do HTML,
+         antes de baixar o bundle. No 1º acesso isso corta a cascata
+         bundle→React→fetch: quando o App monta, o JSON (~16 KB gz) já chegou
+         ou está a caminho. O App consome window.__fluxoProducts UMA vez
+         (App.jsx, load de produtos); polling segue pelo client normal.
+         A chave é a MESMA publishable exposta no bundle (supabaseClient.js). -->
+    <script>
+      try {
+        var _fk = 'sb_publishable_XaGrDdX2df8qolf2WocwuQ_FsVP1-kW';
+        window.__fluxoProducts = fetch(
+          'https://tapgnlrjhrhewqlpahvg.supabase.co/rest/v1/products?select=*&order=id.asc',
+          { headers: { apikey: _fk, Authorization: 'Bearer ' + _fk } }
+        ).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+      } catch (e) { /* sem fetch adiantado: App busca como sempre */ }
     </script>
     <title>FLUXO OUTLET</title>
     <meta name="description" content="⚡ Peças premium selecionadas, coleções limitadas e envio para todo o Brasil. Escolha no catálogo e finalize pelo WhatsApp. 🔥" />

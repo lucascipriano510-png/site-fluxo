@@ -16,7 +16,9 @@ export const DEFAULT_BANNERS = [
 ];
 
 const BANNERS_CACHE_KEY = '@fluxo:banners-cache-v1';
-const BANNERS_CACHE_TTL = 120_000; // 2 min
+// Janela de PINTURA (não de rede): banner de até 24h atrás pinta na hora e o
+// fetch do mount troca em ~0,5s. Era 2min — passou disso piscava o fallback.
+const BANNERS_CACHE_TTL = 24 * 60 * 60_000;
 
 /**
  * Camada de dados dos banners: estado + cache local + fetch periódico do Supabase

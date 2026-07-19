@@ -142,7 +142,17 @@ function App() {
     let alive = true;
     const load = async () => {
       try {
-        const remote = await fetchProducts();
+        // 1ª carga: consome o fetch ADIANTADO disparado no index.html (sai no
+        // parse do HTML, antes do bundle — mesma query, mesmo shape PostgREST).
+        // Consumido uma vez; falhou/vazio → fallback no client normal. Polling
+        // e cargas seguintes caem direto no fetchProducts.
+        let remote = null;
+        const boot = typeof window !== 'undefined' ? window.__fluxoProducts : null;
+        if (boot) {
+          window.__fluxoProducts = null;
+          try { remote = await boot; } catch { remote = null; }
+        }
+        if (!Array.isArray(remote) || remote.length === 0) remote = await fetchProducts();
         if (alive && Array.isArray(remote) && remote.length > 0) {
           setProductsRaw(remote);
           try { localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: remote })); } catch {}
@@ -215,7 +225,10 @@ function App() {
   const products = productsRaw;
 
   const CONFIG_CACHE_KEY = '@fluxo:config-cache-v1';
-  const CONFIG_CACHE_TTL = 300_000; // 5 min
+  // Janela de PINTURA (não de rede): config de até 24h atrás pinta na hora e o
+  // fetch do mount corrige em ~0,5s. Era 5min — passou disso o cliente via os
+  // DEFAULTS genéricos piscarem até a rede responder. Config velha ≫ default.
+  const CONFIG_CACHE_TTL = 24 * 60 * 60_000;
 
   const [config, setConfigState] = useState(() => {
     try {
@@ -257,6 +270,9 @@ function App() {
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const seenOrderIdsRef = useRef(null); // Set dos IDs já vistos
   const isAdminRef = useRef(false);
+  // Declarado AQUI (antes do efeito de pedidos, que depende dele); o efeito de
+  // sessão que o alimenta segue mais abaixo na seção AUTH.
+  const [isAdmin, setIsAdmin] = useState(false);
   // Mapeia row do Supabase -> shape interno usado pelo painel
   // Schema real: { id, order_number, name, phone, items (jsonb|string), value, status, created_at }
   const mapOrderRow = (row) => {
@@ -318,7 +334,11 @@ function App() {
     } catch (e) { /* silencioso */ }
   };
 
+  // Pedidos são consumidos SÓ pelo painel (leads/dashboard/growth): o cliente
+  // da loja não usa esse estado ("Meus pedidos" tem busca própria). Buscar isso
+  // no boot de todo visitante = rede disputando com as fotos do grid à toa.
   useEffect(() => {
+    if (!isAdmin) return;
     let alive = true;
     const load = async () => {
       try {
@@ -360,7 +380,7 @@ function App() {
     // Polling de 30s (era 5s) — só o admin precisa de atualização frequente
     const t = setInterval(load, 30_000);
     return () => { alive = false; clearInterval(t); };
-  }, []);
+  }, [isAdmin]);
   // Carrinho persistido no localStorage (sobrevive a recarregar/voltar a página).
   const CART_STORAGE_KEY = '@fluxo:cart-v1';
   const [cart, setCart] = useState(() => {
@@ -375,8 +395,7 @@ function App() {
 
   const [cartBounce, setCartBounce] = useState(false);
 
-  // --- AUTH Supabase ---
-  const [isAdmin, setIsAdmin] = useState(false);
+  // --- AUTH Supabase --- (isAdmin declarado lá em cima, junto do efeito de pedidos)
   const [authReady, setAuthReady] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [loginUser, setLoginUser] = useState('');
