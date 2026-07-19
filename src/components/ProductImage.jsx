@@ -10,9 +10,14 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
   // rootMargin generoso pré-carrega à frente da rolagem -> o cliente não se
   // depara com imagem carregando. SEM fila: o navegador (HTTP/2 + lazy nativo)
   // cuida da concorrência e já prioriza o que está na tela.
+  // Reset do fade SÓ quando a FOTO troca. Resetar também no flip de `priority`
+  // (produto entra/sai do top-2 a cada busca/filtro/reordenação da grade)
+  // apagava imagem JÁ carregada: o <img> persiste no DOM, 'load' não dispara de
+  // novo e os 2 primeiros cards ficavam no blur de carregando pra sempre.
+  React.useEffect(() => { setLoaded(false); }, [src]);
+
   React.useEffect(() => {
     if (!src) return;
-    setLoaded(false);
     if (priority) { setInView(true); return; }
     setInView(false);
     const el = wrapperRef.current;
@@ -50,6 +55,10 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
       )}
       {(priority || inView) && (
         <img
+          // Rede de segurança do fade: se o 'load' já tiver acontecido quando o
+          // elemento (re)entra no DOM (cache de memória, remontagem), destrava
+          // sem depender do evento — imagem pronta nunca fica invisível.
+          ref={(el) => { if (el && el.complete && el.naturalWidth > 0) setLoaded(true); }}
           src={fullRes ? src : optimizeImage(src, fixedWidth || 1000, fixedWidth ? 95 : 86)}
           srcSet={srcSet}
           sizes={(fullRes || fixedWidth) ? undefined : (sizesProp || "(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw")}
