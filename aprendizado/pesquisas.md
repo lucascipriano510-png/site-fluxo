@@ -33,6 +33,13 @@ Formato: **[data] achado — fonte — status no projeto**.
 - **[2026-07-10] 60% das imagens do catálogo estavam FRIAS no wsrv (2,5s/img)** —
   medição própria via tools/warm-image-cache.mjs — causa raiz do "quadrado
   escuro". **RESOLVIDO**: warm de 2001 URLs + GitHub Action a cada 6h.
+- **[2026-07-19] O payload de produtos é LEVE (15,6 KB gzip, ~200ms de resposta)**
+  — medição via curl no REST do Supabase. O atraso do 1º acesso não era a query:
+  era a CASCATA bundle→React→só então buscar (~2,5s). **RESOLVIDO** (45a03bf):
+  fetch adiantado no index.html (dispara no parse do HTML; é uma RÉPLICA da
+  query do fetchProducts — mudou src/lib/supabase.js, mudar lá também), fontes
+  Google sem bloquear render, preload do hero-poster (LCP), cache de config/
+  banners pinta até 24h (rede corrige por baixo), pedidos só p/ admin logado.
 
 ## Como adicionar
 
