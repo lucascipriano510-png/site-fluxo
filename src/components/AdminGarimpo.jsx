@@ -24,14 +24,16 @@ const MARCAS = [
 // nomes de marca aqui são ASCII; 'LV' precisa de borda pra não casar em "aLVo".
 const TEM_MARCA = new RegExp(`\\b(${MARCAS.map((m) => m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'i');
 
-// Token genérico que a marca SUBSTITUI; sem token, a marca entra depois do
-// tipo da peça: "Bermuda Destroyed" + Armani → "Bermuda Armani Destroyed".
-const GENERICO = /\b(premium|b[áa]sica|b[áa]sico)\b/i;
+// Formato do dono (e do título que converteu 49%): MARCA primeiro, sem repetir
+// o tipo da peça — a categoria já diz que é camisa. "Camisa premium" + Lacoste
+// → "Lacoste premium" (+ chips → "Lacoste premium Preta"). O tipo na 1ª
+// palavra é descartado; qualificador (premium, jogador, destroyed…) fica.
+const TIPO_PECA = /^(camisa|camiseta|calca|bermuda|short|bone|tenis|blusa|jaqueta|moletom|regata|corta-?vento|chinelo|sandalia|sapato|meia|cueca|bolsa|mochila|oculos|cinto|carteira)s?$/i;
+const semAcento = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 const proporNome = (nome, marca) => {
-  const limpo = String(nome || '').trim().replace(/\s+/g, ' ');
-  if (GENERICO.test(limpo)) return limpo.replace(GENERICO, marca).replace(/\s+/g, ' ').trim();
-  const [tipo, ...resto] = limpo.split(' ');
-  return [tipo, marca, ...resto].join(' ');
+  const palavras = String(nome || '').trim().replace(/\s+/g, ' ').split(' ').filter(Boolean);
+  const resto = palavras.length && TIPO_PECA.test(semAcento(palavras[0])) ? palavras.slice(1) : palavras;
+  return [marca, ...resto].join(' ').replace(/\s+/g, ' ').trim();
 };
 
 // "Camisa Lacoste" 15× é o mesmo grid de clones com marca — peça única pede
