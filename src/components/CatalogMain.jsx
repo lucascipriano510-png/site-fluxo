@@ -105,6 +105,11 @@ const CatalogMain = ({
   const gridProducts = searchMode ? (sortedProducts || []).slice(0, searchGridCap) : paginatedProducts;
   // GRADE VIVA só em touch — no desktop transform persistente borra a imagem.
   const gradeViva = !isDesktopViewport && !prefersReducedMotion;
+  // 1ª pintura da grade NÃO anima (dono, 2026-07-19): card piscando com a foto
+  // ainda baixando = retângulo preto surgindo, cara de site bugado. A onda da
+  // grade viva fica só pras TROCAS (categoria/busca), e sem mexer em opacidade.
+  const firstPaintRef = React.useRef(true);
+  React.useEffect(() => { firstPaintRef.current = false; }, []);
   return (
 <main className="w-full px-6 lg:px-10 mt-6 lg:mt-12 space-y-5 lg:space-y-12 min-h-dvh lg:max-w-[1500px] lg:mx-auto" data-testid="catalog-main">
         <div id="search-dock" className="group" style={{ scrollMarginTop: '88px' }} onPointerDown={() => dropletRef.current?.wobble()}>
@@ -648,8 +653,12 @@ const CatalogMain = ({
                     key={product.id}
                     {...(gradeViva ? {
                       layout: 'position',
-                      initial: { opacity: 0, y: 18, scale: 0.98 },
-                      animate: { opacity: 1, y: 0, scale: 1 },
+                      // Entrada SEM opacidade (e nenhuma na 1ª pintura): card
+                      // nunca nasce invisível — com foto ainda baixando ele
+                      // piscava PRETO antes da imagem surgir (queixa do dono).
+                      // A onda das trocas segue viva, só que por deslize.
+                      initial: firstPaintRef.current ? false : { y: 18, scale: 0.98 },
+                      animate: { y: 0, scale: 1 },
                       // exit com transition PRÓPRIA: sem ela herdaria o spring +
                       // delay do stagger. No searchMode o desvanecer é LENTO de
                       // propósito (dono: rápido demais não dá pra perceber).
@@ -661,7 +670,7 @@ const CatalogMain = ({
                         ? { type: 'spring', stiffness: 150, damping: 26, delay: 0.08 }
                         : { type: 'spring', stiffness: 320, damping: 32, delay: Math.min(idx * 0.035, 0.28) },
                     } : {})}
-                    className={`cv-card ${searchMode ? '' : 'sda-rise'} group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
+                    className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
                   >

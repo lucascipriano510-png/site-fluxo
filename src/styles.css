@@ -218,25 +218,11 @@
 @keyframes marquee-roll { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
-/* ── Reveals por scroll (CSS puro, roda no compositor — zero JS) ──────────
-   SÓ tela touch: no desktop, transform persistente em card já causou
-   downscale borrado da imagem (ver comentário cv-card no CatalogMain). */
-@supports (animation-timeline: view()) {
-  @media (hover: none) and (pointer: coarse) and (prefers-reduced-motion: no-preference) {
-    .sda-rise {
-      /* backwards (NÃO both): fill forwards em animação de view() segura
-         transform:none pra sempre e atropela o transform inline do framer —
-         matava o FLIP da grade viva. backwards solta o card após a revelação. */
-      animation: sda-rise linear backwards;
-      animation-timeline: view();
-      animation-range: entry 5% entry 55%;
-    }
-    @keyframes sda-rise {
-      from { opacity: 0.3; transform: translateY(18px) scale(0.98); }
-      to   { opacity: 1; transform: none; }
-    }
-  }
-}
+/* .sda-rise (reveal por scroll nos cards) REMOVIDO em 2026-07-19 a pedido do
+   dono: card surgindo de opacidade baixa com a foto ainda baixando = retângulo
+   preto piscando, cara de bug. Se algum reveal por view() voltar um dia, a
+   lição fica: fill `backwards` (NUNCA both/forwards — atropela o transform
+   inline do framer e mata o FLIP) e nada de opacidade em card com imagem. */
 
 @layer base {
   * {

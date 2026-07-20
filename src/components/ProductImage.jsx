@@ -77,7 +77,9 @@ const ProductImage = ({ src, alt, isOutOfStock, priority = false, order = 1000, 
           }}
           draggable={false}
           style={{ pointerEvents: 'none' }}
-          className={`w-full h-full object-contain transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''}`}
+          // Sem transição no reveal (dono, 2026-07-19): foto pronta APARECE, não
+          // "surge" — o fade dava mais 300ms de cara de carregando à toa.
+          className={`w-full h-full object-contain ${loaded ? 'opacity-100' : 'opacity-0'} ${isOutOfStock ? 'grayscale opacity-40' : ''}`}
         />
       )}
     </div>
