@@ -205,6 +205,15 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.liquid-metal-button--compact {
+  min-height: 60px;
+}
+
+.liquid-metal-button--compact .liquid-metal-button__content {
+  min-height: 60px;
+  font-size: 0.72rem;
+}
+
 .liquid-metal-button:hover {
   transform: perspective(760px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-2px);
 }

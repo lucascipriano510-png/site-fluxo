@@ -1,9 +1,10 @@
 import PixIcon from './PixIcon';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Flame, Lock, MapPin, Minus, Plus, Share2, ShoppingBag, Ticket, Trash2, Truck, X, Zap } from 'lucide-react';
+import { Flame, MapPin, Minus, Plus, Share2, ShoppingBag, Ticket, Trash2, Truck, X, Zap } from 'lucide-react';
 import { cartSnapshot, emitSignal } from '../lib/leadSignals';
 import { formatBRL } from '../lib/format';
 import { optimizeImage } from '../lib/images';
+import LiquidMetalCheckoutButton from './LiquidMetalCheckoutButton';
 
 // Extraído do App.jsx (verbatim) — recebe estado/handlers do App por props.
 const CartOverlay = ({
@@ -189,7 +190,15 @@ const CartOverlay = ({
                    <div className="flex items-center gap-2"><MapPin size={13} className="text-emerald-500 shrink-0" /><span className="text-[10px] font-bold text-zinc-300">Ou retire na loja</span></div>
                    <div className="flex items-center gap-2"><Truck size={13} className="text-zinc-500 shrink-0" /><span className="text-[10px] font-bold text-zinc-500">Outras regiões: frete combinado no WhatsApp</span></div>
                 </div>
-                <button onClick={() => { emitSignal('checkout_aberto', { cart: cartSnapshot(cart) }); setShowCart(false); setShowLeadModal(true); }} className="w-full py-5 rounded-2xl font-black text-[11px] uppercase bg-white text-zinc-950 active:scale-95 shadow-2xl flex items-center justify-center gap-2 touch-manipulation">Finalizar Pedido <Lock size={14}/></button>
+                <LiquidMetalCheckoutButton
+                  label="Finalizar pedido"
+                  size="compact"
+                  onClick={() => {
+                    emitSignal('checkout_aberto', { cart: cartSnapshot(cart) });
+                    setShowCart(false);
+                    setShowLeadModal(true);
+                  }}
+                />
               </div>
             )}
           </div>

@@ -8,6 +8,7 @@ export default function LiquidMetalCheckoutButton({
   label = "Finalizar compra",
   loading = false,
   onClick,
+  size = "default",
   statusOpen,
 }) {
   const buttonRef = useRef(null);
@@ -48,7 +49,7 @@ export default function LiquidMetalCheckoutButton({
       <button
         ref={buttonRef}
         type="button"
-        className={`liquid-metal-button liquid-metal-checkout-control__button ${
+        className={`liquid-metal-button liquid-metal-checkout-control__button liquid-metal-button--${size} ${
           glassEnabled ? "is-glass-enabled" : "is-metal-only"
         }`}
         disabled={disabled}
