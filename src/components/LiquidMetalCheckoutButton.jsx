@@ -58,8 +58,11 @@ export default function LiquidMetalCheckoutButton({
         aria-controls="checkout-secure-status"
         aria-describedby="checkout-secure-status"
         onClick={onClick}
+        onPointerDown={handlePointerMove}
         onPointerMove={handlePointerMove}
         onPointerLeave={resetPointer}
+        onPointerUp={resetPointer}
+        onPointerCancel={resetPointer}
         onBlur={resetPointer}
       >
         <span className="liquid-metal-button__metal" aria-hidden="true" />
