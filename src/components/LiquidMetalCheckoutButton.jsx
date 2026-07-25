@@ -68,7 +68,11 @@ export default function LiquidMetalCheckoutButton({
         <span className="liquid-metal-button__caustic" aria-hidden="true" />
         <span className="liquid-metal-button__content">
           <span>{loading ? "Finalizando..." : label}</span>
-          <ArrowUpRight size={19} strokeWidth={1.8} aria-hidden="true" />
+          {size === "cart" ? (
+            <LockKeyhole size={15} strokeWidth={2} aria-hidden="true" />
+          ) : (
+            <ArrowUpRight size={19} strokeWidth={1.8} aria-hidden="true" />
+          )}
         </span>
       </button>
 

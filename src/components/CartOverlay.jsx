@@ -192,7 +192,7 @@ const CartOverlay = ({
                 </div>
                 <LiquidMetalCheckoutButton
                   label="Finalizar pedido"
-                  size="compact"
+                  size="cart"
                   onClick={() => {
                     emitSignal('checkout_aberto', { cart: cartSnapshot(cart) });
                     setShowCart(false);
