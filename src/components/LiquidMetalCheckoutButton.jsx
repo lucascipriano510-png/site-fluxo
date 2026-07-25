@@ -1,5 +1,5 @@
 import { ArrowUpRight, LockKeyhole } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import "./liquid-metal-lab.css";
 
 export default function LiquidMetalCheckoutButton({
@@ -12,40 +12,79 @@ export default function LiquidMetalCheckoutButton({
   statusOpen,
 }) {
   const buttonRef = useRef(null);
+  const controlRef = useRef(null);
+  const boundsRef = useRef(null);
+  const frameRef = useRef(null);
+  const resetTimerRef = useRef(null);
+  const statusId = useId();
   const isStatusOpen = statusOpen ?? loading;
 
-  const handlePointerMove = (event) => {
+  useEffect(() => () => {
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+  }, []);
+
+  const paintPointer = (clientX, clientY) => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+    const control = controlRef.current;
     const button = buttonRef.current;
-    if (!button) return;
+    if (!control || !button) return;
 
-    const bounds = button.getBoundingClientRect();
-    const x = (event.clientX - bounds.left) / bounds.width;
-    const y = (event.clientY - bounds.top) / bounds.height;
+    const bounds = boundsRef.current || button.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (clientX - bounds.left) / bounds.width));
+    const y = Math.max(0, Math.min(1, (clientY - bounds.top) / bounds.height));
 
-    button.style.setProperty("--pointer-x", `${x * 100}%`);
-    button.style.setProperty("--pointer-y", `${y * 100}%`);
-    button.style.setProperty("--tilt-x", `${(0.5 - y) * 5}deg`);
-    button.style.setProperty("--tilt-y", `${(x - 0.5) * 7}deg`);
-    button.style.setProperty("--lens-x", `${(0.5 - x) * 10}px`);
-    button.style.setProperty("--lens-y", `${(0.5 - y) * 7}px`);
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    frameRef.current = requestAnimationFrame(() => {
+      control.style.setProperty("--pointer-x", `${x * 100}%`);
+      control.style.setProperty("--pointer-y", `${y * 100}%`);
+      control.style.setProperty("--tilt-x", `${(0.5 - y) * 3}deg`);
+      control.style.setProperty("--tilt-y", `${(x - 0.5) * 4}deg`);
+      control.style.setProperty("--lens-x", `${(0.5 - x) * 6}px`);
+      control.style.setProperty("--lens-y", `${(0.5 - y) * 4}px`);
+    });
+  };
+
+  const handlePointerDown = (event) => {
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    boundsRef.current = buttonRef.current?.getBoundingClientRect() || null;
+    paintPointer(event.clientX, event.clientY);
+  };
+
+  const handlePointerMove = (event) => {
+    if (event.pointerType === "touch") return;
+    paintPointer(event.clientX, event.clientY);
   };
 
   const resetPointer = () => {
-    const button = buttonRef.current;
-    if (!button) return;
+    const control = controlRef.current;
+    if (!control) return;
 
-    button.style.setProperty("--pointer-x", "50%");
-    button.style.setProperty("--pointer-y", "18%");
-    button.style.setProperty("--tilt-x", "0deg");
-    button.style.setProperty("--tilt-y", "0deg");
-    button.style.setProperty("--lens-x", "0px");
-    button.style.setProperty("--lens-y", "0px");
+    boundsRef.current = null;
+    control.style.setProperty("--pointer-x", "50%");
+    control.style.setProperty("--pointer-y", "18%");
+    control.style.setProperty("--tilt-x", "0deg");
+    control.style.setProperty("--tilt-y", "0deg");
+    control.style.setProperty("--lens-x", "0px");
+    control.style.setProperty("--lens-y", "0px");
+  };
+
+  const releasePointer = () => {
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = setTimeout(resetPointer, 220);
   };
 
   return (
-    <div className={`liquid-metal-checkout-control ${isStatusOpen ? "is-status-open" : ""}`}>
+    <div
+      ref={controlRef}
+      className={`liquid-metal-checkout-control ${isStatusOpen ? "is-status-open" : ""}`}
+    >
+      {size === "cart" && (
+        <span className="liquid-metal-checkout-control__ambient" aria-hidden="true">
+          <span />
+        </span>
+      )}
       <button
         ref={buttonRef}
         type="button"
@@ -55,14 +94,14 @@ export default function LiquidMetalCheckoutButton({
         disabled={disabled}
         aria-busy={loading}
         aria-expanded={isStatusOpen}
-        aria-controls="checkout-secure-status"
-        aria-describedby="checkout-secure-status"
+        aria-controls={statusId}
+        aria-describedby={statusId}
         onClick={onClick}
-        onPointerDown={handlePointerMove}
+        onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerLeave={resetPointer}
-        onPointerUp={resetPointer}
-        onPointerCancel={resetPointer}
+        onPointerUp={releasePointer}
+        onPointerCancel={releasePointer}
         onBlur={resetPointer}
       >
         <span className="liquid-metal-button__metal" aria-hidden="true" />
@@ -82,7 +121,7 @@ export default function LiquidMetalCheckoutButton({
       <div className="liquid-metal-checkout-control__status-slot">
         <div>
           <div
-            id="checkout-secure-status"
+            id={statusId}
             className={`liquid-metal-checkout-bar ${isStatusOpen ? "is-open" : ""}`}
             role="status"
             aria-hidden={!isStatusOpen}
