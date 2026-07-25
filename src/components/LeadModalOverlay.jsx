@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, Lock, ShieldCheck, X, Zap } from 'lucide-react';
 import { cartSnapshot, emitSignal, setKnownLead } from '../lib/leadSignals';
+import LiquidMetalCheckoutButton from './LiquidMetalCheckoutButton';
 
 // Extraído do App.jsx (verbatim) — recebe estado/handlers do App por props.
 const LeadModalOverlay = ({
@@ -71,7 +72,14 @@ const LeadModalOverlay = ({
                      // Capturou contato: identifica o lead e liga todo o histórico anônimo ao telefone
                      if (ph.length >= 10) { setKnownLead(ph, currentLead.name); emitSignal('telefone_informado', { phone: ph, name: currentLead.name, cart: cartSnapshot(cart) }); }
                    }} /></div>
-                 <button onClick={handleFinalize} disabled={isLoading} className="w-full py-5 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 mt-2 flex justify-center items-center gap-2 touch-manipulation">{isLoading ? 'Processando...' : 'Finalizar Pedido via WhatsApp'} <Zap size={14}/></button>
+                 <div className="mt-2">
+                   <LiquidMetalCheckoutButton
+                     onClick={handleFinalize}
+                     disabled={isLoading}
+                     loading={isLoading}
+                     label="Finalizar compra"
+                   />
+                 </div>
                 </div>
                 <p className="text-[8px] font-bold uppercase tracking-widest text-zinc-600 flex items-center justify-center gap-1 opacity-70 mt-6"><Lock size={10}/> Ambiente 100% Seguro</p>
               </div>
