@@ -759,7 +759,7 @@ const CatalogMain = ({
                                    <span
                                      key={s.name}
                                      ref={marcarMeuNumeroExposto}
-                                     className="relative h-[22px] px-1.5 flex items-center justify-center text-[9px] font-black uppercase tracking-wide bg-flux text-flux-ink border-r border-white/10 last:border-r-0 whitespace-nowrap"
+                                     className="relative h-[22px] px-1.5 flex items-center justify-center text-[9px] font-black uppercase tracking-wide bg-white/[0.07] text-white/95 border-r border-white/10 last:border-r-0 whitespace-nowrap"
                                    >
                                      Seu {s.name}
                                    </span>
