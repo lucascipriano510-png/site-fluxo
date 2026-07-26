@@ -829,16 +829,15 @@ const CatalogMain = ({
                                   {!isOutOfStock && (
                                     <motion.button
                                       type="button"
+                                      className="flux-buy-cta"
                                       onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
                                       whileHover={prefersReducedMotion ? {} : { scale: 1.04, transition: { duration: 0.15, ease: 'easeOut' } }}
                                       whileTap={prefersReducedMotion ? {} : { scale: 0.96, transition: { duration: 0.08 } }}
                                       style={{
                                         height: '32px', padding: '0 12px', borderRadius: '6px', flexShrink: 0,
-                                        background: 'var(--flux-signal)',
-                                        color: 'var(--flux-signal-ink)', fontWeight: '750', fontSize: '10px',
+                                        fontWeight: '750', fontSize: '10px',
                                         letterSpacing: '0.08em', textTransform: 'uppercase',
                                         border: 0,
-                                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.56), 0 4px 8px rgba(0,0,0,0.34)',
                                         cursor: 'pointer', fontFamily: 'inherit', outline: 'none',
                                         touchAction: 'manipulation',
                                       }}
