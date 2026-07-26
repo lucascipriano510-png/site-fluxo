@@ -57,7 +57,7 @@ const QuickMenuOverlay = ({
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } }}
-                    className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-12 pr-10 text-[16px] font-bold text-white outline-none focus:border-emerald-500/40"
+                    className="w-full bg-gunmetal border border-white/10 rounded-2xl py-4 pl-12 pr-10 text-[16px] font-bold text-white outline-none focus:border-flux/40"
                   />
                   {searchQuery && (
                     <button type="button" onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white touch-manipulation">
@@ -73,9 +73,9 @@ const QuickMenuOverlay = ({
                     { Icon: Star, label: 'Top', active: !noveltyMode && !kitsOnly && selectedCategory === 'TODOS' && selectedSize === 'TODOS', action: () => { setSelectedCategory('TODOS'); setSelectedSize('TODOS'); setKitsOnly(false); setNoveltyMode(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
                     { Icon: Zap, label: 'Kits', active: kitsOnly, action: () => { setKitsOnly(true); setNoveltyMode(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); } },
                   ].map(({ Icon, label, active, action }) => (
-                    <button key={label} type="button" onClick={action} className={`bg-zinc-900 border rounded-2xl py-3 flex flex-col items-center gap-1.5 touch-manipulation active:scale-95 transition-transform ${active ? 'border-emerald-500/50' : 'border-white/10'}`}>
-                      <Icon size={18} className={active ? 'text-emerald-400' : 'text-zinc-400'} strokeWidth={2.2} />
-                      <span className={`text-[9px] font-black uppercase tracking-widest ${active ? 'text-emerald-400' : 'text-zinc-400'}`}>{label}</span>
+                    <button key={label} type="button" onClick={action} className={`bg-gunmetal border rounded-2xl py-3 flex flex-col items-center gap-1.5 touch-manipulation active:scale-95 transition-transform ${active ? 'border-flux/50' : 'border-white/10'}`}>
+                      <Icon size={18} className={active ? 'text-flux' : 'text-zinc-400'} strokeWidth={2.2} />
+                      <span className={`text-[9px] font-black uppercase tracking-widest ${active ? 'text-flux' : 'text-zinc-400'}`}>{label}</span>
                     </button>
                   ))}
                 </div>
@@ -137,10 +137,10 @@ const QuickMenuOverlay = ({
                         key={cat}
                         type="button"
                         onClick={() => { setSelectedCategory(cat); setSelectedSubcategory('TODOS'); setSelectedSize('TODOS'); setNoveltyMode(false); setShowQuickMenu(false); document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }); }}
-                        className={`w-full flex items-center justify-between bg-zinc-900/50 rounded-2xl px-4 py-3.5 touch-manipulation active:scale-[0.98] transition-transform border ${selectedCategory === cat ? 'border-emerald-500/30' : 'border-transparent'}`}
+                        className={`w-full flex items-center justify-between bg-gunmetal/50 rounded-2xl px-4 py-3.5 touch-manipulation active:scale-[0.98] transition-transform border ${selectedCategory === cat ? 'border-flux/30' : 'border-transparent'}`}
                       >
-                        <span className={`font-black text-[12px] uppercase ${selectedCategory === cat ? 'text-emerald-400' : 'text-white'}`}>{cat}</span>
-                        {selectedCategory === cat ? <Check size={14} className="text-emerald-500 shrink-0" /> : <ChevronRight size={14} className="text-zinc-600 shrink-0" />}
+                        <span className={`font-black text-[12px] uppercase ${selectedCategory === cat ? 'text-flux' : 'text-white'}`}>{cat}</span>
+                        {selectedCategory === cat ? <Check size={14} className="text-flux shrink-0" /> : <ChevronRight size={14} className="text-zinc-600 shrink-0" />}
                       </button>
                     ))}
                   </div>
@@ -154,9 +154,9 @@ const QuickMenuOverlay = ({
                     href={`https://wa.me/${config.whatsapp}?text=${encodeURIComponent('Oi! Tô no site da Fluxo com uma dúvida antes de comprar.')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 bg-zinc-900 border border-white/10 rounded-2xl px-4 py-3.5 touch-manipulation active:scale-[0.98] transition-transform"
+                    className="flex items-center gap-3 bg-whatsapp/5 border border-whatsapp/30 rounded-2xl px-4 py-3.5 touch-manipulation active:scale-[0.98] transition-transform"
                   >
-                    <MessageCircle size={16} className="text-emerald-500 shrink-0" />
+                    <MessageCircle size={16} className="text-whatsapp shrink-0" />
                     <div>
                       <p className="font-black text-[11px] uppercase text-white">WhatsApp</p>
                       <p className="text-[9px] text-zinc-500">Tire dúvidas antes de comprar</p>

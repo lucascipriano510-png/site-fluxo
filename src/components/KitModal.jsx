@@ -169,7 +169,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
           <X size={18}/>
         </button>
         {/* Badge KIT — overlay fixo */}
-        <div className="absolute top-4 left-4 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1 shadow-[0_4px_15px_rgba(251,191,36,0.4)] pointer-events-none z-10">
+        <div className="absolute top-4 left-4 bg-offer text-flux-ink text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1 shadow-[0_4px_8px_rgba(0,0,0,0.3)] pointer-events-none z-10">
           <Zap size={10} className="fill-zinc-950" /> KIT
         </div>
 
@@ -250,7 +250,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
               </div>
               <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-amber-400 to-pink-500 rounded-full transition-all duration-300"
+                  className="h-full bg-offer rounded-full transition-all duration-300"
                   style={{ width: `${components.length > 0 ? (includedItems.length / components.length) * 100 : 0}%` }}
                 />
               </div>
@@ -278,16 +278,16 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
             })).filter(s => s.name);
             const isMissing = !!missingFlash[c.id];
             return (
-              <div key={c.id} className={`relative rounded-2xl border transition-all duration-200 p-3 ${included ? (isMissing ? 'bg-red-500/10 border-red-500 animate-pulse' : 'bg-zinc-900 border-emerald-500/30') : 'bg-zinc-900/20 border-white/5'}`}>
+              <div key={c.id} className={`relative rounded-2xl border transition-all duration-200 p-3 ${included ? (isMissing ? 'bg-red-500/10 border-red-500 animate-pulse' : 'bg-gunmetal border-flux/30') : 'bg-gunmetal/20 border-white/5'}`}>
                 {/* Linha de status */}
                 {included && (
-                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500/50 to-transparent rounded-t-2xl pointer-events-none" />
+                  <div className="absolute top-0 left-0 right-0 h-px bg-flux/35 rounded-t-2xl pointer-events-none" />
                 )}
                 <div className="flex gap-3">
                   <div className="relative shrink-0">
-                    <img src={optimizeImage(c.image, 400, 80)} className={`w-16 h-20 rounded-xl object-cover border ${included ? 'border-emerald-500/30' : 'border-white/5 grayscale opacity-50'}`} alt={c.name} loading="lazy" decoding="async" />
+                    <img src={optimizeImage(c.image, 400, 80)} className={`w-16 h-20 rounded-xl object-cover border ${included ? 'border-flux/30' : 'border-white/5 grayscale opacity-50'}`} alt={c.name} loading="lazy" decoding="async" />
                     {included && chosenSize && (
-                      <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-zinc-950 text-[8px] font-black px-1.5 py-0.5 rounded-md leading-none">{chosenSize}</div>
+                      <div className="absolute -bottom-1 -right-1 bg-flux text-flux-ink text-[8px] font-black px-1.5 py-0.5 rounded-md leading-none">{chosenSize}</div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -295,13 +295,13 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
                       <h4 className={`font-black text-[11px] uppercase leading-tight line-clamp-2 ${included ? 'text-white' : 'text-zinc-500'}`}>{c.name}</h4>
                       <button
                         onClick={() => togglePick(c.id)}
-                        className={`shrink-0 w-7 h-7 rounded-lg border-2 grid place-items-center transition-all touch-manipulation ${included ? 'bg-emerald-500 border-emerald-500 text-zinc-950 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-zinc-800 border-zinc-600 text-zinc-600 hover:border-zinc-400'}`}
+                        className={`shrink-0 w-7 h-7 rounded-lg border-2 grid place-items-center transition-all touch-manipulation ${included ? 'bg-flux border-flux text-flux-ink shadow-[0_0_10px_rgba(232,234,236,0.22)]' : 'bg-zinc-800 border-zinc-600 text-zinc-600 hover:border-zinc-400'}`}
                         aria-label={included ? 'Remover do kit' : 'Adicionar ao kit'}
                       >
                         {included ? <Check size={14} strokeWidth={3} /> : <Plus size={13} strokeWidth={2.5} />}
                       </button>
                     </div>
-                    <p className={`font-black text-sm mt-1 ${included ? 'text-emerald-400' : 'text-zinc-500'}`}>{formatBRL(c.price || 0)}</p>
+                    <p className={`font-black text-sm mt-1 ${included ? 'text-flux' : 'text-zinc-500'}`}>{formatBRL(c.price || 0)}</p>
                     {included && (
                       <>
                         {sizes.length > 0 && (
@@ -370,7 +370,7 @@ const KitModal = ({ kit, products, kitItemsByKit, cart, setCart, setCartBounce, 
           <button
             onClick={handleAddKitToCart}
             disabled={includedItems.length === 0}
-            className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 touch-manipulation ${includedItems.length === 0 ? 'bg-zinc-900 text-zinc-700' : 'bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 text-zinc-950 shadow-[0_10px_30px_rgba(251,146,60,0.35)] active:scale-[0.98]'}`}
+            className={`w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 touch-manipulation ${includedItems.length === 0 ? 'bg-zinc-900 text-zinc-700' : 'bg-flux text-flux-ink shadow-[0_8px_8px_rgba(0,0,0,0.34)] active:scale-[0.98]'}`}
           >
             <ShoppingBag size={14}/> Adicionar Kit à Sacola
           </button>

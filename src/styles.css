@@ -58,6 +58,16 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-flux: var(--flux-signal);
+  --color-flux-bright: var(--flux-signal-bright);
+  --color-flux-deep: var(--flux-signal-deep);
+  --color-flux-ink: var(--flux-signal-ink);
+  --color-denim: var(--flux-denim);
+  --color-asphalt: var(--flux-asphalt);
+  --color-gunmetal: var(--flux-gunmetal);
+  --color-titanium: var(--flux-titanium);
+  --color-offer: var(--flux-offer);
+  --color-whatsapp: var(--flux-whatsapp);
 }
 
 :root {
@@ -133,17 +143,66 @@
 
 /* ── Premium gray layer system ─────────────────────────────────────────── */
 :root {
-  --bg-base:     #26262a;
-  --bg-surface:  #2f2f33;
-  --bg-elevated: #3a3a3f;
-  --bg-header:   #232327;
-  --border:      #46464b;
-  --border-light:#54545a;
-  --text-primary:#f7f7f9;
-  --text-secondary:#b9b9be;
-  --text-muted:  #6e6e73;
-  --gold:        #c9a84c;
+  --flux-void: oklch(0.105 0.009 264);
+  --flux-asphalt: oklch(0.135 0.011 264);
+  --flux-surface: oklch(0.175 0.014 264);
+  --flux-gunmetal: oklch(0.215 0.018 264);
+  --flux-elevated: oklch(0.265 0.021 264);
+  --flux-titanium: oklch(0.72 0.018 264);
+  --flux-border: oklch(0.34 0.022 264);
+  --flux-border-light: oklch(0.43 0.022 264);
+  --flux-signal: oklch(0.91 0.012 264);
+  --flux-signal-bright: oklch(0.975 0.006 264);
+  --flux-signal-deep: oklch(0.73 0.02 264);
+  --flux-signal-ink: oklch(0.115 0.012 264);
+  --flux-denim: oklch(0.63 0.14 264);
+  --flux-offer: oklch(0.78 0.165 72);
+  --flux-whatsapp: #25d366;
+  --flux-pix: #32bcad;
+  --flux-danger: oklch(0.66 0.22 25);
+  --bg-base: var(--flux-asphalt);
+  --bg-surface: var(--flux-surface);
+  --bg-elevated: var(--flux-elevated);
+  --bg-header: var(--flux-void);
+  --border: var(--flux-border);
+  --border-light: var(--flux-border-light);
+  --text-primary: oklch(0.97 0.006 264);
+  --text-secondary: oklch(0.79 0.014 264);
+  --text-muted: oklch(0.61 0.018 264);
+  --gold: var(--flux-offer);
 }
+
+.flux-storefront,
+.flux-storefront.font-sans {
+  color-scheme: dark;
+  background-color: var(--flux-asphalt);
+  accent-color: var(--flux-signal);
+  font-family: "Archivo", ui-sans-serif, system-ui, sans-serif;
+}
+
+.flux-storefront :focus-visible {
+  outline: 2px solid var(--flux-signal-bright);
+  outline-offset: 3px;
+}
+
+.flux-panel {
+  background: var(--flux-surface);
+  border-color: color-mix(in oklch, var(--flux-border) 74%, transparent);
+}
+
+.flux-panel-elevated {
+  background: var(--flux-gunmetal);
+}
+
+/* Compatibilidade com os componentes públicos ainda escritos com utilitários
+ * zinc. O escopo impede que a paleta operacional do admin seja alterada. */
+.flux-storefront .bg-zinc-950 { background-color: var(--flux-void); }
+.flux-storefront .bg-zinc-900 { background-color: var(--flux-surface); }
+.flux-storefront .bg-zinc-800 { background-color: var(--flux-gunmetal); }
+.flux-storefront .border-zinc-800 { border-color: var(--flux-border); }
+.flux-storefront .text-zinc-300 { color: var(--text-secondary); }
+.flux-storefront .text-zinc-400 { color: var(--text-secondary); }
+.flux-storefront .text-zinc-500 { color: var(--text-muted); }
 
 /* ── Liquid glass — vidro com borda especular (uso CIRÚRGICO) ─────────────
    Só em superfícies FIXAS que flutuam sobre conteúdo rolando (barras de
@@ -214,7 +273,7 @@
 }
 .mq-solid { color: var(--text-primary); }
 .mq-outline { color: transparent; -webkit-text-stroke: 1.5px rgba(247, 247, 249, 0.38); }
-.mq-sep { color: var(--gold); font-size: 0.5em; }
+.mq-sep { color: var(--flux-signal-bright); font-size: 0.5em; }
 @keyframes marquee-roll { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
@@ -302,20 +361,20 @@
 @media (pointer: fine) {
   #root {
     scrollbar-width: thin;
-    scrollbar-color: #52525b #09090b;
+    scrollbar-color: var(--flux-border-light) var(--flux-void);
   }
   #root::-webkit-scrollbar {
     width: 6px;
   }
   #root::-webkit-scrollbar-track {
-    background: #09090b;
+    background: var(--flux-void);
   }
   #root::-webkit-scrollbar-thumb {
-    background: #52525b;
+    background: var(--flux-border-light);
     border-radius: 3px;
   }
   #root::-webkit-scrollbar-thumb:hover {
-    background: #71717a;
+    background: var(--flux-titanium);
   }
 }
 
@@ -441,8 +500,9 @@
  *    da vitrine via style inline; aqui fica a versão utilitária reutilizável). */
 .brilho-ambient {
   background:
-    radial-gradient(1100px 620px at 12% -8%, rgba(245, 158, 11, 0.06), transparent 60%),
-    radial-gradient(1000px 680px at 100% 4%, rgba(16, 185, 129, 0.05), transparent 55%),
+    radial-gradient(920px 560px at 16% -7%, oklch(0.63 0.14 264 / 0.09), transparent 62%),
+    radial-gradient(820px 520px at 100% 6%, oklch(0.92 0.018 264 / 0.045), transparent 58%),
+    linear-gradient(180deg, var(--flux-asphalt) 0%, var(--flux-void) 100%),
     var(--bg-base) !important;
   /* background-attachment: fixed REMOVIDO do mobile: no Chrome Android, fundo
      fixo com gradiente grande causa flicker/risco ao rolar (repaint por tile),
@@ -452,6 +512,23 @@
 }
 @media (pointer: fine) {
   .brilho-ambient { background-attachment: fixed; }
+}
+
+/* O vídeo atual traz neon vermelho/ciano. A gradação o transforma em uma
+ * vitrine mineral e preserva um único reflexo denim, sem esconder o produto. */
+.flux-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(75% 110% at 4% 20%, oklch(0.63 0.14 264 / 0.13), transparent 58%),
+    linear-gradient(180deg, transparent 48%, oklch(0.105 0.009 264 / 0.58) 100%);
+}
+
+.flux-hero__media {
+  filter: saturate(0.62) contrast(1.08) brightness(0.86);
 }
 
 /* 2) Cards "pegando luz": gloss diagonal sutil no topo do card. Fica ACIMA da
@@ -470,7 +547,7 @@
 .cv-card:hover::before { opacity: 1; }
 
 /* 3) Acentos que "acendem": halo suave (usar via classe onde quiser realçar). */
-.brilho-glow-emerald { box-shadow: 0 0 18px rgba(16, 185, 129, 0.28), 0 6px 20px rgba(0, 0, 0, 0.4); }
+.brilho-glow-emerald,
+.brilho-glow-flux { box-shadow: 0 0 18px oklch(0.91 0.012 264 / 0.2), 0 6px 20px rgba(0, 0, 0, 0.4); }
 .brilho-text-glow { text-shadow: 0 0 18px rgba(255, 255, 255, 0.18); }
 .brilho-text-glow-amber { text-shadow: 0 0 20px rgba(245, 200, 100, 0.45); }
-

@@ -61,7 +61,7 @@ const SizeGuideModal = ({ product, onClose, whatsapp }) => {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="grid place-items-center w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-400"><Ruler size={16}/></span>
+            <span className="grid place-items-center w-9 h-9 rounded-full bg-flux/10 text-flux"><Ruler size={16}/></span>
             <div>
               <h3 className="text-[13px] font-black uppercase tracking-wide text-white leading-tight">Guia de Medidas</h3>
               <p className="text-[10px] text-zinc-500 font-bold uppercase">{guide.title}</p>
@@ -95,7 +95,7 @@ const SizeGuideModal = ({ product, onClose, whatsapp }) => {
             href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Oi! Tô na dúvida do tamanho dessa peça 👇\n\n*${product.name}*\nSKU: ${product.sku || 'N/A'}\n\nPodem me ajudar com as medidas?`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 bg-emerald-500 text-zinc-950 active:scale-[0.98] transition-transform touch-manipulation"
+            className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 bg-whatsapp text-zinc-950 active:scale-[0.98] transition-transform touch-manipulation"
           >
             <MessageCircle size={14}/> Tirar dúvida no WhatsApp
           </a>

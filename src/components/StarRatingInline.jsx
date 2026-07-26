@@ -122,16 +122,16 @@ const StarRatingInline = ({ product, ratingsMap, userProfile, setRatingsMap, set
             <motion.button type="button" whileTap={{ scale: 0.82 }} onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
               disabled={submitting}
               className="touch-manipulation flex items-center justify-center"
-              style={{ width: '22px', height: '22px', borderRadius: '50%', background: submitting ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', cursor: submitting ? 'default' : 'pointer', flexShrink: 0, boxShadow: submitting ? 'none' : '0 0 8px rgba(16,185,129,0.2)' }}
+              style={{ width: '22px', height: '22px', borderRadius: '50%', background: submitting ? 'oklch(0.91 0.012 264 / 0.08)' : 'oklch(0.91 0.012 264 / 0.15)', border: '1px solid oklch(0.91 0.012 264 / 0.35)', cursor: submitting ? 'default' : 'pointer', flexShrink: 0, boxShadow: submitting ? 'none' : '0 0 8px oklch(0.91 0.012 264 / 0.18)' }}
             >
               {submitting ? (
                 <svg width={9} height={9} viewBox="0 0 20 20" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}>
-                  <circle cx="10" cy="10" r="8" stroke="rgba(16,185,129,0.4)" strokeWidth="2.5"/>
-                  <path d="M10 2a8 8 0 018 8" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"/>
+                  <circle cx="10" cy="10" r="8" stroke="oklch(0.91 0.012 264 / 0.4)" strokeWidth="2.5"/>
+                  <path d="M10 2a8 8 0 018 8" stroke="var(--flux-signal)" strokeWidth="2.5" strokeLinecap="round"/>
                 </svg>
               ) : (
                 <svg width={10} height={10} viewBox="0 0 20 20" fill="none">
-                  <path d="M4 10l5 5 7-8" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M4 10l5 5 7-8" stroke="var(--flux-signal)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               )}
             </motion.button>

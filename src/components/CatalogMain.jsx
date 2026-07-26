@@ -9,7 +9,7 @@ import WaterRippleFX from './WaterRippleFX';
 import { ArrowRight, ChevronLeft, Eye, Flame, Package, Plus, Search, Truck, X, Zap } from 'lucide-react';
 import SearchDropBar from './SearchDropBar';
 import { CAMPAIGN_LABELS, OFFER_CAMPAIGNS, isOfferLive, offerCampaign, offerEndsAt, offerPercent, offerPrice } from '../lib/offers';
-import { colorDot, pluralCat, shineDelay } from '../lib/catalogUi';
+import { colorDot, pluralCat } from '../lib/catalogUi';
 import { emitSignal } from '../lib/leadSignals';
 import { formatBRL } from '../lib/format';
 import { getCatImgData, optimizeImage } from '../lib/images';
@@ -176,12 +176,12 @@ const CatalogMain = ({
                 {kitCover ? (
                   <img src={optimizeImage(kitCover, 300, 82)} alt="Kits" className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
                 ) : (
-                  <span className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 flex items-center justify-center">
+                  <span className="absolute inset-0 bg-offer flex items-center justify-center">
                     <Zap size={30} className="-mt-4 text-zinc-950 fill-zinc-950" />
                   </span>
                 )}
                 <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/85 via-black/35 to-transparent pointer-events-none" />
-                <span className="absolute top-2 left-2 w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center shadow-[0_2px_10px_rgba(251,191,36,0.5)]">
+                <span className="absolute top-2 left-2 w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-offer flex items-center justify-center shadow-[0_2px_8px_rgba(251,191,36,0.32)]">
                   <Zap size={13} className="text-zinc-950 fill-zinc-950" />
                 </span>
                 <span
@@ -206,7 +206,7 @@ const CatalogMain = ({
                   whileTap={{ scale: 0.96 }}
                   className={`relative shrink-0 w-[92px] h-[115px] lg:w-[120px] lg:h-[150px] rounded-2xl overflow-hidden border-2 transition-all duration-200 touch-manipulation bg-zinc-950 ${
                     isActive
-                      ? 'border-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.45)]'
+                      ? 'border-flux shadow-[0_0_18px_rgba(232,234,236,0.25)]'
                       : 'border-white/10 hover:border-white/30'
                   }`}
                 >
@@ -214,14 +214,14 @@ const CatalogMain = ({
                     <img src={optimizeImage(imgUrl, 300, 82)} alt={cat} className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: imgPos }} loading="lazy" decoding="async" />
                   ) : (
                     <span className="absolute inset-0 flex items-center justify-center -mt-4">
-                      <span className={`text-3xl font-black select-none transition-colors ${isActive ? 'text-emerald-400/80' : 'text-white/25'}`}>
+                      <span className={`text-3xl font-black select-none transition-colors ${isActive ? 'text-flux/80' : 'text-white/25'}`}>
                         {(cat || '?').charAt(0)}
                       </span>
                     </span>
                   )}
                   <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/85 via-black/35 to-transparent pointer-events-none" />
                   <span
-                    className={`absolute bottom-2.5 left-2.5 right-2.5 text-left text-[10px] lg:text-[11px] font-black uppercase tracking-wider leading-tight transition-colors ${isActive ? 'text-emerald-400' : 'text-white'}`}
+                    className={`absolute bottom-2.5 left-2.5 right-2.5 text-left text-[10px] lg:text-[11px] font-black uppercase tracking-wider leading-tight transition-colors ${isActive ? 'text-flux' : 'text-white'}`}
                     style={{ textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}
                   >
                     {pluralCat(cat)}
@@ -346,7 +346,7 @@ const CatalogMain = ({
                 data-testid={`offers-section-${camp}`}
                 style={{ background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.08) 0%, rgba(9,9,11,0) 58%)' }}
               >
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" aria-hidden="true" />
+                <div className="absolute top-0 left-[12%] right-[12%] h-px bg-offer/35" aria-hidden="true" />
                 <div className="px-6 pt-9 pb-5">
                   <div className="flex items-end justify-between gap-4">
                     <div>
@@ -357,7 +357,7 @@ const CatalogMain = ({
                       </div>
                       <h2 className="font-black uppercase text-white leading-[0.88] tracking-tight" style={{ fontSize: '2.35rem' }}>
                         Ofertas<br/>
-                        <span className="italic font-serif" style={{ fontWeight: 500, background: 'linear-gradient(90deg,#fde68a,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{suffix}</span>
+                        <span className="italic font-serif text-offer" style={{ fontWeight: 500 }}>{suffix}</span>
                       </h2>
                     </div>
                     <div className="flex flex-col items-end pb-1">
@@ -387,18 +387,17 @@ const CatalogMain = ({
                         className="shrink-0 w-[52%] max-w-[200px] snap-start touch-manipulation"
                         data-testid={`offer-card-${product.id}`}
                       >
-                        <div className="p-[1.5px] rounded-2xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40">
+                        <div className="rounded-2xl border border-offer/35 bg-[var(--flux-surface)]">
                           <button
                             type="button"
                             onClick={() => handleProductClick(product)}
-                            className="block w-full text-left rounded-[15px] overflow-hidden bg-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.7)]"
+                            className="block w-full text-left rounded-[15px] overflow-hidden bg-[var(--flux-void)] shadow-[0_5px_8px_rgba(0,0,0,0.34)]"
                           >
                             <div className="aspect-[4/5] relative overflow-hidden">
                               <ProductImage src={product.image} alt={product.name} order={10 + secIdx * 40 + idx} sizes="(min-width: 385px) 200px, 52vw" />
                               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/10 to-transparent pointer-events-none" />
-                              <div className="absolute top-2 left-2 z-10 flex items-center gap-1 text-white text-[10px] font-black px-2 py-1 rounded-md"
-                                style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', boxShadow: '0 2px 10px rgba(245,158,11,0.45)' }}>
-                                <Flame size={9} style={{ fill: '#fff' }} /> -{pct}%
+                              <div className="absolute top-2 left-2 z-10 flex items-center gap-1 text-flux-ink text-[10px] font-black px-2 py-1 rounded-md bg-offer shadow-[0_2px_8px_rgba(245,158,11,0.28)]">
+                                <Flame size={9} className="fill-flux-ink" /> -{pct}%
                               </div>
                               <div className="absolute bottom-2 left-2 right-2 z-10 flex justify-center">
                                 <OfferCountdown target={offerEndsAt(product)} variant="compact" onExpire={bumpOffers} />
@@ -408,10 +407,10 @@ const CatalogMain = ({
                               {/* Nome no card de oferta — mesmo tratamento do catálogo (legível, 2 linhas reservadas) */}
                               <h3 className="uppercase line-clamp-2 mb-1.5" style={{ color: '#E4E4E7', fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.04em', lineHeight: 1.35, minHeight: '2.7em' }}>{product.name}</h3>
                               <div className="flex items-baseline gap-2">
-                                <span style={{ color: '#fde68a', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: 800, letterSpacing: '-0.01em' }}>{formatBRL(novo)}</span>
+                                <span style={{ color: 'var(--flux-offer)', fontSize: '16px', fontFamily: "'Archivo', sans-serif", fontWeight: 800, letterSpacing: '-0.01em' }}>{formatBRL(novo)}</span>
                                 <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>{formatBRL(product.price || 0)}</span>
                               </div>
-                              <div className="flex items-center gap-1.5 mt-1.5" style={{ color: '#4ADE80' }}>
+                              <div className="flex items-center gap-1.5 mt-1.5" style={{ color: 'var(--flux-signal-deep)' }}>
                                 <Truck size={10} strokeWidth={2.4} className="shrink-0" />
                                 <span style={{ fontSize: '8px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Frete grátis · {(config?.location || 'Uberaba').split(',')[0].trim()}</span>
                               </div>
@@ -578,10 +577,10 @@ const CatalogMain = ({
                 <button key={p.id} onClick={() => handleProductClick(p)} className="shrink-0 w-24 lg:w-32 text-left group">
                   <div className="aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 relative mb-1.5">
                     <img src={optimizeImage(p.image, 300, 78)} loading="lazy" decoding="async" className="w-full h-full object-cover group-active:scale-105 transition-transform duration-300" alt={p.name} />
-                    {p.is_kit && <span className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md"><Zap size={8} className="fill-zinc-950"/> Kit</span>}
+                    {p.is_kit && <span className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-offer text-flux-ink text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md"><Zap size={8} className="fill-flux-ink"/> Kit</span>}
                   </div>
                   <p className="text-[9px] font-black uppercase text-zinc-300 truncate">{p.name}</p>
-                  <p className="text-[10px] font-black text-emerald-500">{formatBRL(p.promotional_price || p.price || 0)}</p>
+                  <p className="text-[10px] font-black text-flux">{formatBRL(p.promotional_price || p.price || 0)}</p>
                 </button>
               ))}
             </div>
@@ -600,7 +599,7 @@ const CatalogMain = ({
                 value={sortMode}
                 onChange={(e) => { setSortMode(e.target.value); setCurrentPage(1); }}
                 aria-label="Ordenar"
-                className="bg-zinc-900 border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-wider text-zinc-200 px-2.5 py-1.5 outline-none focus:border-emerald-500/50 cursor-pointer appearance-none"
+                className="bg-gunmetal border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-wider text-zinc-200 px-2.5 py-1.5 outline-none focus:border-flux/60 cursor-pointer appearance-none"
                 style={{ backgroundImage: 'none' }}
               >
                 <option value="relevancia">Ordenar: Relevância</option>
@@ -670,7 +669,7 @@ const CatalogMain = ({
                         ? { type: 'spring', stiffness: 150, damping: 26, delay: 0.08 }
                         : { type: 'spring', stiffness: 320, damping: 32, delay: Math.min(idx * 0.035, 0.28) },
                     } : {})}
-                    className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-emerald-500/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
+                    className={`cv-card group relative rounded-2xl overflow-hidden border flex flex-col touch-manipulation transition-colors duration-200 ${!isOutOfStock ? 'hover:border-white/25' : ''} ${selectedProduct?.id === product.id ? 'border-flux/60' : ''} ${isOutOfStock ? 'opacity-80' : ''}`}
                     style={{ background: 'var(--bg-surface)', borderColor: selectedProduct?.id === product.id ? undefined : 'var(--border)', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}
                     data-testid={`product-card-${product.id}`}
                   >
@@ -695,7 +694,7 @@ const CatalogMain = ({
                          {/* "Na sua mira" — peça que ESTE visitante abriu em 2+ sessões
                              (motor de intenção); desconto tem prioridade no canto */}
                          {!isOutOfStock && estaNaMira(product.id) && !isOfferLive(product) && !(product.promotional_price && product.promotional_price < product.price) && (
-                           <div className="absolute top-2 left-2 z-10 bg-zinc-950/85 backdrop-blur-sm border border-emerald-500/40 text-emerald-400 text-[8px] font-black uppercase tracking-wide px-2 py-1 rounded-md flex items-center gap-1">
+                           <div className="absolute top-2 left-2 z-10 bg-zinc-950/85 backdrop-blur-sm border border-flux/35 text-flux text-[8px] font-black uppercase tracking-wide px-2 py-1 rounded-md flex items-center gap-1">
                              <Eye size={9}/> Na sua mira
                            </div>
                          )}
@@ -744,7 +743,7 @@ const CatalogMain = ({
                              .filter(s => s.name && s.stock > 0);
                            if (avail.length === 0) return null;
                            // "Seu 42": o número aprendido do cliente (lib/mySize) ganha chip
-                           // esmeralda e fura o corte dos 4 visíveis — a faixa que já existia
+                           // titânio e fura o corte dos 4 visíveis — a faixa que já existia
                            // vira resposta pessoal da dúvida nº1 do WhatsApp ("tem no meu?").
                            const meuNum = hasMyNumber(product);
                            const meuIdx = meuNum ? avail.findIndex(s => s.name === meuNum) : -1;
@@ -755,20 +754,11 @@ const CatalogMain = ({
                                  className="absolute bottom-0 left-0 z-10 flex overflow-hidden bg-white/10 backdrop-blur-md border-t border-r border-white/20 rounded-tr-md shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
                                  data-testid={`product-sizes-${product.id}`}
                                >
-                                 <style>{`
-                                   @keyframes shineSize {
-                                     0%, 60% { transform: translateX(-180%) skewX(-18deg); }
-                                     100%     { transform: translateX(280%) skewX(-18deg); }
-                                   }
-                                 `}</style>
-                                 <span className="pointer-events-none absolute inset-0 overflow-hidden">
-                                   <span className="absolute top-0 left-0 h-full w-[28%]" style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.13), transparent)', animation: 'shineSize 6s ease-in-out infinite', animationDelay: shineDelay(product.id) }} />
-                                 </span>
                                  {visible.map(s => (s.name === meuNum ? (
                                    <span
                                      key={s.name}
                                      ref={marcarMeuNumeroExposto}
-                                     className="relative h-[22px] px-1.5 flex items-center justify-center text-[9px] font-black uppercase tracking-wide bg-emerald-500 text-zinc-950 border-r border-white/10 last:border-r-0 whitespace-nowrap"
+                                     className="relative h-[22px] px-1.5 flex items-center justify-center text-[9px] font-black uppercase tracking-wide bg-flux text-flux-ink border-r border-white/10 last:border-r-0 whitespace-nowrap"
                                    >
                                      Seu {s.name}
                                    </span>
@@ -799,9 +789,7 @@ const CatalogMain = ({
                           cursor: isOutOfStock ? 'default' : 'pointer',
                           position: 'relative',
                           zIndex: 4,
-                          background: 'linear-gradient(to bottom, hsl(228 9% 19%) 0%, hsl(228 9% 16%) 100%)',
-                          backgroundImage: 'url("https://www.transparenttextures.com/patterns/egg-shell.png")',
-                          backgroundSize: '100px',
+                          background: 'linear-gradient(to bottom, var(--flux-gunmetal) 0%, var(--flux-surface) 100%)',
                           boxShadow: '0 -1px 0 rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04)',
                         }}
                         onClick={() => !isOutOfStock && handleProductClick(product)}
@@ -813,7 +801,7 @@ const CatalogMain = ({
                         <div style={{ position: 'relative', zIndex: 6 }}>
                           {/* Linha 1 — nome. É o que o cliente compra: legível (11.5px, quase branco),
                               2 linhas com altura RESERVADA (cards continuam alinhados no grid). */}
-                          <h3 className="uppercase line-clamp-2 mb-1.5" style={{ color: '#E4E4E7', fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.04em', lineHeight: 1.35, minHeight: '2.7em' }}>
+                          <h3 className="uppercase line-clamp-2 mb-1.5" style={{ color: 'var(--text-primary)', fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.04em', lineHeight: 1.35, minHeight: '2.7em' }}>
                             {product.name}
                           </h3>
                           {(() => {
@@ -830,11 +818,11 @@ const CatalogMain = ({
                                 <div className="flex items-center justify-between gap-2 mb-1">
                                   <div className="flex flex-col leading-none min-w-0">
                                     {showStrike && (
-                                      <span style={{ color: '#71717A', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>
+                                      <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>
                                         {formatBRL(product.price || 0)}
                                       </span>
                                     )}
-                                    <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? '#fde68a' : '#F3F4F6'), fontSize: '16px', fontFamily: "'DM Sans', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0, whiteSpace: 'nowrap', textShadow: (!isOutOfStock && live) ? '0 0 16px rgba(245,200,100,0.45)' : 'none' }}>
+                                    <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? 'var(--flux-offer)' : 'var(--text-primary)'), fontSize: '16px', fontFamily: "'Archivo', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0, whiteSpace: 'nowrap', textShadow: (!isOutOfStock && live) ? '0 0 16px oklch(0.78 0.165 72 / 0.28)' : 'none' }}>
                                       {formatBRL(mainPrice || 0)}
                                     </p>
                                   </div>
@@ -846,38 +834,15 @@ const CatalogMain = ({
                                       whileTap={prefersReducedMotion ? {} : { scale: 0.96, transition: { duration: 0.08 } }}
                                       style={{
                                         height: '32px', padding: '0 12px', borderRadius: '6px', flexShrink: 0,
-                                        background: 'linear-gradient(135deg, #D4D4D4 0%, #A8A8A8 50%, #C8C8C8 100%)',
-                                        color: '#1a1a1a', fontWeight: '700', fontSize: '10px',
+                                        background: 'var(--flux-signal)',
+                                        color: 'var(--flux-signal-ink)', fontWeight: '750', fontSize: '10px',
                                         letterSpacing: '0.08em', textTransform: 'uppercase',
-                                        border: '1px solid rgba(255,255,255,0.15)',
-                                        boxShadow: '0 1px 4px rgba(0,0,0,0.4), 0 0 14px rgba(255,255,255,0.10)',
+                                        border: 0,
+                                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.56), 0 4px 8px rgba(0,0,0,0.34)',
                                         cursor: 'pointer', fontFamily: 'inherit', outline: 'none',
                                         touchAction: 'manipulation',
-                                        position: 'relative', overflow: 'hidden',
                                       }}
                                     >
-                                      {!prefersReducedMotion && (
-                                        <>
-                                          <style>{`
-                                            @keyframes shineBuy {
-                                              0%,60% { transform: translateX(-180%) skewX(-18deg); }
-                                              100%    { transform: translateX(280%) skewX(-18deg); }
-                                            }
-                                          `}</style>
-                                          <span aria-hidden="true" style={{
-                                            position: 'absolute', inset: 0, overflow: 'hidden',
-                                            borderRadius: 'inherit', pointerEvents: 'none',
-                                          }}>
-                                            <span style={{
-                                              position: 'absolute', top: 0, left: 0,
-                                              width: '28%', height: '100%',
-                                              background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.13), transparent)',
-                                              animation: 'shineBuy 6s ease-in-out infinite',
-                                              animationDelay: shineDelay(product.id),
-                                            }} />
-                                          </span>
-                                        </>
-                                      )}
                                       COMPRAR
                                     </motion.button>
                                   )}
@@ -902,7 +867,7 @@ const CatalogMain = ({
 
                           {/* Selo de frete / entrega local */}
                           {!isOutOfStock && (
-                            <div className="flex items-center gap-1.5 mb-1.5" style={{ color: '#4ADE80' }}>
+                            <div className="flex items-center gap-1.5 mb-1.5" style={{ color: 'var(--flux-signal-deep)' }}>
                               <Truck size={11} strokeWidth={2.4} className="shrink-0" />
                               <span style={{ fontSize: '8.5px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                                 Frete grátis · {(config?.location || 'Uberaba').split(',')[0].trim()}

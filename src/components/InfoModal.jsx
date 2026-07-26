@@ -59,7 +59,7 @@ const InfoModal = ({ page, config, onClose }) => {
       >
         <div className="flex items-start justify-between gap-3 p-6 pb-4 shrink-0">
           <div className="flex items-center gap-2">
-            <span className="grid place-items-center w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-400">{data.icon}</span>
+            <span className="grid place-items-center w-9 h-9 rounded-full bg-flux/10 text-flux">{data.icon}</span>
             <h3 className="text-[13px] font-black uppercase tracking-wide text-white leading-tight">{data.title}</h3>
           </div>
           <button type="button" onClick={onClose} aria-label="Fechar" className="text-zinc-500 hover:text-white shrink-0 touch-manipulation"><X size={18}/></button>
@@ -67,7 +67,7 @@ const InfoModal = ({ page, config, onClose }) => {
         <div className="overflow-y-auto px-6 space-y-5" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
           {data.sections.map(s => (
             <div key={s.h}>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-1.5">{s.h}</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-flux mb-1.5">{s.h}</p>
               <p className="text-[13px] leading-relaxed text-zinc-300">{s.p}</p>
             </div>
           ))}
@@ -76,7 +76,7 @@ const InfoModal = ({ page, config, onClose }) => {
               href={`https://wa.me/${waNumber}${data.wa ? `?text=${encodeURIComponent(data.wa)}` : ''}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 bg-zinc-900 border border-white/10 text-white hover:bg-zinc-800 active:scale-[0.98] transition-all touch-manipulation"
+              className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 bg-whatsapp text-zinc-950 active:scale-[0.98] transition-all touch-manipulation"
             >
               <MessageCircle size={14}/> Falar com a loja
             </a>

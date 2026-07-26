@@ -11,9 +11,11 @@ import { optimizeImage } from '../lib/images';
 const ProductVideoPip = ({ src, poster }) => {
   const [closed, setClosed] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [ready, setReady] = useState(false);
   const vidRef = useRef(null);
   // Garante mudo + tenta dar play (iOS só faz autoplay se mudo + playsInline).
   useEffect(() => {
+    setReady(false);
     const v = vidRef.current;
     if (v) { v.muted = true; v.play?.().catch(() => {}); }
   }, [src, expanded]);
@@ -21,8 +23,23 @@ const ProductVideoPip = ({ src, poster }) => {
 
   // poster = imagem do produto (já existe) mostrada NA HORA enquanto o vídeo baixa.
   const posterUrl = poster ? optimizeImage(poster, 300, 72) : undefined;
+  const posterStyle = posterUrl
+    ? { backgroundImage: `url("${posterUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : undefined;
   const videoEl = (cls, style) => (
-    <video ref={vidRef} src={src} poster={posterUrl} muted loop autoPlay playsInline preload="auto" className={cls} style={style} />
+    <video
+      ref={vidRef}
+      src={src}
+      poster={posterUrl}
+      muted
+      loop
+      autoPlay
+      playsInline
+      preload="auto"
+      onLoadedData={() => setReady(true)}
+      className={cls}
+      style={{ ...style, opacity: ready ? 1 : 0, transition: 'opacity 280ms ease-out' }}
+    />
   );
 
   if (expanded) {
@@ -33,7 +50,7 @@ const ProductVideoPip = ({ src, poster }) => {
         role="dialog"
         aria-label="Vídeo do produto ampliado"
       >
-        <div className="relative" onClick={(e) => e.stopPropagation()}>
+        <div className="relative bg-[var(--flux-void)]" style={posterStyle} onClick={(e) => e.stopPropagation()}>
           {videoEl('max-h-[82vh] max-w-[92vw] rounded-2xl shadow-2xl', { objectFit: 'contain' })}
           <button
             onClick={() => setExpanded(false)}
@@ -47,8 +64,8 @@ const ProductVideoPip = ({ src, poster }) => {
 
   return (
     <div
-      className="fixed z-[130] left-3 bottom-[92px] lg:bottom-6 w-[108px] lg:w-[132px] aspect-[3/4] rounded-2xl overflow-hidden border border-white/15 bg-zinc-950 shadow-[0_12px_30px_rgba(0,0,0,0.55)]"
-      style={{ animation: 'pipIn 0.3s ease-out' }}
+      className="fixed z-[130] left-3 bottom-[106px] lg:bottom-6 w-[84px] lg:w-[132px] aspect-[3/4] rounded-xl lg:rounded-2xl overflow-hidden border border-white/15 bg-zinc-950 shadow-[0_8px_8px_rgba(0,0,0,0.42)]"
+      style={{ animation: 'pipIn 0.3s ease-out', ...posterStyle }}
     >
       <style>{`@keyframes pipIn { from { opacity: 0; transform: translateY(12px) scale(0.92); } to { opacity: 1; transform: none; } }`}</style>
       <button

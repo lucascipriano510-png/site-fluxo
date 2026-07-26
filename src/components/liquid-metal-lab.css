@@ -394,7 +394,7 @@
   gap: 18px;
   padding: 0 32px;
   color: rgba(255, 255, 255, 0.96);
-  font-family: "DM Sans", Arial, sans-serif;
+  font-family: "Archivo", Arial, sans-serif;
   font-size: 0.94rem;
   font-weight: 800;
   letter-spacing: -0.015em;
@@ -422,8 +422,8 @@
   z-index: 0;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(30, 30, 34, 0.74), rgba(7, 8, 10, 0.91)),
-    rgba(9, 9, 11, 0.72);
+    linear-gradient(180deg, oklch(0.215 0.018 264 / 0.78), oklch(0.105 0.009 264 / 0.93)),
+    var(--flux-void);
   -webkit-backdrop-filter: blur(20px) saturate(145%);
   backdrop-filter: blur(20px) saturate(145%);
 }
@@ -492,14 +492,14 @@
   inset: -58% -9%;
   background:
     radial-gradient(ellipse 28% 58% at 12% 46%, rgba(230, 235, 237, 0.46), transparent 72%),
-    radial-gradient(ellipse 36% 70% at 87% 60%, rgba(7, 186, 132, 0.4), transparent 72%),
+    radial-gradient(ellipse 36% 70% at 87% 60%, oklch(0.63 0.14 264 / 0.38), transparent 72%),
     radial-gradient(ellipse 18% 48% at 55% 12%, rgba(255, 255, 255, 0.21), transparent 72%),
-    radial-gradient(ellipse 28% 52% at 38% 92%, rgba(231, 169, 55, 0.13), transparent 74%),
+    radial-gradient(ellipse 28% 52% at 38% 92%, oklch(0.79 0.03 264 / 0.14), transparent 74%),
     linear-gradient(
       102deg,
       transparent 5%,
       rgba(94, 104, 111, 0.2) 29%,
-      rgba(8, 88, 67, 0.15) 68%,
+      oklch(0.45 0.09 264 / 0.17) 68%,
       transparent 95%
     );
   filter: blur(11px) saturate(128%);
@@ -732,7 +732,7 @@
   min-width: 0;
   flex: 1;
   overflow: hidden;
-  font-family: "DM Sans", Arial, sans-serif;
+  font-family: "Archivo", Arial, sans-serif;
   font-size: 0.7rem;
   font-weight: 800;
   text-overflow: ellipsis;
@@ -841,7 +841,7 @@
   }
 
   .liquid-metal-button--cart .liquid-metal-button__refraction {
-    background: rgba(29, 33, 36, 0.86);
+    background: oklch(0.215 0.018 264 / 0.9);
   }
 
   .liquid-metal-checkout-control__ambient {
@@ -851,13 +851,13 @@
 
 @media (prefers-reduced-transparency: reduce) {
   .cart-checkout-dock::before {
-    background: rgba(9, 9, 11, 0.97);
+    background: oklch(0.105 0.009 264 / 0.97);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 
   .liquid-metal-button--cart .liquid-metal-button__refraction {
-    background: rgba(35, 39, 42, 0.96);
+    background: oklch(0.215 0.018 264 / 0.96);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }

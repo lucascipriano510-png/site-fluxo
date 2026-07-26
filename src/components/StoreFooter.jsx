@@ -11,7 +11,7 @@ const StoreFooter = ({
   setInfoPage,
   setShowMyOrders,
 }) => (
-<footer className="mt-20 border-t border-white/5 pt-14 pb-10 px-6 lg:px-16 w-full" style={{ background: '#1f1f23' }}>
+<footer className="mt-20 border-t border-white/5 pt-14 pb-10 px-6 lg:px-16 w-full" style={{ background: 'var(--flux-void)' }}>
         <div className="max-w-2xl lg:max-w-5xl mx-auto space-y-12">
 
           {/* Logo + tagline */}
@@ -20,7 +20,7 @@ const StoreFooter = ({
                 container (bg sólido igual ao footer) e não contra a página toda —
                 mix-blend "vazando" pro documento é outra causa clássica de flash
                 de tela no Chrome Android durante o scroll. Visual: idêntico. */}
-            <div className="h-16 w-full flex items-center justify-center relative overflow-hidden pointer-events-none" style={{ isolation: 'isolate', background: '#1f1f23' }}>
+            <div className="h-16 w-full flex items-center justify-center relative overflow-hidden pointer-events-none" style={{ isolation: 'isolate', background: 'var(--flux-void)' }}>
               {config.logoUrl ? (
                 <img src={optimizeImage(config.logoUrl, 540, 90)} alt={config.brandName} style={{ transform: `scale(${config.logoZoom || 1.5})` }} className="h-full w-auto max-w-full object-contain mix-blend-screen opacity-90 transition-transform" />
               ) : (
@@ -33,7 +33,7 @@ const StoreFooter = ({
               Streetwear e grife masculina. Peça escolhida a dedo.
             </p>
             <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400">
-              <MapPin size={11} className="text-emerald-500" />
+              <MapPin size={11} className="text-flux-deep" />
               <span>Loja física em {config.location || 'Uberaba, MG'} · Entrega no mesmo dia</span>
             </div>
           </div>
@@ -51,7 +51,7 @@ const StoreFooter = ({
             <div className="space-y-3">
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em]">Institucional</p>
               <button onClick={() => setInfoPage('sobre')} className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide text-left touch-manipulation">Sobre a Loja</button>
-              <a href={`https://wa.me/${(config.whatsapp || '').replace(/\D/g,'')}?text=${encodeURIComponent('Oi! Vim pelo site da Fluxo.')}`} target="_blank" rel="noopener noreferrer" className="block text-[11px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-wide">Contato</a>
+              <a href={`https://wa.me/${(config.whatsapp || '').replace(/\D/g,'')}?text=${encodeURIComponent('Oi! Vim pelo site da Fluxo.')}`} target="_blank" rel="noopener noreferrer" className="block text-[11px] font-bold text-whatsapp hover:text-whatsapp transition-colors uppercase tracking-wide">Contato</a>
             </div>
             <div className="space-y-3">
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em]">Ajuda</p>
@@ -62,12 +62,12 @@ const StoreFooter = ({
           </div>
 
           {/* Trust + pagamento */}
-          <div className="bg-zinc-950/50 rounded-[32px] p-6 border border-white/5 space-y-5">
+          <div className="bg-asphalt rounded-2xl p-6 border border-white/5 space-y-5">
             <h4 className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em] text-center">Checkout 100% Seguro</h4>
             <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col items-center gap-2"><ShieldCheck size={20} className="text-emerald-500/70" /><span className="text-[7px] font-bold uppercase text-zinc-600">SSL Cripto</span></div>
-              <div className="flex flex-col items-center gap-2"><Lock size={20} className="text-emerald-500/70" /><span className="text-[7px] font-bold uppercase text-zinc-600">Seguro</span></div>
-              <div className="flex flex-col items-center gap-2"><Award size={20} className="text-emerald-500/70" /><span className="text-[7px] font-bold uppercase text-zinc-600">Original</span></div>
+              <div className="flex flex-col items-center gap-2"><ShieldCheck size={20} className="text-flux-deep" /><span className="text-[7px] font-bold uppercase text-zinc-500">SSL Cripto</span></div>
+              <div className="flex flex-col items-center gap-2"><Lock size={20} className="text-flux-deep" /><span className="text-[7px] font-bold uppercase text-zinc-500">Seguro</span></div>
+              <div className="flex flex-col items-center gap-2"><Award size={20} className="text-flux-deep" /><span className="text-[7px] font-bold uppercase text-zinc-500">Original</span></div>
             </div>
             <div className="border-t border-white/5 pt-4">
               <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em] text-center mb-3">Formas de Pagamento</p>
@@ -85,7 +85,7 @@ const StoreFooter = ({
           {/* Copyright */}
           <div className="pt-4 text-center border-t border-white/5 text-[8px] font-black text-zinc-700 uppercase tracking-widest flex items-center justify-center gap-2 relative z-10">
             &copy; {new Date().getFullYear()} {config.brandName} &bull; DIREITOS RESERVADOS
-            <button onClick={handleSecretDoubleTap} className="text-zinc-800 hover:text-emerald-500 transition-colors outline-none select-none touch-manipulation cursor-pointer"><Lock size={10}/></button>
+            <button onClick={handleSecretDoubleTap} className="text-zinc-800 hover:text-flux transition-colors outline-none select-none touch-manipulation cursor-pointer"><Lock size={10}/></button>
           </div>
         </div>
       </footer>

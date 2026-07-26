@@ -1993,7 +1993,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell brilho-ambient min-h-dvh font-sans text-white pb-0 selection:bg-emerald-500 selection:text-zinc-950">
+    <div className="app-shell flux-storefront brilho-ambient min-h-dvh font-sans text-white pb-0 selection:bg-flux selection:text-flux-ink">
 
       {/* Atmosfera 3D (three.js lazy): profundidade pro brilho-ambient, z -1
           dentro do shell isolado — acima do fundo, abaixo de TODO o conteúdo.
@@ -2034,8 +2034,8 @@ function App() {
 
       {/* ── Barra de Benefícios ─────────────────────────────── */}
       <div
-        className="w-full overflow-x-auto no-scrollbar flex items-center justify-center border-b"
-        style={{ background: '#2c2c2e', borderColor: 'rgba(255,255,255,0.06)', height: '44px' }}
+        className="w-full overflow-x-auto no-scrollbar flex items-center justify-start lg:justify-center border-b"
+        style={{ background: 'var(--flux-surface)', borderColor: 'var(--flux-border)', height: '44px' }}
       >
         <div className="flex items-center gap-6 lg:gap-10 px-6 shrink-0">
           {[
@@ -2047,8 +2047,8 @@ function App() {
             { icon: <ShieldCheck size={13} />, label: 'Enviamos pra todo Brasil' },
           ].map(({ icon, label }) => (
             <div key={label} className="flex items-center gap-1.5 shrink-0">
-              <span style={{ color: '#a1a1aa' }}>{icon}</span>
-              <span style={{ color: '#a1a1aa', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' }}>{label}</span>
+              <span style={{ color: label.includes('Pix') ? 'var(--flux-pix)' : 'var(--flux-signal-deep)' }}>{icon}</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' }}>{label}</span>
             </div>
           ))}
         </div>
@@ -2143,12 +2143,12 @@ function App() {
         >
           <button
             onClick={() => setShowCart(true)}
-            className="pointer-events-auto w-full md:w-auto flex items-center justify-between md:justify-start gap-4 bg-zinc-900 text-white border border-white/10 px-5 py-4 md:px-6 md:py-4 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] touch-manipulation active:scale-95 transition-transform"
+            className="pointer-events-auto w-full md:w-auto flex items-center justify-between md:justify-start gap-4 bg-gunmetal text-white border border-[var(--flux-border)] px-5 py-4 md:px-6 md:py-4 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] touch-manipulation active:scale-95 transition-transform"
           >
             <div className="flex items-center gap-3">
               <div className="relative">
-                <ShoppingBag size={22} strokeWidth={2.5} className="text-emerald-400" />
-                <span className="absolute -top-2 -right-2 bg-emerald-500 text-zinc-950 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                <ShoppingBag size={22} strokeWidth={2.5} className="text-flux" />
+                <span className="absolute -top-2 -right-2 bg-flux text-flux-ink text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
                   {cart.reduce((a, i) => a + i.quantity, 0)}
                 </span>
               </div>
@@ -2168,8 +2168,8 @@ function App() {
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCartModalOpen(false)} />
           <div className="relative w-full sm:max-w-md bg-zinc-950 border border-zinc-800 rounded-t-3xl sm:rounded-2xl px-6 pt-8 pb-7 animate-slide-up">
             <div className="flex justify-center mb-5">
-              <div className="w-14 h-14 rounded-full border-2 border-emerald-500 flex items-center justify-center">
-                <Check size={28} className="text-emerald-500" strokeWidth={3} />
+              <div className="w-14 h-14 rounded-full border-2 border-flux flex items-center justify-center">
+                <Check size={28} className="text-flux" strokeWidth={3} />
               </div>
             </div>
             <h3 className="text-center text-white font-black text-lg uppercase tracking-wide">Adicionado ao Carrinho</h3>
@@ -2177,7 +2177,7 @@ function App() {
             <div className="space-y-3">
               <button
                 onClick={() => { setIsCartModalOpen(false); setShowCart(true); }}
-                className="w-full py-4 rounded-xl bg-emerald-500 text-white font-black text-[12px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation"
+                className="w-full py-4 rounded-xl bg-flux text-flux-ink font-black text-[12px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation"
               >
                 Ir para o Carrinho
               </button>

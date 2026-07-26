@@ -27,8 +27,8 @@
     <!-- Fontes SEM bloquear a 1ª pintura: preload+onload vira stylesheet quando
          chega; display=swap já garante texto visível na fonte de fallback.
          Em 4G ruim o CSS bloqueante do Google segurava o render inteiro. -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Anton&family=DM+Sans:wght@800&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Anton&family=DM+Sans:wght@800&display=swap" /></noscript>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Anton&family=Archivo:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Anton&family=Archivo:wght@400;500;600;700;800;900&display=swap" /></noscript>
     <!-- Preload das 2 PRIMEIRAS imagens do grid, com a URL EXATA que ESTE
          aparelho renderizou na visita anterior (currentSrc salvo pelo App em
          @fluxo:preload-imgs-v1). Começa o download junto com o JS em vez de

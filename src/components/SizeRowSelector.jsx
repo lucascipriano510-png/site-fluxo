@@ -31,10 +31,10 @@ const SizeRowSelector = ({ product, selectedSizes, setSelectedSizes, onPick, onA
               onClick={() => onAlert(size)}
               style={SIZE_STRIKE_STYLE}
               aria-label={`Tamanho ${size} esgotado — pedir aviso`}
-              className="h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border border-zinc-800 bg-zinc-900/40 font-black transition-all active:scale-95 touch-manipulation hover:border-emerald-500/40 flex flex-col items-center justify-center gap-[3px] leading-none"
+              className="h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border border-zinc-800 bg-gunmetal/40 font-black transition-all active:scale-95 touch-manipulation hover:border-flux/40 flex flex-col items-center justify-center gap-[3px] leading-none"
             >
               <span className="text-[12px] text-zinc-500">{size}</span>
-              <span className="text-[7px] text-emerald-400 uppercase tracking-wide flex items-center gap-0.5"><Bell size={7}/> Avise-me</span>
+              <span className="text-[7px] text-flux-deep uppercase tracking-wide flex items-center gap-0.5"><Bell size={7}/> Avise-me</span>
             </button>
           );
           const ehMeu = size === meu;
@@ -43,15 +43,15 @@ const SizeRowSelector = ({ product, selectedSizes, setSelectedSizes, onPick, onA
               key={size}
               onClick={() => (qty > 0 ? unpick(size) : onPick(size, stock))}
               aria-label={ehMeu ? `Tamanho ${size} — seu número` : `Tamanho ${size}`}
-              className={`relative h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border font-black text-[13px] transition-all active:scale-95 touch-manipulation ${qty > 0 ? 'bg-white border-white text-zinc-950' : ehMeu ? 'bg-zinc-900 border-emerald-500/60 text-white hover:border-emerald-400' : 'bg-zinc-900 border-zinc-700 text-zinc-200 hover:border-white hover:text-white'}`}
+              className={`relative h-11 flex-1 min-w-[42px] max-w-[64px] rounded-lg border font-black text-[13px] transition-all active:scale-95 touch-manipulation ${qty > 0 ? 'bg-flux border-flux text-flux-ink' : ehMeu ? 'bg-gunmetal border-flux/60 text-white hover:border-flux' : 'bg-gunmetal border-zinc-700 text-zinc-200 hover:border-white hover:text-white'}`}
             >
               {ehMeu && qty === 0 ? (
                 <span className="flex flex-col items-center justify-center gap-[3px] leading-none">
                   <span className="text-[12px]">{size}</span>
-                  <span className="text-[7px] text-emerald-400 uppercase tracking-wide">seu nº</span>
+                  <span className="text-[7px] text-flux-deep uppercase tracking-wide">seu nº</span>
                 </span>
               ) : size}
-              {qty > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-0.5 rounded-full bg-emerald-500 text-zinc-950 text-[10px] font-black grid place-items-center tabular-nums">{qty}</span>}
+              {qty > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-0.5 rounded-full bg-flux text-flux-ink text-[10px] font-black grid place-items-center tabular-nums">{qty}</span>}
               {qty === 0 && stock <= 3 && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden="true"/>}
             </button>
           );
@@ -59,7 +59,7 @@ const SizeRowSelector = ({ product, selectedSizes, setSelectedSizes, onPick, onA
       </div>
       {anySoldOut && (
         <p className="text-[9px] font-bold uppercase tracking-wide text-zinc-500 flex items-center gap-1.5">
-          <Bell size={10} className="text-emerald-400 shrink-0"/> Riscado esgotou — toca nele pra ser avisado quando voltar
+          <Bell size={10} className="text-flux-deep shrink-0"/> Riscado esgotou — toca nele pra ser avisado quando voltar
         </p>
       )}
       {picked.length > 0 && (

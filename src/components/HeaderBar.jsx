@@ -108,19 +108,19 @@ const HeaderBar = ({
                   title={userProfile ? `Olá, ${userProfile.name.split(' ')[0]}` : 'Minha Conta'}
                   className={`relative w-9 h-9 rounded-full flex items-center justify-center touch-manipulation transition-all duration-200 active:scale-90 shrink-0 ${
                     userProfile
-                      ? 'bg-emerald-500/15 border-2 border-emerald-500/60 hover:border-emerald-400'
+                      ? 'bg-flux/10 border-2 border-flux/55 hover:border-flux'
                       : 'bg-zinc-900 border border-white/15 hover:border-white/40 hover:bg-zinc-800'
                   }`}
                 >
                   {initials ? (
-                    <span className="text-[11px] font-black text-emerald-400 leading-none select-none">
+                    <span className="text-[11px] font-black text-flux leading-none select-none">
                       {initials}
                     </span>
                   ) : (
                     <User size={15} className="text-zinc-400" />
                   )}
                   {userProfile && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-zinc-950 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-flux rounded-full border-2 border-[var(--flux-void)] shadow-[0_0_7px_rgba(232,234,236,0.45)]" />
                   )}
                 </button>
               );
@@ -129,7 +129,7 @@ const HeaderBar = ({
               <motion.div
                 animate={cartBounce ? { scale: [1, 1.3, 0.9, 1.1, 1], rotate: [0, -8, 6, -3, 0] } : { scale: 1 }}
                 transition={{ duration: 0.4, ease: 'easeOut' }}
-                className={cartBounce ? 'text-emerald-500' : 'text-white hover:text-emerald-500'}
+                className={cartBounce ? 'text-flux' : 'text-white hover:text-flux'}
               >
                 <ShoppingBag size={24} />
               </motion.div>
@@ -139,7 +139,7 @@ const HeaderBar = ({
                   initial={{ scale: 0.5 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                  className="absolute top-0 right-0 bg-emerald-500 text-zinc-950 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-zinc-950 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                  className="absolute top-0 right-0 bg-flux text-flux-ink text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-[var(--flux-void)] shadow-[0_0_10px_rgba(232,234,236,0.28)]"
                 >
                   {cart.reduce((a,i)=>a+i.quantity,0)}
                 </motion.span>

@@ -26,7 +26,7 @@ const PecaUnicaChip = () => {
   const ref = React.useRef(null);
   React.useEffect(() => observarExposicao(ref.current, 'peca_unica'), []);
   return (
-    <span ref={ref} className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 rounded-full px-2.5 py-1">
+    <span ref={ref} className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-flux bg-flux/8 border border-flux/25 rounded-full px-2.5 py-1">
       <Gem size={10}/> Peça única
     </span>
   );
@@ -128,7 +128,7 @@ const ProductPageOverlay = ({
           <nav
             aria-label="Caminho do produto"
             className={`flex flex-wrap items-center gap-x-2 gap-y-1 ${className || ''}`}
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
+            style={{ fontFamily: "'Archivo', sans-serif" }}
           >
             {crumbs.map((c, i) => (
               <React.Fragment key={i}>
@@ -155,7 +155,7 @@ const ProductPageOverlay = ({
           {/* A barra real (hambúrguer/logo/perfil/sacola) fica sticky logo acima — barra compartilhada com o home. */}
           <motion.div
             className="lg:hidden min-h-dvh"
-            style={{ background: '#202024' }}
+            style={{ background: 'var(--flux-surface)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -225,7 +225,7 @@ const ProductPageOverlay = ({
                 {productGallery.length > 1 && (
                   <div className="shrink-0 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar bg-zinc-950 border-b border-white/5" style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
                     {productGallery.map((g, i) => (
-                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-zinc-800 border-2 transition-all touch-manipulation ${heroImg === g ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-60'}`}>
+                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-zinc-800 border-2 transition-all touch-manipulation ${heroImg === g ? 'border-flux shadow-[0_0_12px_rgba(232,234,236,0.24)] scale-105' : 'border-white/10 opacity-60'}`}>
                         <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" draggable={false} decoding="async" />
                       </button>
                     ))}
@@ -258,16 +258,16 @@ const ProductPageOverlay = ({
 
                   {/* Preço */}
                   {isOfferLive(selectedProduct) ? (
-                    <div className="p-[1.5px] rounded-3xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40">
-                      <div className="rounded-[22px] bg-zinc-950/80 p-5 space-y-3">
+                    <div className="rounded-3xl border border-offer/35 bg-[var(--flux-surface)]">
+                      <div className="rounded-[22px] bg-transparent p-5 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.25em]" style={{ color: '#fbbf24' }}>
                             <Flame size={11} className="fill-amber-400 text-amber-400"/> Oferta do Dia
                           </span>
-                          <span className="text-[10px] font-black text-zinc-950 px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-red-500">-{offerPercent(selectedProduct)}%</span>
+                          <span className="text-[10px] font-black text-flux-ink px-2 py-0.5 rounded-md bg-offer">-{offerPercent(selectedProduct)}%</span>
                         </div>
                         <div className="flex items-baseline gap-3">
-                          <span className="text-[34px] font-black tracking-tighter tabular-nums" style={{ color: '#fde68a' }}>{formatBRL(offerPrice(selectedProduct))}</span>
+                          <span className="text-[34px] font-black tracking-tighter tabular-nums" style={{ color: 'var(--flux-offer)' }}>{formatBRL(offerPrice(selectedProduct))}</span>
                           <span className="text-base font-bold text-zinc-500 line-through tabular-nums">{formatBRL(selectedProduct.price || 0)}</span>
                         </div>
                         <OfferCountdown target={offerEndsAt(selectedProduct)} variant="full" onExpire={bumpOffers} />
@@ -293,7 +293,7 @@ const ProductPageOverlay = ({
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[11px] font-black text-white uppercase tracking-[0.22em]">Selecione o Tamanho</p>
                     {hasSizeGuide(selectedProduct) && (
-                      <button onClick={() => setShowSizeGuide(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400 touch-manipulation active:opacity-70 transition-opacity">
+                      <button onClick={() => setShowSizeGuide(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-flux touch-manipulation active:opacity-70 transition-opacity">
                         <Ruler size={12}/> Guia de medidas
                       </button>
                     )}
@@ -333,15 +333,15 @@ const ProductPageOverlay = ({
                 {/* Trust signals */}
                 <div className="grid grid-cols-3 gap-3 pt-8 border-t border-white/5">
                   <div className="flex flex-col items-center gap-2 text-center">
-                    <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><ShieldCheck size={16} className="text-emerald-500"/></div>
+                    <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><ShieldCheck size={16} className="text-flux-deep"/></div>
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wide leading-tight">Compra Segura</span>
                   </div>
                   <div className="flex flex-col items-center gap-2 text-center">
-                    <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={16} className="text-emerald-500"/></div>
+                    <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={16} className="text-flux-deep"/></div>
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wide leading-tight">{`Entrega Hoje ${cityShort}`}</span>
                   </div>
                   <div className="flex flex-col items-center gap-2 text-center">
-                    <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={16} className="text-emerald-500"/></div>
+                    <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={16} className="text-whatsapp"/></div>
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wide leading-tight">Suporte WA</span>
                   </div>
                 </div>
@@ -363,10 +363,10 @@ const ProductPageOverlay = ({
                         >
                           <div className="aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 relative mb-2">
                             <img src={optimizeImage(p.image, 400, 80)} className="w-full h-full object-cover group-active:scale-105 transition-transform duration-300" alt={p.name} loading="lazy" />
-                            {p.is_kit && <span className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md shadow-lg"><Zap size={8} className="fill-zinc-950"/> Kit</span>}
+                            {p.is_kit && <span className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 bg-offer text-flux-ink text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md"><Zap size={8} className="fill-flux-ink"/> Kit</span>}
                           </div>
                           <p className="text-[10px] font-black text-zinc-300 uppercase truncate">{p.name}</p>
-                          <p className="text-[11px] font-black text-emerald-500">{formatBRL(p.promotional_price || p.price || 0)}</p>
+                          <p className="text-[11px] font-black text-flux">{formatBRL(p.promotional_price || p.price || 0)}</p>
                         </motion.button>
                       ))}
                     </div>
@@ -379,7 +379,7 @@ const ProductPageOverlay = ({
                 <button
                   onClick={handleCommitToCart}
                   disabled={Object.keys(selectedSizes).length === 0}
-                  className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 touch-manipulation ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-700' : 'bg-emerald-500 text-zinc-950 shadow-[0_10px_30px_rgba(16,185,129,0.3)] active:scale-[0.98]'}`}
+                  className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 touch-manipulation ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-700' : 'bg-flux text-flux-ink shadow-[0_8px_8px_rgba(0,0,0,0.34)] active:scale-[0.98]'}`}
                 >
                   {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola (${Object.values(selectedSizes).reduce((a,b)=>a+b,0)})`} <ShoppingBag size={14}/>
                 </button>
@@ -389,7 +389,7 @@ const ProductPageOverlay = ({
           {/* ── DESKTOP: página de produto real (oculto no mobile) ── */}
           <motion.div
             className="hidden lg:block fixed inset-0 z-30 overflow-y-auto"
-            style={{ background: '#202024' }}
+            style={{ background: 'var(--flux-surface)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -429,7 +429,7 @@ const ProductPageOverlay = ({
                 {productGallery.length > 1 && (
                   <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar" style={{ touchAction: 'pan-x pan-y' }}>
                     {productGallery.map((g, i) => (
-                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-zinc-800 border-2 transition-all ${heroImg === g ? 'border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
+                      <button key={i} onClick={() => setActiveProductImage(g)} className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-zinc-800 border-2 transition-all ${heroImg === g ? 'border-flux shadow-[0_0_14px_rgba(232,234,236,0.22)] scale-105' : 'border-white/10 opacity-50 hover:opacity-100'}`}>
                         <img src={optimizeImage(g, 300, 80)} className="w-full h-full object-cover" alt="" decoding="async" />
                       </button>
                     ))}
@@ -480,16 +480,16 @@ const ProductPageOverlay = ({
 
                   {/* Preço */}
                   {isOfferLive(selectedProduct) ? (
-                    <div className="mb-8 p-[1.5px] rounded-3xl bg-gradient-to-br from-amber-400/50 via-amber-500/10 to-red-500/40">
-                      <div className="rounded-[22px] bg-zinc-950/80 p-5 space-y-4">
+                    <div className="mb-8 rounded-3xl border border-offer/35 bg-[var(--flux-surface)]">
+                      <div className="rounded-[22px] bg-transparent p-5 space-y-4">
                         <div className="flex items-center gap-2.5">
                           <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#fbbf24' }}>
                             <Flame size={13} className="fill-amber-400 text-amber-400"/> Oferta do Dia
                           </span>
-                          <span className="text-[11px] font-black text-zinc-950 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-red-500 shadow-[0_4px_14px_rgba(245,158,11,0.4)]">-{offerPercent(selectedProduct)}% OFF</span>
+                          <span className="text-[11px] font-black text-flux-ink px-2.5 py-1 rounded-lg bg-offer shadow-[0_3px_8px_rgba(0,0,0,0.3)]">-{offerPercent(selectedProduct)}% OFF</span>
                         </div>
                         <div className="flex items-baseline gap-4">
-                          <span className="text-5xl font-black tracking-tighter tabular-nums" style={{ color: '#fde68a' }}>{formatBRL(offerPrice(selectedProduct))}</span>
+                          <span className="text-5xl font-black tracking-tighter tabular-nums" style={{ color: 'var(--flux-offer)' }}>{formatBRL(offerPrice(selectedProduct))}</span>
                           <span className="text-xl font-bold text-zinc-500 line-through tabular-nums">{formatBRL(selectedProduct.price || 0)}</span>
                         </div>
                         <OfferCountdown target={offerEndsAt(selectedProduct)} variant="full" onExpire={bumpOffers} />
@@ -517,7 +517,7 @@ const ProductPageOverlay = ({
                     <div className="flex items-center justify-between gap-3 mb-4">
                       <p className="text-[11px] font-black text-white uppercase tracking-[0.22em]">Selecione o Tamanho</p>
                       {hasSizeGuide(selectedProduct) && (
-                        <button onClick={() => setShowSizeGuide(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors">
+                        <button onClick={() => setShowSizeGuide(true)} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-flux hover:text-flux-bright transition-colors">
                           <Ruler size={12}/> Guia de medidas
                         </button>
                       )}
@@ -532,7 +532,7 @@ const ProductPageOverlay = ({
                   </div>
 
                   {/* CTA */}
-                  <button onClick={handleCommitToCart} disabled={Object.keys(selectedSizes).length === 0} className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed' : 'bg-emerald-500 text-zinc-950 shadow-[0_10px_40px_rgba(16,185,129,0.35)] hover:bg-emerald-400 hover:shadow-[0_10px_50px_rgba(16,185,129,0.5)]'}`}>
+                  <button onClick={handleCommitToCart} disabled={Object.keys(selectedSizes).length === 0} className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed' : 'bg-flux text-flux-ink shadow-[0_8px_8px_rgba(0,0,0,0.34)] hover:bg-flux-bright'}`}>
                     {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola — ${Object.values(selectedSizes).reduce((a,b)=>a+b,0)} ${Object.values(selectedSizes).reduce((a,b)=>a+b,0) === 1 ? 'peça' : 'peças'}`}
                     <ShoppingBag size={16}/>
                   </button>
@@ -563,15 +563,15 @@ const ProductPageOverlay = ({
                   {/* Trust signals */}
                   <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-3 gap-4">
                     <div className="flex flex-col items-center gap-2 text-center">
-                      <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><ShieldCheck size={17} className="text-emerald-500"/></div>
+                      <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><ShieldCheck size={17} className="text-flux-deep"/></div>
                       <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Compra Segura</span>
                     </div>
                     <div className="flex flex-col items-center gap-2 text-center">
-                      <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={17} className="text-emerald-500"/></div>
+                      <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><Truck size={17} className="text-flux-deep"/></div>
                       <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">{`Entrega Hoje ${cityShort}`}</span>
                     </div>
                     <div className="flex flex-col items-center gap-2 text-center">
-                      <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={17} className="text-emerald-500"/></div>
+                      <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center"><MessageCircle size={17} className="text-whatsapp"/></div>
                       <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">Suporte WhatsApp</span>
                     </div>
                   </div>
@@ -595,10 +595,10 @@ const ProductPageOverlay = ({
                     >
                       <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 relative mb-3">
                         <img src={optimizeImage(p.image, 400, 80)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={p.name} loading="lazy" />
-                        {p.is_kit && <span className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-gradient-to-r from-amber-400 to-pink-500 text-zinc-950 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-lg"><Zap size={9} className="fill-zinc-950"/> Kit</span>}
+                        {p.is_kit && <span className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-offer text-flux-ink text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md"><Zap size={9} className="fill-flux-ink"/> Kit</span>}
                       </div>
                       <p className="text-[11px] font-black text-zinc-300 uppercase truncate">{p.name}</p>
-                      <p className="text-sm font-black text-emerald-500">{formatBRL(p.promotional_price || p.price || 0)}</p>
+                      <p className="text-sm font-black text-flux">{formatBRL(p.promotional_price || p.price || 0)}</p>
                     </motion.button>
                   ))}
                 </div>

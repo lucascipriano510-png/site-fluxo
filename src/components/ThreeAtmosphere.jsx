@@ -1,8 +1,8 @@
 // =====================================================================
 // FLUXO OUTLET — Atmosfera 3D da home (three.js)
 // Não é enfeite genérico: é o brilho-ambient da casa ganhando PROFUNDIDADE.
-// Poeira fina de vitrine iluminada, com os MESMOS acentos do CSS —
-// âmbar no alto-esquerdo, esmeralda no alto-direito — flutuando em 3D
+// Poeira fina de vitrine iluminada: gunmetal, flash de titânio e um reflexo
+// denim raro, flutuando em 3D
 // atrás de todo o conteúdo (z -1 dentro do shell isolado).
 //
 // Regras de convivência com a home (identidade > efeito):
@@ -67,7 +67,7 @@ export default function ThreeAtmosphere() {
       const scene = new THREE.Scene();
       // Fog na cor do fundo da página: partícula longe some NO fundo (profundidade
       // de verdade, não pontinho flutuando na frente).
-      scene.fog = new THREE.FogExp2(0x121214, 0.052);
+      scene.fog = new THREE.FogExp2(0x0b0d12, 0.052);
 
       const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 60);
       camera.position.set(0, 0, 11);
@@ -84,11 +84,11 @@ export default function ThreeAtmosphere() {
       sctx.fillRect(0, 0, 64, 64);
       const sprite = new THREE.CanvasTexture(spriteCanvas);
 
-      // Paleta da casa (mesmos acentos do brilho-ambient do styles.css).
-      // Neon vermelho/azul do vídeo foi testado e RECUSADO pelo dono (2026-07-11).
-      const zinc    = new THREE.Color(0x9a9aa4);
-      const amber   = new THREE.Color(0xf59e0b);
-      const emerald = new THREE.Color(0x10b981);
+      // Paleta 60/30/10: mineral na base, titânio como flash e denim apenas
+      // na região de assinatura. Verde pertence ao WhatsApp.
+      const gunmetal = new THREE.Color(0x9399a6);
+      const titanium = new THREE.Color(0xe8eaec);
+      const denim = new THREE.Color(0x617dc8);
 
       const spreadX = 16 * Math.max(1, window.innerWidth / window.innerHeight);
       const base = new Float32Array(N * 3);   // posição de nascença
@@ -104,13 +104,13 @@ export default function ThreeAtmosphere() {
         const z = -2 - Math.random() * 14; // tudo ATRÁS do plano da página
         base[i * 3] = x; base[i * 3 + 1] = y; base[i * 3 + 2] = z;
 
-        // Acentos nas mesmas regiões do brilho CSS: âmbar alto-esquerdo,
-        // esmeralda alto-direito; o resto é poeira zinco neutra.
+        // Flash de provador no alto esquerdo; denim no canto oposto. O restante
+        // fica mineral para não disputar com as fotos dos produtos.
         const nx = x / spreadX + 0.5;   // 0..1
         const ny = y / BAND + 0.5;      // 0..1 (1 = topo)
-        const wAmber   = Math.exp(-(((nx - 0.12) ** 2) / 0.03 + ((ny - 0.88) ** 2) / 0.06));
-        const wEmerald = Math.exp(-(((nx - 0.92) ** 2) / 0.03 + ((ny - 0.90) ** 2) / 0.06));
-        tmp.copy(zinc).lerp(amber, Math.min(1, wAmber * 1.4)).lerp(emerald, Math.min(1, wEmerald * 1.4));
+        const wFlash = Math.exp(-(((nx - 0.14) ** 2) / 0.035 + ((ny - 0.88) ** 2) / 0.07));
+        const wDenim = Math.exp(-(((nx - 0.92) ** 2) / 0.035 + ((ny - 0.90) ** 2) / 0.07));
+        tmp.copy(gunmetal).lerp(titanium, Math.min(0.72, wFlash)).lerp(denim, Math.min(0.82, wDenim));
         // variação de brilho individual (poeira não é uniforme)
         const dim = 0.35 + Math.random() * 0.65;
         col[i * 3] = tmp.r * dim; col[i * 3 + 1] = tmp.g * dim; col[i * 3 + 2] = tmp.b * dim;

@@ -38,9 +38,9 @@ const CartOverlay = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-x-0 z-[150] bg-zinc-950 overflow-y-auto" style={viewportOverlayStyle}>
-          <div className="max-w-md mx-auto min-h-dvh flex flex-col bg-zinc-950 relative">
-            <div className="sticky top-0 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-6 flex justify-between items-center h-20 z-10">
+          className="fixed inset-x-0 z-[150] bg-asphalt overflow-y-auto" style={viewportOverlayStyle}>
+          <div className="max-w-md mx-auto min-h-dvh flex flex-col bg-asphalt relative">
+            <div className="sticky top-0 bg-asphalt/88 backdrop-blur-xl border-b border-white/5 px-6 py-6 flex justify-between items-center h-20 z-10">
               <h2 className="text-xl font-black uppercase text-white">Sua Sacola <span className="bg-white text-zinc-950 text-[10px] px-2 py-0.5 rounded-full ml-2">{cart.length}</span></h2>
               <div className="flex items-center gap-2">
                 {cart.length > 0 && (
@@ -97,7 +97,7 @@ const CartOverlay = ({
                                   <img src={optimizeImage(p.image, 400, 80)} className="w-full h-full object-cover group-active:scale-105 transition-transform duration-300" alt={p.name} loading="lazy" decoding="async" />
                                 </div>
                                 <p className="text-[10px] font-black text-zinc-300 uppercase truncate">{p.name}</p>
-                                <p className="text-[11px] font-black text-emerald-500">{formatBRL(p.promotional_price || p.price || 0)}</p>
+                                <p className="text-[11px] font-black text-flux">{formatBRL(p.promotional_price || p.price || 0)}</p>
                               </motion.button>
                             ))}
                           </div>
@@ -107,7 +107,7 @@ const CartOverlay = ({
                     );
                 })() : (
                     cart.map(item => (
-                      <div key={item.itemKey} className="bg-zinc-900/50 p-3 rounded-[24px] border border-white/5 flex gap-4 shadow-sm animate-in">
+                      <div key={item.itemKey} className="bg-gunmetal/60 p-3 rounded-[24px] border border-white/5 flex gap-4 animate-in">
                         {/* Thumb via wsrv: sem isso o original cru (1–5 MB) desce pra um thumb de 80px */}
                         <img src={optimizeImage(item.image, 200, 80)} className="w-20 h-24 rounded-[16px] object-cover border border-white/5" alt="Item" loading="lazy" decoding="async" />
                         <div className="flex-1 flex flex-col justify-between py-1">
@@ -116,11 +116,11 @@ const CartOverlay = ({
                             <button onClick={() => setCart(cart.filter(i => i.itemKey !== item.itemKey))} aria-label="Remover peça da sacola" className="p-2 -m-2 text-zinc-500 hover:text-red-500 touch-manipulation"><Trash2 size={16}/></button>
                           </div>
                           <div className="flex justify-between items-center mt-3">
-                            <span className={`font-black text-sm flex items-center gap-1.5 ${item.offer_applied ? 'text-amber-400' : 'text-emerald-500'}`}>
+                            <span className={`font-black text-sm flex items-center gap-1.5 ${item.offer_applied ? 'text-offer' : 'text-flux'}`}>
                               {formatBRL(item.price || 0)}
-                              {item.offer_applied && <span className="text-[7px] font-black text-zinc-950 px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-400 to-red-500 tracking-wide">OFERTA</span>}
+                              {item.offer_applied && <span className="text-[7px] font-black text-flux-ink px-1.5 py-0.5 rounded bg-offer tracking-wide">OFERTA</span>}
                             </span>
-                            <div className="flex items-center bg-zinc-950 rounded-lg border border-white/5 p-1">
+                            <div className="flex items-center bg-asphalt rounded-lg border border-white/5 p-1">
                               <button onClick={() => { if(item.quantity > 1) setCart(cart.map(i => i.itemKey === item.itemKey ? {...i, quantity: i.quantity - 1} : i)) }} aria-label="Diminuir quantidade" className="text-zinc-400 p-2.5 -m-1 touch-manipulation"><Minus size={12}/></button>
                               <span className="font-black text-xs text-white w-6 text-center">{item.quantity}</span>
                               <button onClick={() => {
@@ -149,7 +149,7 @@ const CartOverlay = ({
                       onChange={e => setCupomInput(e.target.value.toUpperCase())}
                       onKeyDown={e => { if (e.key === 'Enter' && aplicarCupom(cupomInput)) setCupomInput(''); }}
                       placeholder="TEM CUPOM? DIGITA AQUI"
-                      className="flex-1 min-w-0 bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white placeholder:text-zinc-500 outline-none focus:border-amber-400/50"
+                      className="flex-1 min-w-0 bg-gunmetal border border-white/10 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white placeholder:text-zinc-500 outline-none focus:border-offer/50"
                       data-testid="cupom-input"
                     />
                     <button
@@ -169,7 +169,7 @@ const CartOverlay = ({
                        </span>
                      </div>
                    )}
-                   <div className="flex justify-between items-center text-[11px] font-bold uppercase"><span className="text-zinc-400 inline-flex items-center gap-1.5"><span style={{ color: '#32BCAD', display: 'inline-flex' }}><PixIcon size={12} /></span>Desconto Pix (5%)</span><span className="text-emerald-500">- {formatBRL(pixDiscount)}</span></div>
+                   <div className="flex justify-between items-center text-[11px] font-bold uppercase"><span className="text-zinc-400 inline-flex items-center gap-1.5"><span style={{ color: 'var(--flux-pix)', display: 'inline-flex' }}><PixIcon size={12} /></span>Desconto Pix (5%)</span><span className="text-flux">- {formatBRL(pixDiscount)}</span></div>
                    {hasOfferInCart && (
                      <div className="flex items-start gap-1.5 text-[9px] font-bold text-amber-400/90 uppercase tracking-wide leading-snug">
                        <Flame size={11} className="shrink-0 mt-px fill-amber-400 text-amber-400" />
@@ -178,16 +178,16 @@ const CartOverlay = ({
                    )}
                    <div className="flex justify-between items-end pt-3 border-t border-white/10">
                      <div className="flex flex-col">
-                       <p className="text-[12px] font-black text-white uppercase tracking-widest inline-flex items-center gap-1.5"><span style={{ color: '#32BCAD', display: 'inline-flex' }}><PixIcon size={13} /></span>Total no Pix</p>
+                       <p className="text-[12px] font-black text-white uppercase tracking-widest inline-flex items-center gap-1.5"><span style={{ color: 'var(--flux-pix)', display: 'inline-flex' }}><PixIcon size={13} /></span>Total no Pix</p>
                        <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">ou {formatBRL(subtotal - cupomDiscount)} em até 4x sem juros</span>
                      </div>
-                     <h3 className="text-3xl font-black text-emerald-500 tracking-tighter">{formatBRL(totalComPix)}</h3>
+                     <h3 className="text-3xl font-black text-flux tracking-tighter">{formatBRL(totalComPix)}</h3>
                    </div>
                 </div>
                 {/* Entrega local — diferencial Uberaba */}
-                <div className="flex flex-col gap-2 mb-4 p-3 rounded-2xl" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
-                   <div className="flex items-center gap-2"><Zap size={13} className="text-emerald-500 shrink-0" /><span className="text-[10px] font-bold text-white">Entrega no mesmo dia em Uberaba</span></div>
-                   <div className="flex items-center gap-2"><MapPin size={13} className="text-emerald-500 shrink-0" /><span className="text-[10px] font-bold text-zinc-300">Ou retire na loja</span></div>
+                <div className="flex flex-col gap-2 mb-4 p-3 rounded-2xl" style={{ background: 'var(--flux-gunmetal)', border: '1px solid var(--flux-border)' }}>
+                   <div className="flex items-center gap-2"><Zap size={13} className="text-flux-deep shrink-0" /><span className="text-[10px] font-bold text-white">Entrega no mesmo dia em Uberaba</span></div>
+                   <div className="flex items-center gap-2"><MapPin size={13} className="text-flux-deep shrink-0" /><span className="text-[10px] font-bold text-zinc-300">Ou retire na loja</span></div>
                    <div className="flex items-center gap-2"><Truck size={13} className="text-zinc-500 shrink-0" /><span className="text-[10px] font-bold text-zinc-500">Outras regiões: frete combinado no WhatsApp</span></div>
                 </div>
                 <LiquidMetalCheckoutButton

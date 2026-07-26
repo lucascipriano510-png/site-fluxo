@@ -7,9 +7,9 @@ import React from 'react';
 const HeroVideo = () => {
   const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
   return (
-    <div className="relative w-full overflow-hidden bg-zinc-950 select-none">
+    <div className="flux-hero relative w-full overflow-hidden bg-[var(--flux-void)] select-none">
       {reduce ? (
-        <img src="/hero-poster.jpg" alt="Fluxo Outlet" className="w-full aspect-video lg:aspect-auto lg:h-[520px] object-cover" draggable={false} />
+        <img src="/hero-poster.jpg" alt="Fluxo Outlet" className="flux-hero__media w-full aspect-video lg:aspect-auto lg:h-[520px] object-cover" draggable={false} />
       ) : (
         <video
           src="/hero-brand.mp4"
@@ -20,7 +20,7 @@ const HeroVideo = () => {
           playsInline
           preload="metadata"
           aria-label="Fluxo Outlet"
-          className="w-full aspect-video lg:aspect-auto lg:h-[520px] object-cover"
+          className="flux-hero__media w-full aspect-video lg:aspect-auto lg:h-[520px] object-cover"
         />
       )}
     </div>

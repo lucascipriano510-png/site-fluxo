@@ -39,7 +39,7 @@ const StockAlertModal = ({ target, onClose, showToast, whatsapp }) => {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="grid place-items-center w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-400">{done ? <Check size={16}/> : <Bell size={16}/>}</span>
+            <span className="grid place-items-center w-9 h-9 rounded-full bg-whatsapp/10 text-whatsapp">{done ? <Check size={16}/> : <Bell size={16}/>}</span>
             <div>
               <h3 className="text-[13px] font-black uppercase tracking-wide text-white leading-tight">{done ? 'Tamo junto!' : 'Avise-me quando voltar'}</h3>
               <p className="text-[10px] text-zinc-500 font-bold uppercase">{product?.name}{size ? ` · Tam ${size}` : ''}</p>
@@ -57,7 +57,7 @@ const StockAlertModal = ({ target, onClose, showToast, whatsapp }) => {
                   href={orderLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 bg-emerald-500 text-zinc-950 active:scale-[0.98] transition-transform"
+                  className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 bg-whatsapp text-zinc-950 active:scale-[0.98] transition-transform"
                 >
                   <MessageCircle size={14}/> Quero encomendar agora
                 </a>
@@ -75,19 +75,19 @@ const StockAlertModal = ({ target, onClose, showToast, whatsapp }) => {
               onChange={(e) => setPhone(e.target.value)}
               placeholder="(34) 9 9999-9999"
               autoFocus
-              className="w-full p-4 bg-zinc-900 border border-white/10 rounded-2xl text-[15px] font-bold text-white outline-none focus:border-emerald-500/50"
+              className="w-full p-4 bg-gunmetal border border-white/10 rounded-2xl text-[15px] font-bold text-white outline-none focus:border-whatsapp/50"
             />
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Seu nome (opcional)"
-              className="w-full p-4 bg-zinc-900 border border-white/10 rounded-2xl text-[15px] font-bold text-white outline-none focus:border-emerald-500/50"
+              className="w-full p-4 bg-gunmetal border border-white/10 rounded-2xl text-[15px] font-bold text-white outline-none focus:border-whatsapp/50"
             />
             <button
               type="submit"
               disabled={sending}
-              className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${sending ? 'bg-zinc-800 text-zinc-500' : 'bg-emerald-500 text-zinc-950 active:scale-[0.98]'}`}
+              className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${sending ? 'bg-zinc-800 text-zinc-500' : 'bg-whatsapp text-zinc-950 active:scale-[0.98]'}`}
             >
               {sending ? 'Enviando…' : <><Bell size={14}/> Quero ser avisado</>}
             </button>

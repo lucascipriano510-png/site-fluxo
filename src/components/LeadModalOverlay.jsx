@@ -38,9 +38,9 @@ const LeadModalOverlay = ({
             <button onClick={() => { setShowLeadModal(false); setCheckoutSuccess(false); }} className="absolute top-5 right-5 text-zinc-500 bg-zinc-900 p-2 rounded-full touch-manipulation"><X size={16}/></button>
             {checkoutSuccess ? (
               <div className="text-center relative z-10 space-y-2 mt-4 animate-in">
-                 <div className="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20"><CheckCircle2 size={40}/></div>
+                 <div className="w-20 h-20 bg-flux/10 text-flux rounded-full flex items-center justify-center mx-auto mb-4 border border-flux/20"><CheckCircle2 size={40}/></div>
                  <h3 className="text-2xl font-black uppercase text-white tracking-tighter">Pedido Pronto!</h3>
-                 <div className="inline-block bg-zinc-900 border border-white/10 rounded-xl px-4 py-2 mt-2 mb-4"><span className="text-[9px] text-zinc-500 uppercase font-black block">Código do Pedido</span><span className="text-emerald-500 font-black text-xl tracking-widest">#{checkoutOrderNumber}</span></div>
+                 <div className="inline-block bg-gunmetal border border-white/10 rounded-xl px-4 py-2 mt-2 mb-4"><span className="text-[9px] text-zinc-500 uppercase font-black block">Código do Pedido</span><span className="text-flux font-black text-xl tracking-widest">#{checkoutOrderNumber}</span></div>
                  <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest px-2 mb-6 text-center">Agora, envie no WhatsApp para validarmos seu envio e combinarmos o frete.</p>
                  <button
                    type="button"
@@ -48,7 +48,7 @@ const LeadModalOverlay = ({
                      if (!whatsappLink) { showToast('Cadastre um número de WhatsApp válido no Master Control.', 'error'); return; }
                      window.open(whatsappLink, '_blank');
                    }}
-                   className="w-full py-5 mt-4 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 flex justify-center items-center gap-2 touch-manipulation"
+                   className="w-full py-5 mt-4 bg-whatsapp text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 flex justify-center items-center gap-2 touch-manipulation"
                  >Enviar WhatsApp <Zap size={14}/></button>
                  <button
                    type="button"
@@ -71,7 +71,7 @@ const LeadModalOverlay = ({
                      // Capturou contato: identifica o lead e liga todo o histórico anônimo ao telefone
                      if (ph.length >= 10) { setKnownLead(ph, currentLead.name); emitSignal('telefone_informado', { phone: ph, name: currentLead.name, cart: cartSnapshot(cart) }); }
                    }} /></div>
-                 <button onClick={handleFinalize} disabled={isLoading} className="w-full py-5 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 mt-2 flex justify-center items-center gap-2 touch-manipulation">{isLoading ? 'Processando...' : 'Finalizar Pedido via WhatsApp'} <Zap size={14}/></button>
+                 <button onClick={handleFinalize} disabled={isLoading} className="w-full py-5 bg-whatsapp text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 mt-2 flex justify-center items-center gap-2 touch-manipulation">{isLoading ? 'Processando...' : 'Finalizar Pedido via WhatsApp'} <Zap size={14}/></button>
                 </div>
                 <p className="text-[8px] font-bold uppercase tracking-widest text-zinc-600 flex items-center justify-center gap-1 opacity-70 mt-6"><Lock size={10}/> Ambiente 100% Seguro</p>
               </div>

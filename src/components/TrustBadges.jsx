@@ -8,29 +8,29 @@ const TrustBadges = ({
         {/* Fundo SÓLIDO (não translúcido): alpha sobre o gradiente do brilho fazia o
             Chrome Android piscar/riscar este painel ao rolar. #202024 = mesma cor
             que o zinc-900/40 resultava sobre o fundo — visual idêntico, sem alpha. */}
-        <div className="rounded-3xl border border-white/10 p-5 lg:p-7" style={{ background: '#202024' }}>
+        <div className="flux-panel rounded-2xl border p-5 lg:p-7">
           <div className="flex items-center gap-2 mb-5">
-            <ShieldCheck size={15} className="text-emerald-500 shrink-0" />
+            <ShieldCheck size={15} className="text-flux-deep shrink-0" />
             <span className="text-[10px] lg:text-[11px] font-black uppercase tracking-[0.22em] text-white">Daqui de {(config.location || 'Uberaba, MG').split(',')[0]}</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
-            <div className="flex items-start gap-3 rounded-2xl bg-zinc-950/40 border border-white/5 p-4">
-              <MapPin size={18} className="text-emerald-500 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 p-3">
+              <MapPin size={18} className="text-flux-deep shrink-0 mt-0.5" />
               <div>
                 <p className="text-[11px] font-black uppercase tracking-wide text-white leading-tight">Loja física</p>
                 <p className="text-[10px] font-medium text-zinc-400 mt-1 leading-snug">Venha conhecer ou retire seu pedido pessoalmente em {(config.location || 'Uberaba, MG')}.</p>
               </div>
             </div>
-            <div className="flex items-start gap-3 rounded-2xl bg-zinc-950/40 border border-white/5 p-4">
-              <Zap size={18} className="text-emerald-500 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 border-t border-white/7 p-3 sm:border-l sm:border-t-0">
+              <Zap size={18} className="text-flux-deep shrink-0 mt-0.5" />
               <div>
                 <p className="text-[11px] font-black uppercase tracking-wide text-white leading-tight">Entrega no mesmo dia</p>
                 <p className="text-[10px] font-medium text-zinc-400 mt-1 leading-snug">Recebeu hoje em {(config.location || 'Uberaba, MG').split(',')[0]}? A gente entrega hoje.</p>
               </div>
             </div>
-            <div className="flex items-start gap-3 rounded-2xl bg-zinc-950/40 border border-white/5 p-4">
-              <MessageCircle size={18} className="text-emerald-500 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 border-t border-white/7 p-3 sm:border-l sm:border-t-0">
+              <MessageCircle size={18} className="text-whatsapp shrink-0 mt-0.5" />
               <div>
                 <p className="text-[11px] font-black uppercase tracking-wide text-white leading-tight">Atendimento humano</p>
                 <p className="text-[10px] font-medium text-zinc-400 mt-1 leading-snug">No WhatsApp, antes e depois da compra.</p>

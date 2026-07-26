@@ -33,17 +33,17 @@ export default function WelcomeCoupon({ aberto, cupom = 'NOVOFLUXO5', onFechar, 
             exit={{ y: '100%', transition: { duration: 0.22, ease: 'easeIn' } }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             className="relative w-full max-w-md rounded-t-[28px] overflow-hidden border-t border-x border-white/10 px-6 pt-9 pb-7"
-            style={{ background: '#131316' }}
+            style={{ background: 'var(--flux-surface)' }}
           >
-            {/* Luzes da casa: âmbar alto-esq, esmeralda alto-dir (mesma paleta
-                do brilho-ambient — o pop-up é da MESMA loja, não um banner alien) */}
+            {/* Oferta em âmbar; reflexo denim no lado oposto. Mesma lógica
+                60/30/10 da vitrine, sem verde decorativo. */}
             <div
               aria-hidden="true"
               style={{
                 position: 'absolute', inset: 0, pointerEvents: 'none',
                 background:
                   'radial-gradient(440px 280px at 6% 0%, rgba(245,158,11,0.14), transparent 60%),' +
-                  'radial-gradient(440px 280px at 96% 6%, rgba(16,185,129,0.12), transparent 55%)',
+                  'radial-gradient(440px 280px at 96% 6%, oklch(0.63 0.14 264 / 0.12), transparent 55%)',
               }}
             />
             <button
@@ -85,7 +85,7 @@ export default function WelcomeCoupon({ aberto, cupom = 'NOVOFLUXO5', onFechar, 
                   que o custo do cadastro matava o presente). */}
               <button
                 onClick={onQueroCupom}
-                className="w-full py-4 min-h-[54px] rounded-2xl font-black text-[11px] uppercase tracking-widest bg-white text-zinc-950 active:scale-95 shadow-2xl flex items-center justify-center gap-2 touch-manipulation"
+                className="w-full py-4 min-h-[54px] rounded-2xl font-black text-[11px] uppercase tracking-widest bg-flux text-flux-ink active:scale-95 shadow-[0_6px_8px_rgba(0,0,0,0.34)] flex items-center justify-center gap-2 touch-manipulation"
                 data-testid="welcome-cta"
               >
                 <Ticket size={15} /> Aplicar meus 5% na sacola

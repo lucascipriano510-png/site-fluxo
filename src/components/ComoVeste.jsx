@@ -81,7 +81,7 @@ const ComoVeste = ({ product, whatsapp, onOpenSizeGuide }) => {
               className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left touch-manipulation"
             >
               <span className="text-[12px] font-black uppercase tracking-wide text-zinc-200">{p.q}</span>
-              <ChevronDown size={15} className={`shrink-0 text-emerald-400 transition-transform duration-200 ${aberta === p.id ? 'rotate-180' : ''}`} />
+              <ChevronDown size={15} className={`shrink-0 text-flux-deep transition-transform duration-200 ${aberta === p.id ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence initial={false}>
               {aberta === p.id && (
@@ -102,7 +102,7 @@ const ComoVeste = ({ product, whatsapp, onOpenSizeGuide }) => {
                       <button
                         type="button"
                         onClick={onOpenSizeGuide}
-                        className="self-start flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400 touch-manipulation active:opacity-70 transition-opacity"
+                        className="self-start flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-flux touch-manipulation active:opacity-70 transition-opacity"
                       >
                         <Ruler size={12}/> Ver medidas da cintura
                       </button>
@@ -112,7 +112,7 @@ const ComoVeste = ({ product, whatsapp, onOpenSizeGuide }) => {
                         href={waHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="self-start flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400 touch-manipulation active:opacity-70 transition-opacity"
+                        className="self-start flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-whatsapp touch-manipulation active:opacity-70 transition-opacity"
                       >
                         <MessageCircle size={12}/> Pedir foto no WhatsApp
                       </a>

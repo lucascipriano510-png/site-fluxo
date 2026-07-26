@@ -1,8 +1,6 @@
 // Extraído do App.jsx (verbatim) — recebe estado/handlers do App por props.
 const GlobalStyles = () => (
 <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        
         ::-webkit-scrollbar { display: none; }
         
         html, body {
@@ -12,7 +10,7 @@ const GlobalStyles = () => (
         }
 
         body {
-          font-family: 'Inter', sans-serif;
+          font-family: ui-sans-serif, system-ui, sans-serif;
           -webkit-tap-highlight-color: transparent;
           background-color: #09090b;
           -webkit-font-smoothing: antialiased;

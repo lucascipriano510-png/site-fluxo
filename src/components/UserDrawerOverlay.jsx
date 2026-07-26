@@ -72,13 +72,13 @@ const UserDrawerOverlay = ({
             <div className="px-7 pt-10 pb-5 shrink-0">
               {userProfile && accountToken ? (
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-full bg-emerald-500/15 border-2 border-emerald-500/50 flex items-center justify-center shrink-0">
-                    <span className="text-lg font-black text-emerald-400 leading-none select-none">
+                  <div className="w-14 h-14 rounded-full bg-flux/10 border-2 border-flux/45 flex items-center justify-center shrink-0">
+                    <span className="text-lg font-black text-flux leading-none select-none">
                       {userProfile.name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest">Usuário Fluxo</p>
+                    <p className="text-[10px] font-black text-flux-deep uppercase tracking-widest">Usuário Fluxo</p>
                     <h3 className="text-lg font-black text-white uppercase leading-tight truncate">
                       {userProfile.name.split(' ')[0]}
                     </h3>
@@ -122,7 +122,7 @@ const UserDrawerOverlay = ({
                     }}
                     className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                       drawerTab === 'orders'
-                        ? 'bg-emerald-500 text-zinc-950 shadow'
+                        ? 'bg-flux text-flux-ink shadow'
                         : 'text-zinc-500 hover:text-white'
                     }`}
                   >
@@ -151,7 +151,7 @@ const UserDrawerOverlay = ({
                       </p>
                       <button
                         onClick={() => { setRecoveryToShow(null); setDrawerTab('orders'); setTimeout(() => handleSearchMyOrders(), 100); }}
-                        className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation shadow-[0_10px_30px_rgba(16,185,129,0.2)]"
+                        className="w-full py-4 bg-flux text-flux-ink rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation shadow-[0_6px_8px_rgba(0,0,0,0.34)]"
                         data-testid="btn-recovery-ok"
                       >
                         Anotei — entrar na minha conta
@@ -164,7 +164,7 @@ const UserDrawerOverlay = ({
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Nome completo</label>
                           <input
-                            className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
+                            className="w-full p-4 bg-gunmetal border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-flux/40 client-input"
                             value={userProfile.name}
                             onChange={e => saveUserProfile({ ...userProfile, name: e.target.value })}
                           />
@@ -227,7 +227,7 @@ const UserDrawerOverlay = ({
                             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Nome completo</label>
                             <input
                               placeholder="Ex: João Silva"
-                              className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
+                              className="w-full p-4 bg-gunmetal border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-flux/40 client-input"
                               value={authForm.name}
                               onChange={e => setAuthForm(f => ({ ...f, name: e.target.value }))}
                               data-testid="auth-name"
@@ -239,7 +239,7 @@ const UserDrawerOverlay = ({
                           <input
                             placeholder="Ex: 34999999999"
                             type="tel"
-                            className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
+                            className="w-full p-4 bg-gunmetal border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-flux/40 client-input"
                             value={authForm.phone}
                             onChange={e => setAuthForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))}
                             data-testid="auth-phone"
@@ -262,7 +262,7 @@ const UserDrawerOverlay = ({
                           <input
                             placeholder={authMode === 'signup' ? 'Crie uma senha (mín. 6)' : 'Sua senha'}
                             type="password"
-                            className="w-full p-4 bg-zinc-900 border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-emerald-500/30 client-input"
+                            className="w-full p-4 bg-gunmetal border border-white/5 rounded-xl text-[16px] font-bold text-white outline-none focus:border-flux/40 client-input"
                             value={authForm.password}
                             onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))}
                             onKeyDown={e => { if (e.key === 'Enter') handleAuthSubmit(); }}
@@ -280,7 +280,7 @@ const UserDrawerOverlay = ({
                       <button
                         onClick={handleAuthSubmit}
                         disabled={authLoading}
-                        className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation shadow-[0_10px_30px_rgba(16,185,129,0.2)] disabled:opacity-60"
+                        className="w-full py-4 bg-flux text-flux-ink rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform touch-manipulation shadow-[0_6px_8px_rgba(0,0,0,0.34)] disabled:opacity-60"
                         data-testid="auth-submit"
                       >
                         {authLoading ? 'Processando...' : authMode === 'login' ? 'Entrar na minha conta' : authMode === 'signup' ? 'Criar minha conta' : 'Redefinir senha e entrar'}
@@ -315,7 +315,7 @@ const UserDrawerOverlay = ({
               {drawerTab === 'orders' && userProfile && accountToken && (
                 <div className="space-y-3 animate-in">
                   {myOrdersLoading && (
-                    <div className="text-center py-10 text-emerald-500 text-[10px] font-black uppercase tracking-widest animate-pulse">
+                    <div className="text-center py-10 text-flux text-[10px] font-black uppercase tracking-widest animate-pulse">
                       Buscando pedidos...
                     </div>
                   )}
@@ -337,7 +337,7 @@ const UserDrawerOverlay = ({
                     const stMap = { 'CONFIRMED': 'CONCLUÍDO', 'CONCLUIDO': 'CONCLUÍDO', 'CANCELLED': 'CANCELADO' };
                     const status = stMap[st] || st;
                     const color = status === 'CONCLUÍDO'
-                      ? 'text-emerald-500 bg-emerald-500/10'
+                      ? 'text-flux bg-flux/10'
                       : status === 'CANCELADO'
                         ? 'text-red-500 bg-red-500/10'
                         : status === 'EM ATENDIMENTO'
@@ -355,14 +355,14 @@ const UserDrawerOverlay = ({
                         <div className="space-y-1">
                           {(its || []).map((it, i) => (
                             <div key={i} className="text-[10px] text-zinc-300 font-bold flex justify-between">
-                              <span className="truncate pr-2">{it.qty || 1}x {it.name} <span className="text-emerald-500">({it.size || 'U'})</span></span>
+                              <span className="truncate pr-2">{it.qty || 1}x {it.name} <span className="text-flux">({it.size || 'U'})</span></span>
                               <span className="text-zinc-500 shrink-0">{formatBRL(it.price || 0)}</span>
                             </div>
                           ))}
                         </div>
                         <div className="flex justify-between items-center pt-2 mt-2 border-t border-white/5">
                           <span className="text-[9px] text-zinc-500 font-black uppercase">Total</span>
-                          <span className="text-[13px] font-black text-emerald-500">{formatBRL(row.value || 0)}</span>
+                          <span className="text-[13px] font-black text-flux">{formatBRL(row.value || 0)}</span>
                         </div>
                       </div>
                     );
