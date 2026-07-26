@@ -829,7 +829,7 @@ const CatalogMain = ({
                                   {!isOutOfStock && (
                                     <motion.button
                                       type="button"
-                                      className="flux-buy-cta"
+                                      className="flux-card-buy-cta"
                                       onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
                                       whileHover={prefersReducedMotion ? {} : { scale: 1.04, transition: { duration: 0.15, ease: 'easeOut' } }}
                                       whileTap={prefersReducedMotion ? {} : { scale: 0.96, transition: { duration: 0.08 } }}

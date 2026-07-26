@@ -257,6 +257,38 @@
   outline: 2px solid var(--flux-signal-bright);
   outline-offset: 3px;
 }
+
+/* Home: o CTA vive dentro da composição 60/30/10, então ele não recebe uma
+   cor nova. É um controle tonalizado: o fundo continua aparecendo através do
+   material, enquanto o filete de luz e o texto dão a prioridade necessária. */
+.flux-card-buy-cta {
+  color: var(--text-primary);
+  background:
+    linear-gradient(145deg, oklch(0.95 0.008 264 / 0.27), oklch(0.76 0.016 264 / 0.12) 52%, oklch(0.49 0.018 264 / 0.18));
+  border: 1px solid oklch(0.94 0.008 264 / 0.24);
+  -webkit-backdrop-filter: blur(10px) saturate(112%);
+  backdrop-filter: blur(10px) saturate(112%);
+  box-shadow:
+    inset 0 1px 0 oklch(0.99 0.004 264 / 0.36),
+    inset 0 -1px 0 oklch(0.1 0.01 264 / 0.42);
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .flux-card-buy-cta:hover {
+    background:
+      linear-gradient(145deg, oklch(0.97 0.006 264 / 0.38), oklch(0.78 0.014 264 / 0.18) 52%, oklch(0.52 0.018 264 / 0.22));
+    border-color: oklch(0.98 0.005 264 / 0.42);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.46),
+      inset 0 -1px 0 oklch(0.1 0.01 264 / 0.38);
+  }
+}
+
+.flux-card-buy-cta:focus-visible {
+  outline: 2px solid var(--flux-signal-bright);
+  outline-offset: 3px;
+}
 /* Navegador sem backdrop-filter: fundo quase sólido pra manter leitura. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .liquid-glass { background: rgba(9, 9, 11, 0.94); }
