@@ -756,10 +756,12 @@
   max-width: none;
   margin: 0;
   border-radius: 0;
+  background: transparent;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 86%, transparent 100%);
   transform: rotateX(0.8deg) translateZ(18px);
   transform-origin: 50% 0;
   box-shadow:
-    0 1px 0 oklch(1 0 0 / 0.08),
     0 28px 34px -30px oklch(0.01 0.004 264 / 0.98);
 }
 
