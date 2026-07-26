@@ -485,10 +485,10 @@ const CatalogMain = ({
                       <div className="block w-full text-left touch-manipulation">
                         <div className="relative">
                           {/* Glow ambiente */}
-                          <div className="absolute -inset-3 bg-gradient-to-b from-white/8 via-white/2 to-transparent rounded-[36px] blur-2xl opacity-70 pointer-events-none" aria-hidden="true" />
+                          <div className="absolute -inset-x-3 -top-2 -bottom-7 bg-gradient-to-b from-white/7 via-white/[0.015] to-transparent rounded-t-[14px] rounded-b-[36px] blur-2xl opacity-70 pointer-events-none" aria-hidden="true" />
                           {/* Borda platina */}
-                          <div className="relative p-[1.5px] rounded-[28px] bg-gradient-to-b from-white/30 via-white/10 to-white/5">
-                            <div className="rounded-[27px] bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+                          <div className="relative p-[1.5px] rounded-t-[12px] rounded-b-[28px] bg-gradient-to-b from-white/26 via-white/10 to-white/5">
+                            <div className="rounded-t-[10.5px] rounded-b-[26.5px] overflow-hidden bg-zinc-950 shadow-[0_22px_32px_-18px_rgba(0,0,0,0.96),0_34px_48px_-28px_rgba(232,234,236,0.16)]">
                               <div className="aspect-[4/5] relative">
                                 <AutoScrollGallery auto startDelay={2000} count={imgs.length}>
                                   {imgs.map((imgSrc, i) => (

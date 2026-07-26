@@ -7,23 +7,25 @@ import React from 'react';
 const HeroVideo = () => {
   const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
   return (
-    <div className="flux-hero relative w-full overflow-hidden bg-[var(--flux-void)] select-none">
-      {reduce ? (
-        <img src="/hero-poster.jpg" alt="Fluxo Outlet" className="flux-hero__media w-full aspect-video lg:aspect-auto lg:h-[520px] object-cover" draggable={false} />
-      ) : (
-        <video
-          src="/hero-brand.mp4"
-          poster="/hero-poster.jpg"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-label="Fluxo Outlet"
-          className="flux-hero__media w-full aspect-video lg:aspect-auto lg:h-[520px] object-cover"
-        />
-      )}
-    </div>
+    <section className="flux-hero-stage">
+      <div className="flux-hero relative w-full overflow-hidden bg-[var(--flux-void)] select-none">
+        {reduce ? (
+          <img src="/hero-poster.jpg" alt="Fluxo Outlet" className="flux-hero__media w-full aspect-video lg:aspect-auto lg:h-[580px] object-cover" draggable={false} />
+        ) : (
+          <video
+            src="/hero-brand.mp4"
+            poster="/hero-poster.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-label="Fluxo Outlet"
+            className="flux-hero__media w-full aspect-video lg:aspect-auto lg:h-[580px] object-cover"
+          />
+        )}
+      </div>
+    </section>
   );
 };
 

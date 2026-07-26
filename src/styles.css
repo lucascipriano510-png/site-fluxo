@@ -727,6 +727,47 @@
     linear-gradient(180deg, transparent 48%, oklch(0.105 0.009 264 / 0.58) 100%);
 }
 
+/* O hero é uma peça de vitrine suspensa, não mais um vídeo encostado na
+   página. A projeção existe no espaço negativo sob ele — por isso a leitura
+   continua funcionando mesmo sobre o fundo quase preto. */
+.flux-hero-stage {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  padding: clamp(10px, 2.2vw, 34px) clamp(0px, 3.2vw, 52px) clamp(26px, 4.4vw, 68px);
+}
+
+.flux-hero-stage::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 8%;
+  right: 8%;
+  bottom: clamp(8px, 1.8vw, 28px);
+  height: clamp(40px, 8vw, 104px);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, oklch(0.46 0.028 264 / 0.3) 0%, oklch(0.12 0.012 264 / 0.2) 36%, transparent 72%);
+  filter: blur(18px);
+  transform: translateY(20%);
+  pointer-events: none;
+}
+
+.flux-hero {
+  max-width: 1480px;
+  margin: 0 auto;
+  border-radius: clamp(16px, 2.2vw, 30px);
+  box-shadow:
+    0 1px 0 oklch(1 0 0 / 0.16),
+    inset 0 1px 0 oklch(1 0 0 / 0.08),
+    0 24px 38px -28px oklch(0.01 0.004 264 / 0.98);
+}
+
+@media (max-width: 639px) {
+  .flux-hero-stage { padding-inline: 0; padding-top: 0; }
+  .flux-hero { border-radius: 0 0 22px 22px; }
+  .flux-hero-stage::before { left: 12%; right: 12%; bottom: 13px; }
+}
+
 .flux-hero__media {
   filter: saturate(0.62) contrast(1.08) brightness(0.86);
 }
