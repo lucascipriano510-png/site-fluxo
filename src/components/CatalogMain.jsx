@@ -842,7 +842,7 @@ const CatalogMain = ({
                                         touchAction: 'manipulation',
                                       }}
                                     >
-                                      COMPRAR
+                                      <span>COMPRAR</span>
                                     </motion.button>
                                   )}
                                 </div>
