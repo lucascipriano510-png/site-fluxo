@@ -52,7 +52,7 @@ const SearchDropBar = forwardRef(function SearchDropBar({ focused, children }, r
         // Corpo d'água neutro: película clara em cima afinando pro meio,
         // juntando de novo embaixo — vidro, não pintura.
         background:
-          'linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 38%, rgba(255,255,255,0.015) 62%, rgba(255,255,255,0.06)), var(--bg-surface)',
+          'radial-gradient(70% 120% at 18% -28%, rgb(var(--hero-light-rgb, 232 234 236) / 0.19), transparent 62%), linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 38%, rgba(255,255,255,0.015) 62%, rgba(255,255,255,0.06)), var(--bg-surface)',
         border: `1px solid ${focused ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.15)'}`,
         boxShadow: [
           'inset 0 1px 1.5px rgba(255,255,255,0.30)',      // menisco (luz de cima)
@@ -65,7 +65,7 @@ const SearchDropBar = forwardRef(function SearchDropBar({ focused, children }, r
       }}
     >
       {/* Brilho especular alongado — a luz escorrendo na superfície da gota */}
-      <span aria-hidden="true" className="absolute pointer-events-none" style={{ top: 5, left: 22, right: '52%', height: 7, borderRadius: 9999, background: 'rgba(255,255,255,0.13)', filter: 'blur(3px)' }} />
+      <span aria-hidden="true" className="absolute pointer-events-none" style={{ top: 5, left: 22, right: '52%', height: 7, borderRadius: 9999, background: 'rgb(var(--hero-light-rgb, 232 234 236) / 0.18)', filter: 'blur(3px)' }} />
       {/* Faísca menor no canto oposto, como segunda fonte de luz */}
       <span aria-hidden="true" className="absolute pointer-events-none" style={{ top: 7, right: 30, width: 26, height: 4, borderRadius: 9999, background: 'rgba(255,255,255,0.09)', filter: 'blur(2px)' }} />
       {children}
