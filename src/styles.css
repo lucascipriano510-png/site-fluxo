@@ -218,39 +218,144 @@
     0 -12px 40px rgba(0,0,0,0.45);          /* sombra projetada pra cima */
 }
 
-/* CTA de compra — uma única cor de ação, com a leitura imediata de um
-   botão de compra da Apple: superfície limpa, contraste alto e só uma
-   aresta de luz para dar materialidade. O azul já pertence à paleta Fluxo,
-   mas aqui ganha exclusividade para a ação que move o pedido adiante. */
+/* CTA de compra — cápsula azul liquid glass. A transparência deixa a barra
+   inferior atravessar o material, enquanto a lente interna concentra luz nas
+   bordas e mantém o centro limpo para o texto. */
 .flux-buy-cta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid oklch(0.92 0.07 232 / 0.72);
+  border-radius: 999px;
   color: oklch(0.985 0.003 264);
   background:
-    linear-gradient(180deg, oklch(0.68 0.145 264) 0%, var(--flux-denim) 56%, oklch(0.53 0.145 264) 100%);
+    radial-gradient(
+      circle at 18% 0%,
+      oklch(0.96 0.05 225 / 0.48) 0%,
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 86% 108%,
+      oklch(0.76 0.16 231 / 0.34) 0%,
+      transparent 38%
+    ),
+    linear-gradient(
+      180deg,
+      oklch(0.72 0.17 241 / 0.91) 0%,
+      oklch(0.63 0.22 250 / 0.94) 52%,
+      oklch(0.52 0.235 258 / 0.97) 100%
+    );
+  -webkit-backdrop-filter: blur(18px) saturate(185%) contrast(106%);
+  backdrop-filter: blur(18px) saturate(185%) contrast(106%);
   box-shadow:
-    inset 0 1px 0 oklch(0.96 0.02 264 / 0.34),
-    inset 0 -1px 0 oklch(0.25 0.07 264 / 0.5),
-    0 8px 8px oklch(0.04 0.01 264 / 0.38);
-  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), background 180ms ease, box-shadow 160ms ease;
+    inset 0 1px 1px oklch(0.99 0.015 232 / 0.86),
+    inset 0 -2px 5px oklch(0.28 0.19 263 / 0.58),
+    inset 7px 0 16px oklch(0.82 0.12 230 / 0.18),
+    inset -7px 0 14px oklch(0.34 0.2 264 / 0.18),
+    0 10px 26px oklch(0.34 0.19 255 / 0.42),
+    0 2px 5px oklch(0.04 0.01 264 / 0.58);
+  text-transform: none;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 2px oklch(0.22 0.13 260 / 0.82);
+  transition:
+    transform 170ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms ease,
+    background 220ms ease,
+    box-shadow 180ms ease;
+}
+
+.flux-buy-cta::before,
+.flux-buy-cta::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.flux-buy-cta::before {
+  inset: 2px 8px auto;
+  height: 47%;
+  border-radius: 999px 999px 55% 55%;
+  background: linear-gradient(
+    180deg,
+    oklch(0.995 0.006 230 / 0.48) 0%,
+    oklch(0.91 0.07 228 / 0.19) 48%,
+    transparent 100%
+  );
+  filter: blur(0.35px);
+  opacity: 0.92;
+  transform-origin: center top;
+  transition:
+    opacity 180ms ease,
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.flux-buy-cta::after {
+  width: 54%;
+  height: 190%;
+  top: -112%;
+  left: -10%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    oklch(0.99 0.01 226 / 0.54) 0%,
+    oklch(0.82 0.12 228 / 0.2) 43%,
+    transparent 72%
+  );
+  filter: blur(7px);
+  transform: rotate(17deg);
+  transition:
+    left 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .flux-buy-cta:hover {
+    border-color: oklch(0.96 0.045 229 / 0.88);
     background:
-      linear-gradient(180deg, oklch(0.73 0.145 264) 0%, oklch(0.66 0.15 264) 56%, oklch(0.56 0.145 264) 100%);
+      radial-gradient(
+        circle at 18% 0%,
+        oklch(0.98 0.035 224 / 0.58) 0%,
+        transparent 35%
+      ),
+      radial-gradient(
+        circle at 86% 108%,
+        oklch(0.8 0.14 231 / 0.4) 0%,
+        transparent 39%
+      ),
+      linear-gradient(
+        180deg,
+        oklch(0.76 0.165 239 / 0.93) 0%,
+        oklch(0.66 0.215 248 / 0.96) 52%,
+        oklch(0.55 0.23 256 / 0.98) 100%
+      );
     box-shadow:
-      inset 0 1px 0 oklch(0.98 0.01 264 / 0.4),
-      inset 0 -1px 0 oklch(0.25 0.07 264 / 0.48),
-      0 8px 8px oklch(0.04 0.01 264 / 0.46);
+      inset 0 1px 1px oklch(0.995 0.01 230 / 0.94),
+      inset 0 -2px 5px oklch(0.28 0.19 263 / 0.55),
+      inset 8px 0 18px oklch(0.84 0.11 229 / 0.22),
+      inset -7px 0 14px oklch(0.34 0.2 264 / 0.16),
+      0 13px 30px oklch(0.38 0.2 252 / 0.5),
+      0 2px 5px oklch(0.04 0.01 264 / 0.56);
     transform: translateY(-1px);
+  }
+
+  .flux-buy-cta:hover::after {
+    left: 17%;
   }
 }
 
 .flux-buy-cta:active {
   transform: translateY(1px) scale(0.985);
   box-shadow:
-    inset 0 1px 0 oklch(0.96 0.02 264 / 0.2),
-    inset 0 -1px 0 oklch(0.25 0.07 264 / 0.55),
-    0 4px 5px oklch(0.04 0.01 264 / 0.36);
+    inset 0 2px 7px oklch(0.28 0.19 263 / 0.48),
+    inset 0 -1px 1px oklch(0.94 0.04 231 / 0.32),
+    0 5px 14px oklch(0.31 0.18 257 / 0.36),
+    0 1px 3px oklch(0.04 0.01 264 / 0.6);
+}
+
+.flux-buy-cta:active::before {
+  opacity: 0.55;
+  transform: translateY(3px) scaleX(0.97);
 }
 
 .flux-buy-cta:focus-visible {
