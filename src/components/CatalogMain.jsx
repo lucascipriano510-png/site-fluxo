@@ -6,7 +6,6 @@ import React from 'react';
 import StarRatingInline from './StarRatingInline';
 import SubBanner from './SubBanner';
 import WaterRippleFX from './WaterRippleFX';
-import LiquidLensBuyButton from './LiquidLensBuyButton';
 import { ArrowRight, ChevronLeft, Eye, Flame, Package, Plus, Search, Truck, X, Zap } from 'lucide-react';
 import SearchDropBar from './SearchDropBar';
 import { CAMPAIGN_LABELS, OFFER_CAMPAIGNS, isOfferLive, offerCampaign, offerEndsAt, offerPercent, offerPrice } from '../lib/offers';
@@ -828,10 +827,20 @@ const CatalogMain = ({
                                     </p>
                                   </div>
                                   {!isOutOfStock && (
-                                    <LiquidLensBuyButton
-                                      reducedMotion={prefersReducedMotion}
+                                    <motion.button
+                                      type="button"
+                                      className="flux-card-buy-cta"
                                       onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
-                                    />
+                                      whileHover={prefersReducedMotion ? {} : { scale: 1.04, transition: { duration: 0.15, ease: 'easeOut' } }}
+                                      whileTap={prefersReducedMotion ? {} : { scale: 0.96, transition: { duration: 0.08 } }}
+                                      style={{
+                                        height: '32px', padding: '0 12px', borderRadius: '8px', flexShrink: 0,
+                                        fontWeight: '750', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase',
+                                        cursor: 'pointer', fontFamily: 'inherit', outline: 'none', touchAction: 'manipulation',
+                                      }}
+                                    >
+                                      COMPRAR
+                                    </motion.button>
                                   )}
                                 </div>
                                 {/* Linha 2b — Pix / contador: LARGURA CHEIA embaixo, não disputa espaço com o botão */}
