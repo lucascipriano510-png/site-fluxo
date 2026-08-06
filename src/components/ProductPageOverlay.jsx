@@ -3,6 +3,7 @@ import OfferCountdown from './OfferCountdown';
 import ProductReviewsList from './ProductReviewsList';
 import HoloTilt from './HoloTilt';
 import ProductVideoPip from './ProductVideoPip';
+import LiquidMetalCheckoutButton from './LiquidMetalCheckoutButton';
 import React from 'react';
 import SizeRowSelector from './SizeRowSelector';
 import StarRatingInline from './StarRatingInline';
@@ -376,13 +377,13 @@ const ProductPageOverlay = ({
 
               {/* CTA fixo no rodapé do viewport (mobile) */}
               <div className="fixed bottom-0 left-0 right-0 px-7 py-4 liquid-glass z-[60] lg:hidden" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-                <button
+                <LiquidMetalCheckoutButton
                   onClick={handleCommitToCart}
                   disabled={Object.keys(selectedSizes).length === 0}
-                  className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 touch-manipulation ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-700' : 'flux-buy-cta'}`}
-                >
-                  {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola (${Object.values(selectedSizes).reduce((a,b)=>a+b,0)})`} <ShoppingBag size={14}/>
-                </button>
+                  icon="bag"
+                  label={Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola (${Object.values(selectedSizes).reduce((a,b)=>a+b,0)})`}
+                  size="cart"
+                />
               </div>
           </motion.div>
 
@@ -532,10 +533,13 @@ const ProductPageOverlay = ({
                   </div>
 
                   {/* CTA */}
-                  <button onClick={handleCommitToCart} disabled={Object.keys(selectedSizes).length === 0} className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 ${Object.keys(selectedSizes).length === 0 ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed' : 'flux-buy-cta'}`}>
-                    {Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola — ${Object.values(selectedSizes).reduce((a,b)=>a+b,0)} ${Object.values(selectedSizes).reduce((a,b)=>a+b,0) === 1 ? 'peça' : 'peças'}`}
-                    <ShoppingBag size={16}/>
-                  </button>
+                  <LiquidMetalCheckoutButton
+                    onClick={handleCommitToCart}
+                    disabled={Object.keys(selectedSizes).length === 0}
+                    icon="bag"
+                    label={Object.keys(selectedSizes).length === 0 ? 'Escolha um Tamanho' : `Adicionar à Sacola — ${Object.values(selectedSizes).reduce((a,b)=>a+b,0)} ${Object.values(selectedSizes).reduce((a,b)=>a+b,0) === 1 ? 'peça' : 'peças'}`}
+                    size="cart"
+                  />
 
                   {/* Sobre a peça — descrição da vitrine + material/cor (só se existir) */}
                   {(selectedProduct.description || selectedProduct.material || selectedProduct.color) && (

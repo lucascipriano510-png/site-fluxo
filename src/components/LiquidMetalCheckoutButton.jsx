@@ -1,10 +1,11 @@
-import { ArrowUpRight, LockKeyhole } from "lucide-react";
+import { ArrowUpRight, LockKeyhole, ShoppingBag } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 import "./liquid-metal-lab.css";
 
 export default function LiquidMetalCheckoutButton({
   disabled = false,
   glassEnabled = true,
+  icon = "arrow",
   label = "Finalizar compra",
   loading = false,
   onClick,
@@ -110,7 +111,9 @@ export default function LiquidMetalCheckoutButton({
         <span className="liquid-metal-button__caustic" aria-hidden="true" />
         <span className="liquid-metal-button__content">
           <span>{loading ? "Finalizando..." : label}</span>
-          {size === "cart" ? (
+          {icon === "bag" ? (
+            <ShoppingBag size={16} strokeWidth={2} aria-hidden="true" />
+          ) : icon === "lock" || size === "cart" ? (
             <LockKeyhole size={15} strokeWidth={2} aria-hidden="true" />
           ) : (
             <ArrowUpRight size={19} strokeWidth={1.8} aria-hidden="true" />

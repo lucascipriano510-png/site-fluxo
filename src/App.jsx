@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Plus, Minus, Trash2, X, Search, LayoutDashboard, ShoppingBag, Package, Box, MessageCircle, Zap, Info, Star, ChevronRight, ChevronLeft, ChevronDown, ArrowRight, Layers, Settings, MapPin, User, CheckCircle2, LogOut, ClipboardList, Database, Image as ImageIcon, ZoomIn, Truck, Check, Flame, ShieldCheck, Award, CreditCard, Lock, Megaphone, Instagram, Menu, Share2, Bell, Ruler, Ticket } from 'lucide-react';
-import { fetchProducts, upsertProduct, deleteProduct, uploadImage, fetchAllKitItems } from './lib/supabase';
+import { fetchProducts, upsertProduct, deleteProduct, uploadImage, uploadVideo, fetchAllKitItems } from './lib/supabase';
 import OfferCountdown from './components/OfferCountdown';
 import ProductReviewsList from './components/ProductReviewsList';
 import StarRatingInline from './components/StarRatingInline';
@@ -1959,7 +1959,7 @@ function App() {
               {adminTab === 'dashboard' && <AdminDashboard leads={leads} products={products} loading={!leadsLoaded} setAdminTab={setAdminTab} />}
               {adminTab === 'inventory' && <AdminInventory products={products} setProducts={setProducts} showToast={showToast} availableCollections={availableCollections} productImageFile={productImageFile} setProductImageFile={setProductImageFile} uploadImage={uploadImage} />}
               {adminTab === 'leads' && <AdminLeads leads={leads} setLeads={setLeads} products={products} setProducts={setProducts} showToast={showToast} config={config} mapOrderRow={mapOrderRow} />}
-              {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} products={products} setProducts={setProducts} />}
+              {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} uploadVideo={uploadVideo} products={products} setProducts={setProducts} />}
               {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} products={products} setProducts={setProducts} uploadImage={uploadImage} />}
               {adminTab === 'rastreio' && <AdminRastreio />}
               {adminTab === 'crm' && <AdminCRM showToast={showToast} config={config} />}

@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { Edit3, ImagePlus, Trash2, X } from 'lucide-react';
 import BulkOffers from './BulkOffers';
 
-const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBannerImageFile, uploadImage, products, setProducts }) => {
+const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBannerImageFile, uploadImage, uploadVideo, products, setProducts }) => {
   const [promoTab, setPromoTab] = useState('banners'); // 'banners' | 'ofertas'
   const [editBannerMode, setEditBannerMode] = useState(null);
   const [previewBannerImage, setPreviewBannerImage] = useState('');
   const [bannerDesktopFile, setBannerDesktopFile] = useState(null);
   const [previewDesktopImage, setPreviewDesktopImage] = useState('');
+  const [bannerVideoFile, setBannerVideoFile] = useState(null);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [placement, setPlacement] = useState('hero'); // 'hero' (topo) | 'mid' (meio, 2:1)
   const isMid = placement === 'mid';
@@ -16,6 +17,7 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
     setBannerImageFile(null);
     setPreviewDesktopImage(editBannerMode?.image_desktop || '');
     setBannerDesktopFile(null);
+    setBannerVideoFile(null);
     setPlacement(editBannerMode?.placement || 'hero');
   }, [editBannerMode]);
 
@@ -57,6 +59,10 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
         showToast('Enviando banner desktop em alta resolução...', 'info');
         imageDesktopUrl = await uploadImage(bannerDesktopFile);
       }
+      let videoUrl = editBannerMode?.video_url || '';
+      if (bannerVideoFile) {
+        videoUrl = await uploadVideo(bannerVideoFile);
+      }
       const fd = new FormData(e.target);
       const data = {
         id: editBannerMode === 'new' ? Date.now() : editBannerMode.id,
@@ -71,6 +77,7 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
         external_link: isMid ? null : (fd.get('external_link') || null),
         placement,
         wa_message: isMid ? (fd.get('wa_message')?.trim() || null) : null,
+        video_url: isMid ? (videoUrl || null) : null,
       };
       setBanners(editBannerMode === 'new' ? [...banners, data] : (banners || []).map(b => b.id === data.id ? data : b));
       showToast('Banner salvo!'); 
@@ -146,6 +153,14 @@ const AdminBanners = ({ banners, setBanners, showToast, bannerImageFile, setBann
             <span className="relative z-10 text-[9px] font-black uppercase text-white text-center px-4">{isMid ? '🖼️ Sub-banner · 2:1 (ex: 1600×800px)' : '📱 Banner Mobile · 4:5 (ideal 1600×2000px)'}</span>
             <input type="file" accept="image/*" onChange={handleBannerFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
           </div>
+
+          {isMid && (
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-sky-400 uppercase px-2">Vídeo vertical (opcional)</label>
+              <input type="file" accept="video/mp4,video/quicktime,video/*" onChange={(e) => setBannerVideoFile(e.target.files?.[0] || null)} className="w-full p-3 bg-zinc-950 border border-sky-500/20 rounded-2xl text-xs text-zinc-300" />
+              <p className="text-[9px] font-bold text-zinc-600 px-2">Use MP4 vertical. O vídeo é exibido inteiro, sem cortes.</p>
+            </div>
+          )}
 
           {isMid && (
             <div className="space-y-1">

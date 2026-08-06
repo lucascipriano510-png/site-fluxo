@@ -85,7 +85,7 @@ export default function SubBanner({ banner, whatsapp, onCta }) {
 
   return (
     <section ref={sectionRef} className="relative -mx-6 lg:mx-auto lg:max-w-[760px] lg:rounded-3xl overflow-hidden" aria-label={banner.title || 'Destaque'}>
-      <div className={`relative w-full ${videoUrl ? 'aspect-video' : 'aspect-[2/1]'} bg-zinc-950`}>
+      <div className={`relative w-full ${videoUrl ? 'aspect-[3/4]' : 'aspect-[2/1]'} bg-zinc-950`}>
         {!loaded && (
           <div
             className="absolute inset-0"
@@ -102,7 +102,7 @@ export default function SubBanner({ banner, whatsapp, onCta }) {
             ref={videoRef}
             src={videoUrl}
             poster={src || undefined}
-            className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`w-full h-full object-contain transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
             muted
             loop
             playsInline

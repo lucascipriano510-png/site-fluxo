@@ -87,7 +87,7 @@ export function useBanners(isDesktopViewport) {
 
   // Sub-banner do meio (2:1, decorativo): 1 imagem fixa — pega o 1º ativo da posição.
   const midBanner = useMemo(
-    () => (banners || []).filter(b => b.active && b.placement === 'mid' && b.image)
+    () => (banners || []).filter(b => b.active && b.placement === 'mid' && (b.image || b.video_url))
       .sort((a, b) => (a.banner_order ?? 999) - (b.banner_order ?? 999))[0] || null,
     [banners]
   );
