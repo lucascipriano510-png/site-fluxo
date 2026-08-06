@@ -19,6 +19,7 @@ export default function LiquidMetalCheckoutButton({
   const resetTimerRef = useRef(null);
   const statusId = useId();
   const isStatusOpen = statusOpen ?? loading;
+  const isReady = !disabled && !loading;
 
   useEffect(() => () => {
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
@@ -79,7 +80,7 @@ export default function LiquidMetalCheckoutButton({
   return (
     <div
       ref={controlRef}
-      className={`liquid-metal-checkout-control ${isStatusOpen ? "is-status-open" : ""}`}
+      className={`liquid-metal-checkout-control ${isStatusOpen ? "is-status-open" : ""} ${isReady ? "is-ready" : ""}`}
     >
       {size === "cart" && (
         <span className="liquid-metal-checkout-control__ambient" aria-hidden="true">
@@ -89,7 +90,7 @@ export default function LiquidMetalCheckoutButton({
       <button
         ref={buttonRef}
         type="button"
-        className={`liquid-metal-button liquid-metal-checkout-control__button liquid-metal-button--${size} ${
+        className={`liquid-metal-button liquid-metal-checkout-control__button liquid-metal-button--${size} ${isReady ? "is-ready" : ""} ${
           glassEnabled ? "is-glass-enabled" : "is-metal-only"
         }`}
         disabled={disabled}

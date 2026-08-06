@@ -659,12 +659,55 @@
 }
 
 .liquid-metal-checkout-control__button:disabled {
-  cursor: wait;
-  opacity: 0.84;
+  cursor: not-allowed;
+  opacity: 0.46;
+  filter: grayscale(0.78) brightness(0.72);
 }
 
 .liquid-metal-checkout-control__button:disabled:active {
   transform: perspective(760px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+}
+
+/* Quando o tamanho foi escolhido, o CTA muda de estado de forma inequívoca:
+ * o verde indica que a próxima ação já está disponível, inclusive no touch. */
+.liquid-metal-checkout-control.is-ready .liquid-metal-button--cart {
+  animation: liquid-metal-cart-ready 1.9s ease-in-out infinite;
+  box-shadow:
+    0 8px 18px -9px rgba(0, 0, 0, 0.92),
+    0 0 0 1px rgba(80, 255, 177, 0.68),
+    0 0 24px rgba(31, 218, 126, 0.42);
+}
+
+.liquid-metal-checkout-control.is-ready .liquid-metal-button--cart .liquid-metal-button__refraction {
+  background:
+    radial-gradient(circle at 18% 20%, rgba(192, 255, 222, 0.32), transparent 34%),
+    linear-gradient(112deg, rgba(13, 154, 86, 0.98), rgba(19, 197, 116, 0.9) 52%, rgba(6, 112, 63, 0.98));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.liquid-metal-checkout-control.is-ready .liquid-metal-button--cart .liquid-metal-button__refraction::before {
+  opacity: 0.9;
+  background:
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, 0.34), transparent 24%),
+    linear-gradient(105deg, rgba(255, 255, 255, 0.2), transparent 36%, rgba(205, 255, 229, 0.18) 64%, transparent);
+}
+
+.liquid-metal-checkout-control.is-ready .liquid-metal-button--cart .liquid-metal-button__glass {
+  box-shadow:
+    inset 0 1px 0 rgba(235, 255, 243, 0.76),
+    inset 0 -2px 1px rgba(0, 59, 31, 0.44),
+    0 0 0 1px rgba(203, 255, 226, 0.32);
+}
+
+.liquid-metal-checkout-control.is-ready .liquid-metal-button--cart .liquid-metal-button__content,
+.liquid-metal-checkout-control.is-ready .liquid-metal-button--cart .liquid-metal-button__content svg {
+  color: #f4fff8;
+}
+
+@keyframes liquid-metal-cart-ready {
+  0%, 100% { transform: perspective(760px) scale(1); }
+  50% { transform: perspective(760px) scale(1.018); }
 }
 
 .liquid-metal-checkout-control__status-slot {
