@@ -55,7 +55,6 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-flux: var(--flux-signal);
@@ -101,7 +100,6 @@
   --sidebar-primary: oklch(0.208 0.042 265.755);
   --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
   --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
 }
@@ -136,7 +134,6 @@
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
   --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
@@ -194,31 +191,52 @@
   background: var(--flux-gunmetal);
 }
 
-/* Compatibilidade com os componentes públicos ainda escritos com utilitários
- * zinc. O escopo impede que a paleta operacional do admin seja alterada. */
-.flux-storefront .bg-zinc-950 { background-color: var(--flux-void); }
-.flux-storefront .bg-zinc-900 { background-color: var(--flux-surface); }
-.flux-storefront .bg-zinc-800 { background-color: var(--flux-gunmetal); }
-.flux-storefront .border-zinc-800 { border-color: var(--flux-border); }
-.flux-storefront .text-zinc-300 { color: var(--text-secondary); }
-.flux-storefront .text-zinc-400 { color: var(--text-secondary); }
-.flux-storefront .text-zinc-500 { color: var(--text-muted); }
-
-/* ── Liquid glass — vidro com borda especular (uso CIRÚRGICO) ─────────────
-   Só em superfícies FIXAS que flutuam sobre conteúdo rolando (barras de
-   compra). NÃO espalhar por cards/modais: backdrop-filter é caro na GPU e
-   este projeto já sofreu com camada de GPU × nitidez de imagem. */
-.liquid-glass {
-  background: linear-gradient(180deg, rgba(39,39,42,0.50) 0%, rgba(9,9,11,0.66) 100%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  backdrop-filter: blur(22px) saturate(160%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.16),   /* fio de luz na aresta superior */
-    inset 0 0 0 1px rgba(255,255,255,0.05), /* anel interno sutil */
-    0 -12px 40px rgba(0,0,0,0.45);          /* sombra projetada pra cima */
+.flux-storefront .bg-zinc-950 {
+  background-color: var(--flux-void);
 }
 
-/* CTA de compra — lente azul translúcida, com refração interna e compressão tátil. */
+.flux-storefront .bg-zinc-900 {
+  background-color: var(--flux-surface);
+}
+
+.flux-storefront .bg-zinc-800 {
+  background-color: var(--flux-gunmetal);
+}
+
+.flux-storefront .border-zinc-800 {
+  border-color: var(--flux-border);
+}
+
+.flux-storefront .text-zinc-300 {
+  color: var(--text-secondary);
+}
+
+.flux-storefront .text-zinc-400 {
+  color: var(--text-secondary);
+}
+
+.flux-storefront .text-zinc-500 {
+  color: var(--text-muted);
+}
+
+/* ── Liquid glass ───────────────────────────────────────────────────────── */
+.liquid-glass {
+  background: linear-gradient(
+    180deg,
+    rgba(39,39,42,0.50) 0%,
+    rgba(9,9,11,0.66) 100%
+  );
+
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    inset 0 0 0 1px rgba(255,255,255,0.05),
+    0 -12px 40px rgba(0,0,0,0.45);
+}
+
+/* ── CTA principal ─────────────────────────────────────────────────────── */
 .flux-buy-cta {
   position: relative;
   isolation: isolate;
@@ -228,6 +246,7 @@
   color: oklch(0.985 0.003 264);
   font-size: 16px;
   font-weight: 700;
+
   background:
     radial-gradient(
       ellipse at 22% 8%,
@@ -245,17 +264,21 @@
       oklch(0.28 0.17 259 / 0.68) 52%,
       oklch(0.18 0.13 264 / 0.72) 100%
     );
+
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
+
   box-shadow:
     inset 0 1px 1px oklch(0.99 0.01 235 / 0.6),
     inset 0 2px 7px oklch(0.8 0.06 235 / 0.18),
     inset 0 -3px 7px oklch(0.08 0.08 264 / 0.78),
     inset 0 -10px 18px oklch(0.12 0.1 263 / 0.32),
     0 5px 12px oklch(0.02 0.01 264 / 0.62);
+
   text-transform: none;
   letter-spacing: -0.01em;
   text-shadow: 0 1px 2px oklch(0.22 0.13 260 / 0.82);
+
   transition:
     transform 170ms cubic-bezier(0.16, 1, 0.3, 1),
     border-color 180ms ease,
@@ -276,14 +299,17 @@
   width: 62%;
   height: 78%;
   border-radius: 50%;
+
   background: radial-gradient(
     ellipse at 40% 28%,
     oklch(0.99 0.006 230 / 0.48) 0%,
     oklch(0.9 0.03 230 / 0.17) 34%,
     transparent 68%
   );
+
   filter: blur(1px);
   opacity: 0.82;
+
   transition:
     opacity 180ms ease,
     transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -293,11 +319,13 @@
   inset: 1px;
   border-radius: inherit;
   border: 1px solid oklch(0.86 0.06 235 / 0.2);
+
   box-shadow:
     inset 0 1px 2px oklch(0.97 0.01 235 / 0.38),
     inset 0 -2px 3px oklch(0.08 0.08 264 / 0.58),
     inset 3px 0 8px oklch(0.76 0.08 232 / 0.12),
     inset -3px 0 8px oklch(0.06 0.06 264 / 0.16);
+
   transition:
     transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
     opacity 180ms ease;
@@ -311,6 +339,7 @@
       inset 0 -3px 8px oklch(0.08 0.08 264 / 0.82),
       inset 0 -10px 19px oklch(0.12 0.1 263 / 0.36),
       0 6px 13px oklch(0.02 0.01 264 / 0.66);
+
     transform: translateY(-1px);
   }
 
@@ -321,6 +350,7 @@
 
 .flux-buy-cta:active {
   transform: translateY(1px) scale(0.985);
+
   box-shadow:
     inset 0 3px 8px oklch(0.06 0.07 264 / 0.76),
     inset 0 -1px 2px oklch(0.86 0.04 232 / 0.18),
@@ -342,17 +372,26 @@
   outline-offset: 3px;
 }
 
-/* Home: o CTA vive dentro da composição 60/30/10, então ele não recebe uma
-   cor nova. É um controle tonalizado: o fundo continua aparecendo através do
-   material, enquanto o filete de luz e o texto dão a prioridade necessária. */
+/* ── CTA DOS CARDS — RESPONSIVO ──────────────────────────────────────────
+ *
+ * Regra principal:
+ * - O botão nunca passa de 42% do espaço disponível.
+ * - Em celulares pequenos ele diminui.
+ * - O preço fica com prioridade.
+ * - Não existe largura fixa que possa empurrar/cobrir o preço.
+ */
 .flux-card-buy-cta {
   position: relative;
   isolation: isolate;
   overflow: hidden;
 
-  flex: 0 0 auto;
-  min-width: clamp(68px, 20.5vw, 104px);
-  min-height: clamp(28px, 8.4vw, 36px);
+  flex: 0 1 auto;
+  width: fit-content;
+
+  min-width: 58px;
+  max-width: 42%;
+  min-height: clamp(27px, 8vw, 36px);
+
   border-radius: clamp(7px, 2.2vw, 10px);
 
   color: var(--text-primary);
@@ -399,6 +438,7 @@
   z-index: 0;
   overflow: hidden;
   opacity: 1;
+
   background: rgba(242, 247, 247, 0.055);
 
   -webkit-backdrop-filter: blur(14px) saturate(185%) brightness(1.08);
@@ -411,43 +451,75 @@
   position: relative;
   z-index: 3;
 
-  min-height: clamp(28px, 8.4vw, 36px);
+  min-height: clamp(27px, 8vw, 36px);
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  gap: clamp(4px, 1.4vw, 7px);
-  padding: 0 clamp(7px, 2.6vw, 13px);
+  gap: clamp(3px, 1vw, 7px);
+
+  padding-inline: clamp(6px, 2vw, 13px);
 
   font-family: inherit;
   font-size: clamp(8px, 2.5vw, 10.5px);
+
   white-space: nowrap;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-/* Navegador sem backdrop-filter: fundo quase sólido pra manter leitura. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .liquid-glass { background: rgba(9, 9, 11, 0.94); }
+/* Celulares muito estreitos — ex.: 320/330/340px */
+@media (max-width: 359px) {
+  .flux-card-buy-cta {
+    min-width: 54px;
+    max-width: 40%;
+  }
+
+  .flux-card-buy-cta .flux-card-buy-cta__label {
+    padding-inline: 5px;
+    font-size: 7.5px;
+    letter-spacing: 0.05em;
+  }
 }
 
-/* ── View Transitions: morph card→hero ao abrir produto ───────────────────
-   A foto do card se transforma no hero da página (estilo app nativo).
-   Disparado em App.handleProductClick; navegador sem suporte abre normal. */
+/* Celulares comuns — 360 a 430px */
+@media (min-width: 360px) and (max-width: 430px) {
+  .flux-card-buy-cta {
+    min-width: 60px;
+    max-width: 42%;
+  }
+}
+
+/* Celulares grandes / tablets pequenas */
+@media (min-width: 431px) {
+  .flux-card-buy-cta {
+    min-width: 68px;
+    max-width: 104px;
+  }
+}
+
+/* Navegador sem backdrop-filter */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .liquid-glass {
+    background: rgba(9, 9, 11, 0.94);
+  }
+}
+
+/* ── View Transitions ───────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 0.22s;
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
+
   ::view-transition-group(produto-hero) {
     animation-duration: 0.42s;
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  /* Os dois snapshots preenchem o grupo durante o morph: sem isso a troca de
-     proporção card 4:5 → hero estica a imagem em vez de recortar. */
+
   ::view-transition-old(produto-hero),
   ::view-transition-new(produto-hero) {
     width: 100%;
@@ -457,19 +529,20 @@
   }
 }
 
-/* ── Letreiro de marca (marquee streetwear) ───────────────────────────────
-   Duas cópias do segmento; a faixa anda -50% em loop = infinito perfeito. */
+/* ── Letreiro de marca ─────────────────────────────────────────────────── */
 .marquee-wrap {
   overflow: hidden;
   padding: 16px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
+
 .marquee-track {
   display: flex;
   width: max-content;
   animation: marquee-roll 32s linear infinite;
 }
+
 .marquee-seg {
   display: flex;
   align-items: center;
@@ -482,24 +555,41 @@
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
-.mq-solid { color: var(--text-primary); }
-.mq-outline { color: transparent; -webkit-text-stroke: 1.5px rgba(247, 247, 249, 0.38); }
-.mq-sep { color: var(--flux-signal-bright); font-size: 0.5em; }
-@keyframes marquee-roll { to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
-/* .sda-rise (reveal por scroll nos cards) REMOVIDO em 2026-07-19 a pedido do
-   dono: card surgindo de opacidade baixa com a foto ainda baixando = retângulo
-   preto piscando, cara de bug. Se algum reveal por view() voltar um dia, a
-   lição fica: fill `backwards` (NUNCA both/forwards — atropela o transform
-   inline do framer e mata o FLIP) e nada de opacidade em card com imagem. */
+.mq-solid {
+  color: var(--text-primary);
+}
 
+.mq-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(247, 247, 249, 0.38);
+}
+
+.mq-sep {
+  color: var(--flux-signal-bright);
+  font-size: 0.5em;
+}
+
+@keyframes marquee-roll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
 @layer base {
   * {
     border-color: var(--color-border);
   }
 
-  html, body {
+  html,
+  body {
     width: 100%;
     height: 100%;
     overflow: hidden;
@@ -513,12 +603,6 @@
     overscroll-behavior-y: contain;
   }
 
-  /*
-   * Card de produto (mobile): troca o scroll do #root pelo scroll do DOCUMENTO.
-   * Só assim o navegador mobile recolhe a barra de URL (vira a "faixinha" branca).
-   * Ativa apenas com a classe .product-scroll no <html> e some no desktop.
-   * Reverte 100% ao fechar o card (classe removida).
-   */
   @media (max-width: 1023px) {
     html.product-scroll,
     html.product-scroll body {
@@ -526,7 +610,11 @@
       min-height: 100%;
       overflow: visible;
     }
-    html.product-scroll body { overflow-x: hidden; }
+
+    html.product-scroll body {
+      overflow-x: hidden;
+    }
+
     html.product-scroll #root {
       height: auto;
       min-height: 100%;
@@ -542,30 +630,61 @@
 }
 
 /* Oculta scrollbar em carrosséis nativos */
-.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
-.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
 
 /* Animação da barra de progresso do banner */
 @keyframes bannerProgress {
-  from { width: 0%; }
-  to { width: 100%; }
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: 100%;
+  }
 }
 
-/* Skeleton animado do banner enquanto imagem carrega */
+/* Skeleton animado do banner */
 @keyframes bannerSkeleton {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
-/* Pulsação interna lenta do ícone do sub-banner (respira, sem anel/luz pra fora) */
+/* Pulsação interna do ícone */
 @keyframes waSubtlePulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.06); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.06);
+  }
 }
-.wa-pulse { animation: waSubtlePulse 3.4s ease-in-out infinite; }
+
+.wa-pulse {
+  animation: waSubtlePulse 3.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .wa-pulse { animation: none; }
+  .wa-pulse {
+    animation: none;
+  }
 }
 
 /* Scrollbar visível apenas no desktop */
@@ -574,22 +693,26 @@
     scrollbar-width: thin;
     scrollbar-color: var(--flux-border-light) var(--flux-void);
   }
+
   #root::-webkit-scrollbar {
     width: 6px;
   }
+
   #root::-webkit-scrollbar-track {
     background: var(--flux-void);
   }
+
   #root::-webkit-scrollbar-thumb {
     background: var(--flux-border-light);
     border-radius: 3px;
   }
+
   #root::-webkit-scrollbar-thumb:hover {
     background: var(--flux-titanium);
   }
 }
 
-/* Grid de produtos — 4 colunas no desktop, reset dos negative margins do mobile */
+/* Grid de produtos — desktop */
 @media (min-width: 768px) {
   .products-grid-container {
     grid-template-columns: repeat(4, 1fr) !important;
@@ -601,25 +724,22 @@
   }
 }
 
-/* Desktop (≥1024px): melhorias gerais de layout */
+/* Desktop ≥1024px */
 @media (min-width: 1024px) {
-  /* Banner — ponto focal ajustado para o crop landscape do desktop */
   .banner-img {
     object-position: center 35% !important;
   }
 
-  /* Seção de destaques — garante que a coluna esquerda não expanda além do necessário */
   .featured-rail-header {
     padding-top: 2.5rem;
   }
 
-  /* Footer — layout 3 colunas no desktop */
   .footer-links-grid {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
-/* Wide (≥1280px) — garante que nada quebre em telas grandes */
+/* Wide ≥1280px */
 @media (min-width: 1280px) {
   .products-grid-container {
     grid-template-columns: repeat(5, 1fr) !important;
@@ -627,27 +747,22 @@
   }
 }
 
-/* ── Virtual scrolling agressivo (estilo Amazon) ───────────────────────────
- * Só a área visível + uma faixa de folga é de fato renderizada/pintada.
- * Os cards fora dessa área têm o conteúdo "desligado" pelo navegador
- * (pula layout/estilo/paint = economiza carga real de CPU/GPU/memória) e
- * voltam INSTANTÂNEO ao reaparecer — o DOM e a imagem continuam vivos, então
- * não há reload nem skeleton piscando no scroll de volta.
- * `contain-intrinsic-size: auto Xpx` reserva a altura dos cards ainda não
- * pintados (evita pulo de scroll) e o `auto` faz o navegador lembrar o
- * tamanho real após a primeira pintura. */
-/* content-visibility REMOVIDO: estava rasterizando o card em baixa resolução e
-   borrando a imagem no desktop (pior quanto maior o card/source). */
+/* ── Virtual scrolling ─────────────────────────────────────────────────── */
 .cv-card {
-  /* sem content-visibility */
+  /* content-visibility removido para preservar nitidez das imagens */
 }
 
 @keyframes skeleton-shine {
-  0%   { background-position:  200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
-/* ── Glass footer flutuante nos cards de produto (P07) ─────────────────── */
+/* ── Glass footer flutuante nos cards ───────────────────────────────────── */
 .glass3d {
   --filter-glass3d: blur(8px) brightness(1.1) saturate(0.8);
   --color-glass3d: hsl(222 0% 32% / 0);
@@ -655,6 +770,7 @@
 
   position: relative;
   z-index: 4;
+
   box-shadow:
     0 0 0.75px hsl(205 20% 10% / 0.2),
     0.7px 0.8px 1.2px -0.4px hsl(205 20% 10% / 0.1),
@@ -673,8 +789,10 @@
   border-radius: inherit;
   overflow: hidden;
   z-index: 3;
+
   -webkit-backdrop-filter: var(--filter-glass3d);
   backdrop-filter: var(--filter-glass3d);
+
   background-color: var(--color-glass3d);
   background-image: var(--noise-glass3d);
   background-size: 100px;
@@ -689,6 +807,7 @@
   border-radius: inherit;
   overflow: hidden;
   z-index: 5;
+
   box-shadow:
     inset 2px 2px 1px -3px hsl(205 20% 90% / 0.8),
     inset 4px 4px 2px -6px hsl(205 20% 90% / 0.3),
@@ -702,45 +821,53 @@
   z-index: 6;
 }
 
-/* ─────────────────────────────────────────────────────────────
- * BRILHO — polimento visual (dark premium). Alphas baixos de propósito:
- * a ideia é a loja parecer "iluminada"/refletindo luz, sem piscar/brega.
- * ───────────────────────────────────────────────────────────── */
-
-/* 1) Glow ambiente: luzes radiais suaves atrás de tudo (aplicado no .app-shell
- *    da vitrine via style inline; aqui fica a versão utilitária reutilizável). */
+/* ── BRILHO ─────────────────────────────────────────────────────────────── */
 .brilho-ambient {
   background:
-    radial-gradient(920px 560px at 16% -7%, oklch(0.63 0.14 264 / 0.09), transparent 62%),
-    radial-gradient(820px 520px at 100% 6%, oklch(0.92 0.018 264 / 0.045), transparent 58%),
-    linear-gradient(180deg, var(--flux-asphalt) 0%, var(--flux-void) 100%),
+    radial-gradient(
+      920px 560px at 16% -7%,
+      oklch(0.63 0.14 264 / 0.09),
+      transparent 62%
+    ),
+    radial-gradient(
+      820px 520px at 100% 6%,
+      oklch(0.92 0.018 264 / 0.045),
+      transparent 58%
+    ),
+    linear-gradient(
+      180deg,
+      var(--flux-asphalt) 0%,
+      var(--flux-void) 100%
+    ),
     var(--bg-base) !important;
-  /* background-attachment: fixed REMOVIDO do mobile: no Chrome Android, fundo
-     fixo com gradiente grande causa flicker/risco ao rolar (repaint por tile),
-     visível atrás de painéis translúcidos (ex.: bloco "Loja de verdade" antes
-     do rodapé). No celular o gradiente rola com a página — visual quase igual,
-     sem briga com o scroll. Desktop (mouse) mantém o efeito fixo. */
-}
-@media (pointer: fine) {
-  .brilho-ambient { background-attachment: fixed; }
 }
 
-/* O vídeo atual traz neon vermelho/ciano. A gradação o transforma em uma
- * vitrine mineral e preserva um único reflexo denim, sem esconder o produto. */
+@media (pointer: fine) {
+  .brilho-ambient {
+    background-attachment: fixed;
+  }
+}
+
 .flux-hero::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
+
   background:
-    radial-gradient(75% 110% at 4% 20%, oklch(0.63 0.14 264 / 0.13), transparent 58%),
-    linear-gradient(180deg, transparent 48%, oklch(0.105 0.009 264 / 0.58) 100%);
+    radial-gradient(
+      75% 110% at 4% 20%,
+      oklch(0.63 0.14 264 / 0.13),
+      transparent 58%
+    ),
+    linear-gradient(
+      180deg,
+      transparent 48%,
+      oklch(0.105 0.009 264 / 0.58) 100%
+    );
 }
 
-/* O hero é uma peça de vitrine suspensa, não mais um vídeo encostado na
-   página. A projeção existe no espaço negativo sob ele — por isso a leitura
-   continua funcionando mesmo sobre o fundo quase preto. */
 .flux-hero-stage {
   position: relative;
   z-index: 1;
@@ -753,11 +880,21 @@
   content: "";
   position: absolute;
   z-index: -1;
+
   left: 5%;
   right: 5%;
   bottom: clamp(4px, 1.4vw, 22px);
+
   height: clamp(26px, 5vw, 68px);
-  background: radial-gradient(ellipse, oklch(0.52 0.026 264 / 0.2) 0%, oklch(0.12 0.012 264 / 0.17) 43%, transparent 74%);
+
+  background:
+    radial-gradient(
+      ellipse,
+      oklch(0.52 0.026 264 / 0.2) 0%,
+      oklch(0.12 0.012 264 / 0.17) 43%,
+      transparent 74%
+    );
+
   filter: blur(15px);
   transform: translateY(35%);
   pointer-events: none;
@@ -768,41 +905,90 @@
   margin: 0;
   border-radius: 0;
   background: transparent;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 86%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 86%, transparent 100%);
+
+  -webkit-mask-image:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 9%,
+      #000 86%,
+      transparent 100%
+    );
+
+  mask-image:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 9%,
+      #000 86%,
+      transparent 100%
+    );
+
   transform: rotateX(0.8deg) translateZ(18px);
   transform-origin: 50% 0;
+
   box-shadow:
     0 28px 34px -30px oklch(0.01 0.004 264 / 0.98);
 }
 
 @media (max-width: 639px) {
-  .flux-hero-stage { padding-inline: 0; }
-  .flux-hero { transform: none; }
-  .flux-hero-stage::before { left: 12%; right: 12%; bottom: 13px; }
+  .flux-hero-stage {
+    padding-inline: 0;
+  }
+
+  .flux-hero {
+    transform: none;
+  }
+
+  .flux-hero-stage::before {
+    left: 12%;
+    right: 12%;
+    bottom: 13px;
+  }
 }
 
 .flux-hero__media {
   filter: saturate(0.62) contrast(1.08) brightness(0.86);
 }
 
-/* 2) Cards "pegando luz": gloss diagonal sutil no topo do card. Fica ACIMA da
- *    imagem, mas com pointer-events none e concentrado no topo (some ~40%). */
+/* Gloss dos cards */
 .cv-card::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(157deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 22%, rgba(255, 255, 255, 0) 42%);
+
+  background:
+    linear-gradient(
+      157deg,
+      rgba(255, 255, 255, 0.07) 0%,
+      rgba(255, 255, 255, 0.02) 22%,
+      rgba(255, 255, 255, 0) 42%
+    );
+
   pointer-events: none;
   z-index: 7;
   opacity: 0.9;
+
   transition: opacity 0.25s ease;
 }
-.cv-card:hover::before { opacity: 1; }
 
-/* 3) Acentos que "acendem": halo suave (usar via classe onde quiser realçar). */
+.cv-card:hover::before {
+  opacity: 1;
+}
+
+/* Acentos */
 .brilho-glow-emerald,
-.brilho-glow-flux { box-shadow: 0 0 18px oklch(0.91 0.012 264 / 0.2), 0 6px 20px rgba(0, 0, 0, 0.4); }
-.brilho-text-glow { text-shadow: 0 0 18px rgba(255, 255, 255, 0.18); }
-.brilho-text-glow-amber { text-shadow: 0 0 20px rgba(245, 200, 100, 0.45); }
+.brilho-glow-flux {
+  box-shadow:
+    0 0 18px oklch(0.91 0.012 264 / 0.2),
+    0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.brilho-text-glow {
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.18);
+}
+
+.brilho-text-glow-amber {
+  text-shadow: 0 0 20px rgba(245, 200, 100, 0.45);
+}
