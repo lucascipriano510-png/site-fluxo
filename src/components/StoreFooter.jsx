@@ -87,6 +87,7 @@ const StoreFooter = ({
             &copy; {new Date().getFullYear()} {config.brandName} &bull; DIREITOS RESERVADOS
             <button onClick={handleSecretDoubleTap} className="text-zinc-800 hover:text-flux transition-colors outline-none select-none touch-manipulation cursor-pointer"><Lock size={10}/></button>
           </div>
+          <p className="pt-4 text-center text-[10px] font-bold text-zinc-500">olá Lucas</p>
         </div>
       </footer>
 );
