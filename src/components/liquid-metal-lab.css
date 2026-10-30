@@ -659,6 +659,8 @@
 }
 
 .product-card-details {
+  width: 100%;
+  min-width: 0;
   container-type: inline-size;
 }
 
@@ -670,6 +672,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  min-width: 0;
   gap: 8px;
 }
 

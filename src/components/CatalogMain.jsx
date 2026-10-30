@@ -817,7 +817,7 @@ const CatalogMain = ({
                                 {/* Linha 2 — preço (com riscado) + botão SEMPRE lado a lado.
                                     O Pix/contador saiu daqui pra uma linha própria abaixo, então
                                     o botão tem espaço e nunca sobrepõe o preço, mesmo em cards estreitos. */}
-                                <div className="product-card-price-row mb-1">
+                                <div className="product-card-price-row mb-1" style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                                   <div className="product-card-price-content flex flex-1 flex-col leading-none min-w-0">
                                     {showStrike && (
                                       <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>
@@ -829,7 +829,7 @@ const CatalogMain = ({
                                     </p>
                                   </div>
                                   {!isOutOfStock && (
-                                    <div className="product-card-buy-action">
+                                    <div className="product-card-buy-action" style={{ marginLeft: 'auto', flex: '0 0 auto' }}>
                                       <LiquidMetalCheckoutButton
                                         icon="bag"
                                         label="Comprar"
