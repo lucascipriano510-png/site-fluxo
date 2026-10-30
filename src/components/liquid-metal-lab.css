@@ -667,6 +667,7 @@
 }
 
 .liquid-metal-button--card {
+  width: 50%;
   min-width: 76px;
   min-height: 30px;
   overflow: hidden;
