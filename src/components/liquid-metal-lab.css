@@ -658,6 +658,55 @@
   width: 100%;
 }
 
+.product-card-details {
+  container-type: inline-size;
+}
+
+.product-card-price-row {
+  --product-card-price-size: 16px;
+  --product-card-buy-width: 68px;
+  --product-card-buy-font-size: 8px;
+  --product-card-buy-padding: 0 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.product-card-price-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.product-card-main-price {
+  font-size: var(--product-card-price-size);
+}
+
+.product-card-buy-action {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+@container (max-width: 184px) {
+  .product-card-price-row {
+    --product-card-price-size: 12px;
+    --product-card-buy-width: 60px;
+    --product-card-buy-font-size: 7.5px;
+    --product-card-buy-padding: 0 5px;
+    gap: 6px;
+  }
+}
+
+@container (max-width: 155px) {
+  .product-card-price-row {
+    --product-card-price-size: 10.5px;
+    --product-card-buy-width: 50px;
+    --product-card-buy-font-size: 6.5px;
+    --product-card-buy-padding: 0 4px;
+    gap: 4px;
+  }
+}
+
 /* Mesmo vidro translúcido da sacola, em escala de card. Não recebe o verde
    de disponibilidade, pois o clique abre a peça em vez de adicioná-la direto. */
 .liquid-metal-checkout-control--card {
@@ -668,7 +717,7 @@
 
 .liquid-metal-button--card {
   width: auto;
-  min-width: clamp(48px, 14vw, 64px);
+  min-width: var(--product-card-buy-width, 68px);
   min-height: 32px;
   overflow: hidden;
   border-radius: 8px;
@@ -725,9 +774,9 @@
   min-height: 32px;
   z-index: 3;
   gap: 0;
-  padding: 0 clamp(5px, 1.5vw, 6px);
+  padding: var(--product-card-buy-padding, 0 7px);
   font-family: inherit;
-  font-size: clamp(7px, 1.8vw, 8px);
+  font-size: var(--product-card-buy-font-size, 8px);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
