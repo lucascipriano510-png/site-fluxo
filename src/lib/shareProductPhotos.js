@@ -44,25 +44,19 @@ const safeFilenamePart = (value) =>
 export function getProductPhotoSources(products = []) {
   const seen = new Set();
   const photos = [];
+  const videoExtension = /\.(?:3gp|avi|m4v|mkv|mov|mp4|mpeg|mpg|webm)(?:[?#]|$)/i;
 
   for (const product of products || []) {
-    const sources = [product?.image, ...(Array.isArray(product?.gallery) ? product.gallery : [])];
-    let productPhotoNumber = 0;
+    const rawUrl = getSourceUrl(product?.image);
+    if (!rawUrl || videoExtension.test(rawUrl) || seen.has(rawUrl)) continue;
 
-    for (const source of sources) {
-      const rawUrl = getSourceUrl(source);
-      if (!rawUrl) continue;
-
-      if (seen.has(rawUrl)) continue;
-      seen.add(rawUrl);
-      productPhotoNumber += 1;
-      photos.push({
-        url: rawUrl,
-        product,
-        productPhotoNumber,
-        order: photos.length + 1,
-      });
-    }
+    seen.add(rawUrl);
+    photos.push({
+      url: rawUrl,
+      product,
+      productPhotoNumber: 1,
+      order: photos.length + 1,
+    });
   }
 
   return photos;
@@ -116,6 +110,14 @@ export async function prepareProductPhotoFiles(products, onProgress = () => {}) 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const blob = await response.blob();
+        if (
+          String(blob.type || "")
+            .toLowerCase()
+            .startsWith("video/")
+        ) {
+          files[index] = null;
+          continue;
+        }
         const mime = getImageMime(blob, source.url);
         if (!mime || !mime.startsWith("image/") || blob.size === 0) {
           throw new Error("O arquivo recebido não foi reconhecido como imagem.");
@@ -145,5 +147,11 @@ export async function prepareProductPhotoFiles(products, onProgress = () => {}) 
     );
   }
 
-  return files;
+  const imageFiles = files.filter(Boolean);
+  if (!imageFiles.length) {
+    throw new Error(
+      "Este álbum não tem imagens principais disponíveis para compartilhar; vídeos foram ignorados.",
+    );
+  }
+  return imageFiles;
 }
