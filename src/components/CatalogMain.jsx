@@ -816,14 +816,14 @@ const CatalogMain = ({
                                 {/* Linha 2 — preço (com riscado) + botão SEMPRE lado a lado.
                                     O Pix/contador saiu daqui pra uma linha própria abaixo, então
                                     o botão tem espaço e nunca sobrepõe o preço, mesmo em cards estreitos. */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                                  <div className="flex flex-col leading-none min-w-max">
+                                <div className="flex items-center justify-between gap-1.5 mb-1">
+                                  <div className="flex flex-col leading-none min-w-0">
                                     {showStrike && (
                                       <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>
                                         {formatBRL(product.price || 0)}
                                       </span>
                                     )}
-                                    <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? 'var(--flux-offer)' : 'var(--text-primary)'), fontSize: '16px', fontFamily: "'Archivo', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0, whiteSpace: 'nowrap', textShadow: (!isOutOfStock && live) ? '0 0 16px oklch(0.78 0.165 72 / 0.28)' : 'none' }}>
+                                    <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? 'var(--flux-offer)' : 'var(--text-primary)'), fontSize: 'clamp(12px, 3.7vw, 16px)', fontFamily: "'Archivo', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0, whiteSpace: 'nowrap', textShadow: (!isOutOfStock && live) ? '0 0 16px oklch(0.78 0.165 72 / 0.28)' : 'none' }}>
                                       {formatBRL(mainPrice || 0)}
                                     </p>
                                   </div>
