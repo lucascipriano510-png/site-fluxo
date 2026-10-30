@@ -14,6 +14,22 @@ import { optimizeImage } from "../lib/images";
 const normalizeLabel = (value) => String(value || "").trim();
 const productStock = (product) => Number(product?.stock) || 0;
 const sortLabels = (a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" });
+const getSizeLabel = (entry) => {
+  const value = entry && typeof entry === "object" ? entry.size : entry;
+  return normalizeLabel(value).toLocaleUpperCase("pt-BR");
+};
+const productSizes = (product) =>
+  Array.isArray(product?.sizes)
+    ? [...new Set(product.sizes.map(getSizeLabel).filter(Boolean))]
+    : [];
+const stockForSize = (product, size) => {
+  const entry = (Array.isArray(product?.sizes) ? product.sizes : []).find(
+    (item) => getSizeLabel(item) === size,
+  );
+  return Number(entry && typeof entry === "object" ? entry.stock : 0) || 0;
+};
+const sortSizeLabels = (a, b) =>
+  a.localeCompare(b, "pt-BR", { numeric: true, sensitivity: "base" });
 
 function AlbumCard({ title, count, cover, detail, onClick, isSubfolder = false }) {
   return (
@@ -59,9 +75,11 @@ function AlbumCard({ title, count, cover, detail, onClick, isSubfolder = false }
   );
 }
 
-function ProductCard({ product, onEdit, onDelete }) {
-  const stock = productStock(product);
-  const sizes = Array.isArray(product.sizes) ? product.sizes.length : 0;
+function ProductCard({ product, onEdit, onDelete, selectedSize }) {
+  const usesSpecificSize = Boolean(selectedSize && !["__all__", "__none__"].includes(selectedSize));
+  const stock = usesSpecificSize ? stockForSize(product, selectedSize) : productStock(product);
+  const sizes = productSizes(product).length;
+
   return (
     <article className="overflow-hidden rounded-[24px] border border-white/10 bg-zinc-900 transition-colors hover:border-emerald-400/30">
       <button
@@ -139,6 +157,7 @@ function ProductCard({ product, onEdit, onDelete }) {
 
 export default function InventoryAlbums({ products = [], onEdit, onDelete, searchTerm = "" }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const isSearching = Boolean(searchTerm.trim());
   const query = searchTerm.trim().toLocaleLowerCase("pt-BR");
@@ -157,18 +176,56 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
     );
   }, [products, selectedCategory]);
 
-  const subcategories = useMemo(() => {
-    const labels = new Set(
-      categoryProducts.map((p) => normalizeLabel(p.subcategory)).filter(Boolean),
-    );
-    return [...labels].sort(sortLabels);
+  const sizeLabels = useMemo(() => {
+    const labels = new Set(categoryProducts.flatMap(productSizes));
+    return [...labels].sort(sortSizeLabels);
   }, [categoryProducts]);
+
+  const sizeSummary = useMemo(() => {
+    const groups = sizeLabels.map((size) => {
+      const items = categoryProducts.filter((product) => productSizes(product).includes(size));
+      return {
+        size,
+        items,
+        count: items.length,
+        stock: items.reduce((sum, product) => sum + stockForSize(product, size), 0),
+        cover: items.find((product) => product.image)?.image || "",
+      };
+    });
+    const itemsWithoutSize = categoryProducts.filter(
+      (product) => productSizes(product).length === 0,
+    );
+    if (itemsWithoutSize.length) {
+      groups.push({
+        size: "__none__",
+        items: itemsWithoutSize,
+        count: itemsWithoutSize.length,
+        stock: itemsWithoutSize.reduce((sum, product) => sum + productStock(product), 0),
+        cover: itemsWithoutSize.find((product) => product.image)?.image || "",
+      });
+    }
+    return groups;
+  }, [sizeLabels, categoryProducts]);
+
+  const sizeProducts = useMemo(() => {
+    if (!selectedCategory || selectedSize === null) return [];
+    if (selectedSize === "__all__") return categoryProducts;
+    if (selectedSize === "__none__") {
+      return categoryProducts.filter((product) => productSizes(product).length === 0);
+    }
+    return categoryProducts.filter((product) => productSizes(product).includes(selectedSize));
+  }, [selectedCategory, selectedSize, categoryProducts]);
+
+  const subcategories = useMemo(() => {
+    const labels = new Set(sizeProducts.map((p) => normalizeLabel(p.subcategory)).filter(Boolean));
+    return [...labels].sort(sortLabels);
+  }, [sizeProducts]);
 
   const searchResults = useMemo(() => {
     if (!isSearching) return [];
     return (products || []).filter((p) =>
-      [p.name, p.sku, p.category, p.subcategory].some((v) =>
-        String(v || "")
+      [p.name, p.sku, p.category, p.subcategory, ...productSizes(p)].some((value) =>
+        String(value || "")
           .toLocaleLowerCase("pt-BR")
           .includes(query),
       ),
@@ -194,7 +251,7 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
   const subcategorySummary = useMemo(
     () =>
       subcategories.map((subcategory) => {
-        const items = categoryProducts.filter((p) => normalizeLabel(p.subcategory) === subcategory);
+        const items = sizeProducts.filter((p) => normalizeLabel(p.subcategory) === subcategory);
         return {
           subcategory,
           items,
@@ -202,41 +259,83 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
           cover: items.find((p) => p.image)?.image || "",
         };
       }),
-    [subcategories, categoryProducts],
+    [subcategories, sizeProducts],
   );
 
-  const productsWithoutSubcategory = categoryProducts.filter((p) => !normalizeLabel(p.subcategory));
+  const productsWithoutSubcategory = sizeProducts.filter((p) => !normalizeLabel(p.subcategory));
   const visibleProducts = isSearching
     ? searchResults
-    : !selectedCategory
+    : !selectedCategory || selectedSize === null
       ? []
       : selectedSubcategory === "__all__"
-        ? categoryProducts
+        ? sizeProducts
         : selectedSubcategory === "__none__"
           ? productsWithoutSubcategory
           : selectedSubcategory
-            ? categoryProducts.filter((p) => normalizeLabel(p.subcategory) === selectedSubcategory)
+            ? sizeProducts.filter((p) => normalizeLabel(p.subcategory) === selectedSubcategory)
             : subcategories.length === 0
-              ? categoryProducts
+              ? sizeProducts
               : [];
 
-  const totalStock = (items) => items.reduce((sum, p) => sum + productStock(p), 0);
+  const totalStock = (items, size = null) =>
+    items.reduce(
+      (sum, product) =>
+        sum +
+        (size && !["__all__", "__none__"].includes(size)
+          ? stockForSize(product, size)
+          : productStock(product)),
+      0,
+    );
+
   const goToCategory = (category) => {
     setSelectedCategory(category);
+    setSelectedSize(null);
     setSelectedSubcategory(null);
   };
+  const goToSize = (size) => {
+    setSelectedSize(size);
+    setSelectedSubcategory(null);
+  };
+  const sizeTitle =
+    selectedSize === "__all__"
+      ? "Todos os tamanhos"
+      : selectedSize === "__none__"
+        ? "Sem tamanho"
+        : selectedSize
+          ? `Tamanho ${selectedSize}`
+          : "";
   const heading = isSearching
     ? `Resultados da busca (${searchResults.length})`
     : !selectedCategory
       ? "Categorias do estoque"
-      : selectedSubcategory === "__all__"
-        ? selectedCategory
-        : selectedSubcategory === "__none__"
-          ? `${selectedCategory} · Sem subcategoria`
-          : selectedSubcategory || selectedCategory;
+      : selectedSize === null
+        ? `Tamanhos de ${selectedCategory}`
+        : selectedSubcategory === "__all__"
+          ? `${sizeTitle} · Produtos`
+          : selectedSubcategory === "__none__"
+            ? `${sizeTitle} · Sem subcategoria`
+            : selectedSubcategory
+              ? `${sizeTitle} · ${selectedSubcategory}`
+              : sizeTitle;
+  const seeAllLabel = selectedSize === null ? "Ver todos da categoria" : "Ver todos deste tamanho";
+  const canSeeAll =
+    !isSearching &&
+    selectedCategory &&
+    (selectedSize === null || (selectedSubcategory === null && subcategories.length > 0));
+  const seeAll = () => {
+    if (selectedSize === null) {
+      setSelectedSize("__all__");
+      setSelectedSubcategory("__all__");
+    } else {
+      setSelectedSubcategory("__all__");
+    }
+  };
 
   return (
-    <section className="space-y-5" aria-label="Estoque organizado por categorias">
+    <section
+      className="space-y-5"
+      aria-label="Estoque organizado por categorias, tamanhos e subcategorias"
+    >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-400">
@@ -246,18 +345,20 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
           <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-zinc-500">
             {isSearching
               ? `${searchResults.length} encontrados`
-              : selectedCategory
-                ? `${categoryProducts.length} produtos · ${totalStock(categoryProducts)} unidades`
-                : `${products.length} produtos em ${categories.length} categorias`}
+              : selectedSize !== null
+                ? `${sizeProducts.length} produtos · ${totalStock(sizeProducts, selectedSize)} unidades`
+                : selectedCategory
+                  ? `${categoryProducts.length} produtos · ${totalStock(categoryProducts)} unidades`
+                  : `${products.length} produtos em ${categories.length} categorias`}
           </p>
         </div>
-        {!isSearching && selectedCategory && (
+        {canSeeAll && (
           <button
             type="button"
-            onClick={() => setSelectedSubcategory("__all__")}
+            onClick={seeAll}
             className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-[9px] font-black uppercase tracking-wide text-emerald-300 transition hover:bg-emerald-400/15"
           >
-            Ver tudo nesta categoria
+            {seeAllLabel}
           </button>
         )}
       </div>
@@ -271,6 +372,7 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
             type="button"
             onClick={() => {
               setSelectedCategory(null);
+              setSelectedSize(null);
               setSelectedSubcategory(null);
             }}
             className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-zinc-900 px-3 py-2 text-zinc-400 hover:text-white"
@@ -280,11 +382,26 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
           <ChevronRight size={12} className="shrink-0 text-zinc-600" />
           <button
             type="button"
-            onClick={() => setSelectedSubcategory(null)}
-            className={`shrink-0 ${selectedSubcategory ? "text-zinc-400 hover:text-white" : "text-emerald-300"}`}
+            onClick={() => {
+              setSelectedSize(null);
+              setSelectedSubcategory(null);
+            }}
+            className={`shrink-0 ${selectedSize !== null ? "text-zinc-400 hover:text-white" : "text-emerald-300"}`}
           >
             {selectedCategory}
           </button>
+          {selectedSize !== null && (
+            <>
+              <ChevronRight size={12} className="shrink-0 text-zinc-600" />
+              <button
+                type="button"
+                onClick={() => setSelectedSubcategory(null)}
+                className={`shrink-0 ${selectedSubcategory ? "text-zinc-400 hover:text-white" : "text-emerald-300"}`}
+              >
+                {sizeTitle}
+              </button>
+            </>
+          )}
           {selectedSubcategory && selectedSubcategory !== "__all__" && (
             <>
               <ChevronRight size={12} className="shrink-0 text-zinc-600" />
@@ -314,53 +431,88 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
         </>
       )}
 
-      {!isSearching && selectedCategory && !selectedSubcategory && subcategories.length > 0 && (
+      {!isSearching && selectedCategory && selectedSize === null && (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {subcategorySummary.map(({ subcategory, items, count, cover }) => (
+            {sizeSummary.map(({ size, items, count, stock, cover }) => (
               <AlbumCard
-                key={subcategory}
-                title={subcategory}
+                key={size}
+                title={size === "__none__" ? "Sem tamanho" : `Tamanho ${size}`}
                 count={count}
                 cover={cover}
-                detail={`${count} ${count === 1 ? "produto" : "produtos"} · ${totalStock(items)} un.`}
+                detail={`${count} ${count === 1 ? "produto" : "produtos"} · ${stock} un.`}
                 isSubfolder
-                onClick={() => setSelectedSubcategory(subcategory)}
+                onClick={() => goToSize(size)}
               />
             ))}
-            {productsWithoutSubcategory.length > 0 && (
-              <AlbumCard
-                title="Sem subcategoria"
-                count={productsWithoutSubcategory.length}
-                cover={productsWithoutSubcategory.find((p) => p.image)?.image || ""}
-                detail={`${productsWithoutSubcategory.length} produtos · ${totalStock(productsWithoutSubcategory)} un.`}
-                isSubfolder
-                onClick={() => setSelectedSubcategory("__none__")}
-              />
-            )}
           </div>
-          <div className="rounded-2xl border border-white/5 bg-zinc-900/60 px-4 py-3 text-[9px] font-bold uppercase tracking-wide text-zinc-500">
-            Exemplo de organização: categoria <span className="text-zinc-300">Calça</span> →
-            subcategoria <span className="text-zinc-300">Jogador</span>. A classificação existente
-            continua alimentando a vitrine da loja.
-          </div>
+          {sizeSummary.length === 0 && (
+            <EmptyState message="Esta categoria ainda não tem produtos." />
+          )}
         </>
       )}
+
+      {!isSearching &&
+        selectedCategory &&
+        selectedSize !== null &&
+        !selectedSubcategory &&
+        subcategories.length > 0 && (
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {subcategorySummary.map(({ subcategory, items, count, cover }) => (
+                <AlbumCard
+                  key={subcategory}
+                  title={subcategory}
+                  count={count}
+                  cover={cover}
+                  detail={`${count} ${count === 1 ? "produto" : "produtos"} · ${totalStock(items, selectedSize)} un.`}
+                  isSubfolder
+                  onClick={() => setSelectedSubcategory(subcategory)}
+                />
+              ))}
+              {productsWithoutSubcategory.length > 0 && (
+                <AlbumCard
+                  title="Sem subcategoria"
+                  count={productsWithoutSubcategory.length}
+                  cover={productsWithoutSubcategory.find((p) => p.image)?.image || ""}
+                  detail={`${productsWithoutSubcategory.length} produtos · ${totalStock(productsWithoutSubcategory, selectedSize)} un.`}
+                  isSubfolder
+                  onClick={() => setSelectedSubcategory("__none__")}
+                />
+              )}
+            </div>
+            <div className="rounded-2xl border border-white/5 bg-zinc-900/60 px-4 py-3 text-[9px] font-bold uppercase tracking-wide text-zinc-500">
+              Organização: categoria <span className="text-zinc-300">Calça</span> → tamanho{" "}
+              <span className="text-zinc-300">M</span> → subcategoria{" "}
+              <span className="text-zinc-300">Jogador</span>. A vitrine continua usando a
+              classificação já cadastrada.
+            </div>
+          </>
+        )}
 
       {visibleProducts.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {visibleProducts.map((product) => (
-            <ProductCard key={product.id} product={product} onEdit={onEdit} onDelete={onDelete} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              selectedSize={isSearching ? null : selectedSize}
+            />
           ))}
         </div>
       )}
 
-      {(isSearching || selectedSubcategory || (selectedCategory && subcategories.length === 0)) &&
+      {(isSearching ||
+        (selectedCategory &&
+          selectedSize !== null &&
+          (selectedSubcategory || subcategories.length === 0))) &&
         visibleProducts.length === 0 && (
           <EmptyState
             message={
               isSearching
-                ? "Nenhum produto encontrado. Tente outro nome, SKU ou categoria."
+                ? "Nenhum produto encontrado. Tente outro nome, SKU, tamanho ou categoria."
                 : "Esta pasta ainda não tem produtos."
             }
           />
@@ -368,7 +520,7 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
 
       {isSearching && searchResults.length > 0 && (
         <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-wide text-zinc-600">
-          <Search size={12} /> Busca inclui nome, SKU, categoria e subcategoria
+          <Search size={12} /> Busca inclui nome, SKU, categoria, tamanho e subcategoria
         </div>
       )}
     </section>
