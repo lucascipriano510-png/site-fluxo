@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Barcode, Camera, Check, Clock, Edit3, Film, Flame, Home, Image as ImageIcon, ImagePlus, Layers, Minus, Plus, RefreshCcw, Scan, ScanLine, Search, Tag, Trash2, Upload, X, Zap } from 'lucide-react';
+import { Barcode, Camera, Check, Clock, Film, Flame, Image as ImageIcon, ImagePlus, Layers, Minus, Plus, RefreshCcw, Scan, ScanLine, Search, Tag, Upload, X, Zap } from 'lucide-react';
 import { formatBRL } from '../lib/format';
 import { CAMPAIGN_LABELS, CAMPAIGN_SHORT, OFFER_CAMPAIGNS, formatDayMonth, todayLocalISO } from '../lib/offers';
 import { fetchKitItems, saveKitItems, upsertProduct, uploadVideo } from '../lib/supabase';
 import AdminGarimpo, { contarFilaGarimpo } from './AdminGarimpo';
+import InventoryAlbums from './InventoryAlbums';
 import { optimizeImage } from '../lib/images';
 
 const AdminInventory = ({ products, setProducts, showToast, availableCollections, productImageFile, setProductImageFile, uploadImage }) => {
   const [editMode, setEditMode] = useState(null);
   const [invSearch, setInvSearch] = useState('');
   const [showGarimpo, setShowGarimpo] = useState(false);
+  const productCategories = useMemo(() => [...new Set((products || []).map(p => String(p.category || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [products]);
+  const productSubcategories = useMemo(() => [...new Set((products || []).map(p => String(p.subcategory || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [products]);
 
   // Calcula próximo SKU sequencial com base nos SKUs puramente numéricos existentes
   const nextSku = useMemo(() => {
@@ -292,11 +295,6 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
 
   const removeSize = (index) => setFormSizes(formSizes.filter((_, i) => i !== index));
   const addSize = () => setFormSizes([...formSizes, { size: '', stock: 0 }]);
-
-  const filteredInv = (products || []).filter(p => 
-    (p.name || '').toLowerCase().includes(invSearch.toLowerCase()) || 
-    (p.sku || '').toLowerCase().includes(invSearch.toLowerCase())
-  );
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -701,11 +699,14 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
             <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5"><Layers size={12}/> Classificação</p>
             <div className="space-y-1">
               <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Categoria</label>
-              <input name="category" defaultValue={editMode?.category} placeholder={isKit ? 'KITS (automático)' : 'Ex: VESTUÁRIO'} disabled={isKit} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase disabled:opacity-50 focus:border-emerald-500/50" required={!isKit} />
+              <input name="category" list="inventory-category-options" defaultValue={editMode?.category} placeholder={isKit ? 'KITS (automático)' : 'Ex: CALÇA'} disabled={isKit} className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase disabled:opacity-50 focus:border-emerald-500/50" required={!isKit} />
+              <datalist id="inventory-category-options">{productCategories.map(category => <option key={category} value={category} />)}</datalist>
             </div>
             <div className="space-y-1">
               <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Subcategoria (opcional)</label>
-              <input name="subcategory" defaultValue={editMode?.subcategory || ''} placeholder="Ex: CALÇA JOGADOR" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase focus:border-emerald-500/50" />
+              <input name="subcategory" list="inventory-subcategory-options" defaultValue={editMode?.subcategory || ''} placeholder="Ex: JOGADOR" className="w-full p-4 bg-zinc-950 border border-white/5 rounded-2xl text-sm text-white outline-none uppercase focus:border-emerald-500/50" />
+              <datalist id="inventory-subcategory-options">{productSubcategories.map(subcategory => <option key={subcategory} value={subcategory} />)}</datalist>
+              <p className="px-1 text-[8px] font-bold uppercase tracking-wide text-zinc-600">Ex.: categoria CALÇA · subcategoria JOGADOR. A vitrine continua usando essa mesma classificação.</p>
             </div>
             <div className="space-y-1">
               <label className="text-[9px] font-black text-zinc-500 uppercase px-1">Coleção (opcional)</label>
@@ -944,25 +945,12 @@ const AdminInventory = ({ products, setProducts, showToast, availableCollections
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
             <input placeholder="Buscar produto..." className="w-full bg-zinc-900 border border-white/5 py-4 pl-14 pr-6 rounded-3xl text-sm font-bold text-white outline-none focus:border-emerald-500/50" value={invSearch} onChange={(e) => setInvSearch(e.target.value)} />
           </div>
-          {filteredInv.map(p => (
-            <div key={p.id} className="bg-zinc-900 p-4 rounded-[32px] border border-white/5 flex items-center gap-4 hover:border-white/10 transition-colors">
-              <div className="relative">
-                <img src={optimizeImage(p.image, 160, 72)} loading="lazy" decoding="async" className={`w-16 h-16 rounded-[20px] object-cover shrink-0 ${p.stock === 0 ? 'grayscale opacity-50' : ''}`} alt={p.name} />
-                {p.stock === 0 && <span className="absolute -top-2 -right-2 bg-red-500 w-4 h-4 rounded-full border-2 border-zinc-900"></span>}
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <h4 className="font-black text-white text-[11px] truncate uppercase">{p.name}</h4>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-[9px] font-bold text-zinc-500 uppercase bg-zinc-950 px-2 py-1 rounded-lg flex items-center gap-1"><Barcode size={10}/> {p.sku}</span>
-                  <span className={`text-[9px] font-black px-2 py-1 rounded-lg ${p.stock > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>{p.stock} UN</span>
-                </div>
-              </div>
-              <div className="flex gap-1 flex-col">
-                <button onClick={() => setEditMode(p)} className="p-2.5 bg-white/5 rounded-xl text-zinc-400 hover:text-white transition-colors"><Edit3 size={14}/></button>
-                <button onClick={() => { if(window.confirm('Excluir produto?')) setProducts(products.filter(i => i.id !== p.id)); }} className="p-2.5 bg-red-500/10 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-colors"><Trash2 size={14}/></button>
-              </div>
-            </div>
-          ))}
+          <InventoryAlbums
+            products={products || []}
+            searchTerm={invSearch}
+            onEdit={setEditMode}
+            onDelete={p => { if (window.confirm(`Excluir ${p.name || 'este produto'}?`)) setProducts(products.filter(i => i.id !== p.id)); }}
+          />
         </div>
       )}
     </div>
