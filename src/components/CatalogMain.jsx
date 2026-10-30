@@ -816,8 +816,8 @@ const CatalogMain = ({
                                 {/* Linha 2 — preço (com riscado) + botão SEMPRE lado a lado.
                                     O Pix/contador saiu daqui pra uma linha própria abaixo, então
                                     o botão tem espaço e nunca sobrepõe o preço, mesmo em cards estreitos. */}
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                  <div className="flex flex-col leading-none min-w-0">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                                  <div className="flex flex-col leading-none min-w-max">
                                     {showStrike && (
                                       <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>
                                         {formatBRL(product.price || 0)}

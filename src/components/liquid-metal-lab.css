@@ -664,11 +664,12 @@
   width: auto;
   flex: 0 0 auto;
   padding: 0;
+  margin-left: auto;
 }
 
 .liquid-metal-button--card {
-  min-width: 92px;
-  min-height: 32px;
+  min-width: clamp(76px, 23.5vw, 92px);
+  min-height: clamp(38px, 10vw, 40px);
   overflow: hidden;
   border-radius: 8px;
   box-shadow: 0 4px 7px -6px rgba(0, 0, 0, 0.78);
@@ -721,12 +722,12 @@
 }
 
 .liquid-metal-button--card .liquid-metal-button__content {
-  min-height: 32px;
+  min-height: clamp(38px, 10vw, 40px);
   z-index: 3;
-  gap: 6px;
-  padding: 0 11px;
+  gap: clamp(4px, 1.5vw, 6px);
+  padding: 0 clamp(7px, 2.8vw, 11px);
   font-family: inherit;
-  font-size: 9px;
+  font-size: clamp(7px, 2.25vw, 9px);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
