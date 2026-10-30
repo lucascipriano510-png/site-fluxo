@@ -1,15 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ChevronRight,
   Folder,
   FolderOpen,
   ImagePlus,
+  Loader2,
   Package,
   Search,
+  Share2,
   Trash2,
 } from "lucide-react";
 import { optimizeImage } from "../lib/images";
+import { getProductPhotoSources, prepareProductPhotoFiles } from "../lib/shareProductPhotos";
 
 const normalizeLabel = (value) => String(value || "").trim();
 const productStock = (product) => Number(product?.stock) || 0;
@@ -159,6 +162,16 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+  const [shareFlow, setShareFlow] = useState({
+    status: "idle",
+    files: [],
+    nextIndex: 0,
+    batchSize: 0,
+    albumKey: "",
+    progress: 0,
+    total: 0,
+    message: "",
+  });
   const isSearching = Boolean(searchTerm.trim());
   const query = searchTerm.trim().toLocaleLowerCase("pt-BR");
 
@@ -277,6 +290,42 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
               ? sizeProducts
               : [];
 
+  const shareProducts = isSearching
+    ? searchResults
+    : !selectedCategory
+      ? []
+      : selectedSize === null
+        ? categoryProducts
+        : selectedSubcategory === "__none__"
+          ? productsWithoutSubcategory
+          : selectedSubcategory && selectedSubcategory !== "__all__"
+            ? visibleProducts
+            : sizeProducts;
+  const sharePhotoSources = useMemo(() => getProductPhotoSources(shareProducts), [shareProducts]);
+  const currentAlbumKey = JSON.stringify([
+    searchTerm.trim(),
+    selectedCategory,
+    selectedSize,
+    selectedSubcategory,
+  ]);
+
+  useEffect(() => {
+    setShareFlow({
+      status: "idle",
+      files: [],
+      nextIndex: 0,
+      batchSize: 0,
+      albumKey: currentAlbumKey,
+      progress: 0,
+      total: 0,
+      message: "",
+    });
+  }, [currentAlbumKey]);
+
+  const shareFlowMatchesAlbum = shareFlow.albumKey === currentAlbumKey;
+  const preparedFiles = shareFlowMatchesAlbum ? shareFlow.files : [];
+  const canContinueShare = preparedFiles.length > 0 && shareFlow.status === "ready";
+
   const totalStock = (items, size = null) =>
     items.reduce(
       (sum, product) =>
@@ -296,6 +345,163 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
     setSelectedSize(size);
     setSelectedSubcategory(null);
   };
+
+  const findLargestShareableBatch = (files) => {
+    if (typeof navigator.share !== "function" || typeof navigator.canShare !== "function") return 0;
+    for (let count = files.length; count > 0; count -= 1) {
+      try {
+        if (navigator.canShare({ files: files.slice(0, count) })) return count;
+      } catch {
+        // Continue procurando o maior lote aceito pelo navegador.
+      }
+    }
+    return 0;
+  };
+
+  const sendPreparedBatch = async (flow) => {
+    const batch = flow.files.slice(flow.nextIndex, flow.nextIndex + flow.batchSize);
+    if (!batch.length) return;
+
+    try {
+      // Chamada direta no evento de toque: o Web Share exige ativação recente do usuário.
+      const shareRequest = navigator.share({ files: batch });
+      setShareFlow({ ...flow, status: "sending", message: "Abrindo o compartilhamento nativo…" });
+      await shareRequest;
+
+      const nextIndex = flow.nextIndex + batch.length;
+      if (nextIndex < flow.files.length) {
+        setShareFlow({
+          ...flow,
+          status: "ready",
+          nextIndex,
+          message: `Lote preparado (${nextIndex} de ${flow.files.length} fotos). Escolha WhatsApp e, ao voltar, toque para enviar o próximo lote.`,
+        });
+      } else {
+        setShareFlow({
+          ...flow,
+          status: "done",
+          files: [],
+          nextIndex: 0,
+          batchSize: 0,
+          message: `A folha nativa foi aberta com ${flow.files.length} foto(s). Escolha WhatsApp, o contato e conclua o envio.`,
+        });
+      }
+    } catch (error) {
+      const message =
+        error?.name === "AbortError"
+          ? "Compartilhamento cancelado. As fotos continuam prontas; toque para tentar novamente."
+          : error?.name === "NotAllowedError"
+            ? "As fotos estão prontas. Toque novamente para abrir a folha nativa do iPhone."
+            : "O Safari não abriu o compartilhamento. Toque novamente para tentar ou baixe as fotos originais abaixo.";
+      setShareFlow({ ...flow, status: "ready", message });
+    }
+  };
+
+  const prepareAndShare = async () => {
+    const albumKey = currentAlbumKey;
+    setShareFlow({
+      status: "preparing",
+      files: [],
+      nextIndex: 0,
+      batchSize: 0,
+      albumKey,
+      progress: 0,
+      total: sharePhotoSources.length,
+      message: `Preparando ${sharePhotoSources.length} foto(s) original(is)…`,
+    });
+
+    try {
+      const files = await prepareProductPhotoFiles(shareProducts, (progress, total) => {
+        setShareFlow((current) =>
+          current.albumKey === albumKey
+            ? {
+                ...current,
+                progress,
+                total,
+                message: `Preparando fotos originais: ${progress} de ${total}…`,
+              }
+            : current,
+        );
+      });
+
+      const batchSize = findLargestShareableBatch(files);
+      if (!batchSize) {
+        setShareFlow({
+          status: "unsupported",
+          files,
+          nextIndex: 0,
+          batchSize: 0,
+          albumKey,
+          progress: files.length,
+          total: files.length,
+          message:
+            "Este navegador não permite anexar fotos pela folha nativa. Você ainda pode baixar as imagens originais e anexá-las manualmente no WhatsApp.",
+        });
+        return;
+      }
+
+      const flow = {
+        status: "ready",
+        files,
+        nextIndex: 0,
+        batchSize,
+        albumKey,
+        progress: files.length,
+        total: files.length,
+        message:
+          batchSize < files.length
+            ? `O navegador aceita ${batchSize} foto(s) por envio; o álbum será compartilhado em lotes.`
+            : "Fotos originais prontas para compartilhar.",
+      };
+      setShareFlow(flow);
+      await sendPreparedBatch(flow);
+    } catch (error) {
+      setShareFlow({
+        status: "error",
+        files: [],
+        nextIndex: 0,
+        batchSize: 0,
+        albumKey,
+        progress: 0,
+        total: sharePhotoSources.length,
+        message:
+          error?.message ||
+          "Não foi possível preparar as fotos originais. Nenhuma imagem foi enviada.",
+      });
+    }
+  };
+
+  const handleShareClick = () => {
+    if (shareFlowMatchesAlbum && canContinueShare) {
+      void sendPreparedBatch(shareFlow);
+      return;
+    }
+    if (shareFlow.status === "preparing" || shareFlow.status === "sending") return;
+    void prepareAndShare();
+  };
+
+  const downloadPreparedPhotos = async (files) => {
+    for (const [index, file] of files.entries()) {
+      const objectUrl = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = file.name;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      if (index < files.length - 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+      }
+    }
+    setShareFlow((current) => ({
+      ...current,
+      message:
+        "Fotos baixadas no dispositivo. Abra a conversa no WhatsApp e anexe as imagens salvas; nenhum link foi enviado.",
+    }));
+  };
+
   const sizeTitle =
     selectedSize === "__all__"
       ? "Todos os tamanhos"
@@ -352,16 +558,69 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
                   : `${products.length} produtos em ${categories.length} categorias`}
           </p>
         </div>
-        {canSeeAll && (
-          <button
-            type="button"
-            onClick={seeAll}
-            className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-[9px] font-black uppercase tracking-wide text-emerald-300 transition hover:bg-emerald-400/15"
-          >
-            {seeAllLabel}
-          </button>
-        )}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {canSeeAll && (
+            <button
+              type="button"
+              onClick={seeAll}
+              className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-[9px] font-black uppercase tracking-wide text-emerald-300 transition hover:bg-emerald-400/15"
+            >
+              {seeAllLabel}
+            </button>
+          )}
+          {sharePhotoSources.length > 0 && (
+            <button
+              type="button"
+              onClick={handleShareClick}
+              disabled={
+                shareFlow.status === "preparing" ||
+                shareFlow.status === "sending" ||
+                shareFlow.status === "unsupported"
+              }
+              aria-busy={shareFlow.status === "preparing" || shareFlow.status === "sending"}
+              className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/15 px-3 py-2 text-[9px] font-black uppercase tracking-wide text-emerald-200 transition hover:bg-emerald-500/25 disabled:cursor-wait disabled:opacity-60"
+            >
+              {shareFlow.status === "preparing" || shareFlow.status === "sending" ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Share2 size={13} />
+              )}
+              {shareFlow.status === "preparing"
+                ? `Preparando ${shareFlow.progress}/${shareFlow.total}`
+                : shareFlow.status === "sending"
+                  ? "Abrindo…"
+                  : canContinueShare
+                    ? `Continuar · ${Math.min(shareFlow.batchSize, preparedFiles.length - shareFlow.nextIndex)} fotos`
+                    : `Compartilhar ${sharePhotoSources.length} fotos`}
+            </button>
+          )}
+        </div>
       </div>
+
+      {sharePhotoSources.length > 0 && (
+        <div className="-mt-3 space-y-2 text-right">
+          <p className="text-[9px] font-semibold text-zinc-500">
+            No menu nativo, escolha WhatsApp e o contato. As fotos vão como anexos, sem links.
+          </p>
+          {shareFlowMatchesAlbum && shareFlow.message && shareFlow.status !== "idle" && (
+            <div
+              role="status"
+              className="flex flex-wrap items-center justify-end gap-2 rounded-xl border border-white/10 bg-zinc-900/80 px-3 py-2 text-left text-[10px] font-medium text-zinc-300"
+            >
+              <span className="min-w-0 flex-1">{shareFlow.message}</span>
+              {preparedFiles.length > 0 && shareFlow.status !== "sending" && (
+                <button
+                  type="button"
+                  onClick={() => void downloadPreparedPhotos(preparedFiles)}
+                  className="shrink-0 rounded-lg border border-white/15 px-2.5 py-1.5 text-[9px] font-black uppercase text-zinc-200 hover:bg-white/5"
+                >
+                  Baixar fotos originais
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {!isSearching && selectedCategory && (
         <nav
