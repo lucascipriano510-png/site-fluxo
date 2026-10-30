@@ -816,8 +816,8 @@ const CatalogMain = ({
                                 {/* Linha 2 — preço (com riscado) + botão SEMPRE lado a lado.
                                     O Pix/contador saiu daqui pra uma linha própria abaixo, então
                                     o botão tem espaço e nunca sobrepõe o preço, mesmo em cards estreitos. */}
-                                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 mb-1">
-                                  <div className="flex flex-col leading-none min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="flex flex-1 flex-col leading-none min-w-0">
                                     {showStrike && (
                                       <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>
                                         {formatBRL(product.price || 0)}
@@ -828,12 +828,14 @@ const CatalogMain = ({
                                     </p>
                                   </div>
                                   {!isOutOfStock && (
-                                    <LiquidMetalCheckoutButton
-                                      icon="bag"
-                                      label="Comprar"
-                                      size="card"
-                                      onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
-                                    />
+                                    <div className="ml-auto shrink-0">
+                                      <LiquidMetalCheckoutButton
+                                        icon="bag"
+                                        label="Comprar"
+                                        size="card"
+                                        onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
+                                      />
+                                    </div>
                                   )}
                                 </div>
                                 {/* Linha 2b — Pix / contador: LARGURA CHEIA embaixo, não disputa espaço com o botão */}
