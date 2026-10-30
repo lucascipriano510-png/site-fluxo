@@ -80,7 +80,7 @@ export default function LiquidMetalCheckoutButton({
   return (
     <div
       ref={controlRef}
-      className={`liquid-metal-checkout-control ${size === "card" ? "liquid-metal-checkout-control--card" : ""} ${isStatusOpen ? "is-status-open" : ""} ${isReady ? "is-ready" : ""}`}
+      className={`liquid-metal-checkout-control ${isStatusOpen ? "is-status-open" : ""} ${isReady ? "is-ready" : ""}`}
     >
       {size === "cart" && (
         <span className="liquid-metal-checkout-control__ambient" aria-hidden="true">

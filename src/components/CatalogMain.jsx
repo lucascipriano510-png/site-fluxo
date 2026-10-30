@@ -785,12 +785,11 @@ const CatalogMain = ({
                        )}
                      </div>
                       <motion.div
-                        className="p-3 flex-1 flex flex-col justify-between product-card-details"
+                        className="p-3 flex-1 flex flex-col justify-between"
                         style={{
                           cursor: isOutOfStock ? 'default' : 'pointer',
                           position: 'relative',
                           zIndex: 4,
-                          containerType: 'inline-size',
                           background: 'linear-gradient(to bottom, var(--flux-gunmetal) 0%, var(--flux-surface) 100%)',
                           boxShadow: '0 -1px 0 rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04)',
                         }}
@@ -817,26 +816,24 @@ const CatalogMain = ({
                                 {/* Linha 2 — preço (com riscado) + botão SEMPRE lado a lado.
                                     O Pix/contador saiu daqui pra uma linha própria abaixo, então
                                     o botão tem espaço e nunca sobrepõe o preço, mesmo em cards estreitos. */}
-                                <div className="product-card-price-row mb-1" style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                                  <div className="product-card-price-content flex flex-1 flex-col leading-none min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <div className="flex flex-col leading-none min-w-0">
                                     {showStrike && (
                                       <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: 600, textDecoration: 'line-through' }}>
                                         {formatBRL(product.price || 0)}
                                       </span>
                                     )}
-                                    <p className="product-card-main-price leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? 'var(--flux-offer)' : 'var(--text-primary)'), fontFamily: "'Archivo', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0, whiteSpace: 'nowrap', textShadow: (!isOutOfStock && live) ? '0 0 16px oklch(0.78 0.165 72 / 0.28)' : 'none' }}>
+                                    <p className="leading-none" style={{ color: isOutOfStock ? 'var(--text-muted)' : (live ? 'var(--flux-offer)' : 'var(--text-primary)'), fontSize: '16px', fontFamily: "'Archivo', sans-serif", fontWeight: '800', letterSpacing: '-0.01em', textDecoration: isOutOfStock ? 'line-through' : 'none', marginTop: showStrike ? '2px' : 0, whiteSpace: 'nowrap', textShadow: (!isOutOfStock && live) ? '0 0 16px oklch(0.78 0.165 72 / 0.28)' : 'none' }}>
                                       {formatBRL(mainPrice || 0)}
                                     </p>
                                   </div>
                                   {!isOutOfStock && (
-                                    <div className="product-card-buy-action" style={{ marginLeft: 'auto', flex: '0 0 auto' }}>
-                                      <LiquidMetalCheckoutButton
-                                        icon="bag"
-                                        label="Comprar"
-                                        size="card"
-                                        onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
-                                      />
-                                    </div>
+                                    <LiquidMetalCheckoutButton
+                                      icon="bag"
+                                      label="Comprar"
+                                      size="card"
+                                      onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
+                                    />
                                   )}
                                 </div>
                                 {/* Linha 2b — Pix / contador: LARGURA CHEIA embaixo, não disputa espaço com o botão */}
