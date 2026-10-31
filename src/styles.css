@@ -1005,6 +1005,11 @@
   filter: blur(4px) brightness(0.96) saturate(1.15);
 }
 
+.home-liquid-glass-preview > header {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
 .home-liquid-glass-preview .home-benefit-bar {
   background: rgba(18, 20, 24, 0.5) !important;
   border-color: rgba(255, 255, 255, 0.14) !important;

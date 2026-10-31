@@ -2032,7 +2032,7 @@ function App() {
 
       {toast && <div className="fixed top-24 lg:top-20 left-1/2 -translate-x-1/2 z-[200] animate-slide-down"><div className="px-6 py-3 rounded-full font-black text-[10px] uppercase bg-white text-zinc-950 shadow-2xl">{toast.message}</div></div>}
 
-      <HeaderBar {...{ cart, cartBounce, categories, config, handleOpenUserDrawer, selectedCategory, setActiveCollectionFilter, setCurrentPage, setKitsOnly, setSearchQuery, setSelectedCategory, setSelectedProduct, setSelectedSize, setSelectedSizes, setSelectedSubcategory, setShowCart, setShowQuickMenu, userProfile }} />
+      <HeaderBar {...{ cart, cartBounce, categories, config, handleOpenUserDrawer, selectedCategory, setActiveCollectionFilter, setCurrentPage, setKitsOnly, setSearchQuery, setSelectedCategory, setSelectedProduct, setSelectedSize, setSelectedSizes, setSelectedSubcategory, setShowCart, setShowQuickMenu, liquidGlassPreview: !productPageOpen, userProfile }} />
 
       {/* CORPO DA LOJA — DESMONTADO (não só escondido) quando a página de produto
           está aberta. Ao abrir um produto, o site inteiro (catálogo, banners e TODOS

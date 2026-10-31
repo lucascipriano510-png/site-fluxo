@@ -28,8 +28,36 @@ const HeaderBar = ({
   setShowCart,
   setShowQuickMenu,
   userProfile,
+  liquidGlassPreview = false,
 }) => (
-<header className="sticky top-0 z-40 isolate border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20 lg:h-[68px]" style={{ background: 'var(--bg-header)', backgroundColor: 'var(--bg-header)', backgroundImage: 'none', opacity: 1, backdropFilter: 'none', WebkitBackdropFilter: 'none', filter: 'none', mixBlendMode: 'normal' }}>
+<header
+  className="sticky top-0 z-40 isolate border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] h-20 lg:h-[68px]"
+  style={{
+    background: liquidGlassPreview ? 'rgba(9, 9, 11, 0.64)' : 'var(--bg-header)',
+    backgroundColor: liquidGlassPreview ? 'rgba(9, 9, 11, 0.64)' : 'var(--bg-header)',
+    backgroundImage: 'none',
+    opacity: 1,
+    backdropFilter: liquidGlassPreview ? 'blur(8px) saturate(1.12)' : 'none',
+    WebkitBackdropFilter: liquidGlassPreview ? 'blur(8px) saturate(1.12)' : 'none',
+    filter: 'none',
+    mixBlendMode: 'normal',
+  }}
+>
+  {liquidGlassPreview && (
+    <svg
+      aria-hidden="true"
+      className="pointer-events-none absolute h-0 w-0 overflow-hidden"
+    >
+      <defs>
+        <filter id="flux-logo-black-key" colorInterpolationFilters="sRGB">
+          <feColorMatrix
+            type="matrix"
+            values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0.2126 0.7152 0.0722 0 0"
+          />
+        </filter>
+      </defs>
+    </svg>
+  )}
         <div className="w-full max-w-[1280px] mx-auto px-6 lg:px-10 h-full flex items-center gap-4">
 
           {/* LOGO */}
@@ -59,7 +87,13 @@ const HeaderBar = ({
                   <img
                     src={optimizeImage(config.logoUrl, LOGO_W, 90)}
                     alt={config.brandName}
-                    style={{ transform: `scale(${config.logoZoom || 1})`, maxWidth: '180px', maxHeight: '70px' }}
+                    style={{
+                      transform: `scale(${config.logoZoom || 1})`,
+                      maxWidth: '180px',
+                      maxHeight: '70px',
+                      filter: liquidGlassPreview ? 'url(#flux-logo-black-key)' : undefined,
+                      mixBlendMode: liquidGlassPreview ? 'normal' : undefined,
+                    }}
                     className="w-full h-full object-contain mix-blend-screen transition-transform"
                   />
                 </div>
@@ -68,7 +102,12 @@ const HeaderBar = ({
                   <img
                     src={optimizeImage(config.logoUrl, LOGO_W, 90)}
                     alt={config.brandName}
-                    style={{ transform: `scale(${config.logoZoom || 1})`, transformOrigin: 'left center' }}
+                    style={{
+                      transform: `scale(${config.logoZoom || 1})`,
+                      transformOrigin: 'left center',
+                      filter: liquidGlassPreview ? 'url(#flux-logo-black-key)' : undefined,
+                      mixBlendMode: liquidGlassPreview ? 'normal' : undefined,
+                    }}
                     className="w-full h-full object-contain object-left mix-blend-screen transition-transform"
                   />
                 </div>
