@@ -39,9 +39,11 @@ function AlbumCard({ title, count, cover, detail, onClick, isSubfolder = false }
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-[26px] border border-white/20 bg-zinc-900/55 text-left shadow-[0_12px_36px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-white/35 hover:shadow-[0_20px_48px_rgba(0,0,0,0.42),0_0_24px_rgba(52,211,153,0.1)] active:scale-[0.98] motion-reduce:transition-none"
+      className="group relative isolate overflow-hidden rounded-[28px] border border-white/25 bg-white/[0.11] p-2.5 text-left shadow-[0_20px_45px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-white/35 hover:bg-white/[0.15] hover:shadow-[0_28px_58px_rgba(0,0,0,0.38),0_0_26px_rgba(52,211,153,0.12)] active:scale-[0.99] motion-reduce:transition-none"
     >
-      <div className="relative aspect-[1.18/1] overflow-hidden bg-zinc-950">
+      <span className="pointer-events-none absolute inset-0 rounded-[28px] bg-gradient-to-br from-white/[0.10] via-transparent to-emerald-300/[0.04]" />
+      <span className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-emerald-300/[0.12] blur-3xl" />
+      <div className="relative aspect-[1.18/1] overflow-hidden rounded-[20px] border border-white/15 bg-zinc-950/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
         {cover ? (
           <img
             src={optimizeImage(cover, 460, 78)}
@@ -59,23 +61,25 @@ function AlbumCard({ title, count, cover, detail, onClick, isSubfolder = false }
             )}
           </div>
         )}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.08] via-transparent to-emerald-200/[0.08]" />
-        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent opacity-80" />
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-950/45 via-zinc-950/10 to-transparent" />
-        <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2 rounded-2xl border border-white/35 bg-white/[0.12] px-3 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-2xl backdrop-saturate-150 transition-transform duration-300 group-hover:-translate-y-0.5">
-          <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/65 to-transparent" />
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-black uppercase tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
-              {title}
-            </p>
-            <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-              {detail || `${count} ${count === 1 ? "produto" : "produtos"}`}
-            </p>
-          </div>
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/35 bg-white/15 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.24)] backdrop-blur-lg transition-colors group-hover:bg-white/25">
-            <ChevronRight size={14} />
-          </span>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-zinc-950/35 via-transparent to-white/[0.08]" />
+        <div className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-zinc-950/35 px-2.5 py-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-xl">
+          <Package size={10} className="text-emerald-200" />
+          {isSubfolder ? "Subálbum" : "Álbum"}
         </div>
+        <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
+      </div>
+      <div className="relative flex items-center justify-between gap-2 px-1.5 pb-1 pt-3">
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-black uppercase tracking-wide text-white">
+            {title}
+          </p>
+          <p className="mt-1 truncate text-[9px] font-semibold uppercase tracking-wide text-zinc-300">
+            {detail || `${count} ${count === 1 ? "produto" : "produtos"}`}
+          </p>
+        </div>
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/25 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-xl transition-all group-hover:border-emerald-200/40 group-hover:bg-emerald-200/15">
+          <ChevronRight size={14} />
+        </span>
       </div>
     </button>
   );
@@ -542,8 +546,14 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
 
   return (
     <section
-      className="space-y-5"
+      className="relative isolate space-y-5"
       aria-label="Estoque organizado por categorias, tamanhos e subcategorias"
+      style={{
+        backgroundImage:
+          "radial-gradient(ellipse at 18% 12%, rgba(16, 185, 129, 0.3), transparent 48%), radial-gradient(ellipse at 88% 42%, rgba(34, 211, 238, 0.26), transparent 50%), radial-gradient(ellipse at 45% 85%, rgba(139, 92, 246, 0.2), transparent 50%)",
+        backgroundSize: "100% 100%",
+        backgroundRepeat: "no-repeat",
+      }}
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
