@@ -39,7 +39,7 @@ function AlbumCard({ title, count, cover, detail, onClick, isSubfolder = false }
     <button
       type="button"
       onClick={onClick}
-      className="group overflow-hidden rounded-[26px] border border-white/10 bg-zinc-900 text-left transition-all hover:-translate-y-0.5 hover:border-emerald-400/40 hover:shadow-[0_14px_40px_rgba(0,0,0,0.28)] active:scale-[0.98]"
+      className="group relative overflow-hidden rounded-[26px] border border-white/20 bg-zinc-900/55 text-left shadow-[0_12px_36px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-white/35 hover:shadow-[0_20px_48px_rgba(0,0,0,0.42),0_0_24px_rgba(52,211,153,0.1)] active:scale-[0.98] motion-reduce:transition-none"
     >
       <div className="relative aspect-[1.18/1] overflow-hidden bg-zinc-950">
         {cover ? (
@@ -59,17 +59,20 @@ function AlbumCard({ title, count, cover, detail, onClick, isSubfolder = false }
             )}
           </div>
         )}
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-zinc-950 via-zinc-950/45 to-transparent" />
-        <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.08] via-transparent to-emerald-200/[0.08]" />
+        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent opacity-80" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-950/45 via-zinc-950/10 to-transparent" />
+        <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2 rounded-2xl border border-white/35 bg-white/[0.12] px-3 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-2xl backdrop-saturate-150 transition-transform duration-300 group-hover:-translate-y-0.5">
+          <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/65 to-transparent" />
           <div className="min-w-0">
-            <p className="truncate text-[11px] font-black uppercase tracking-wide text-white drop-shadow">
+            <p className="truncate text-[11px] font-black uppercase tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
               {title}
             </p>
-            <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-zinc-300">
+            <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
               {detail || `${count} ${count === 1 ? "produto" : "produtos"}`}
             </p>
           </div>
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/15 bg-black/40 text-white">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/35 bg-white/15 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.24)] backdrop-blur-lg transition-colors group-hover:bg-white/25">
             <ChevronRight size={14} />
           </span>
         </div>
