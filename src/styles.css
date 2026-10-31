@@ -992,3 +992,46 @@
 .brilho-text-glow-amber {
   text-shadow: 0 0 20px rgba(245, 200, 100, 0.45);
 }
+
+/* Protótipo isolado: fundo da loja mais reconhecível e superfícies Liquid Glass. */
+.home-liquid-glass-wall {
+  position: fixed;
+  inset: -12px;
+  z-index: -10;
+  pointer-events: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(4px) brightness(0.96) saturate(1.15);
+}
+
+.home-liquid-glass-preview > header {
+  background: rgba(9, 9, 11, 0.64) !important;
+  background-color: rgba(9, 9, 11, 0.64) !important;
+  backdrop-filter: blur(8px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(1.12) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.home-liquid-glass-preview .home-benefit-bar {
+  background: rgba(18, 20, 24, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: blur(8px) saturate(1.1);
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+}
+
+.home-liquid-glass-preview .cv-card {
+  background: rgba(21, 23, 28, 0.58) !important;
+  backdrop-filter: blur(7px) saturate(1.12);
+  -webkit-backdrop-filter: blur(7px) saturate(1.12);
+  box-shadow:
+    0 16px 42px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+.home-liquid-glass-preview .cv-card > div:last-child {
+  background: rgba(21, 23, 28, 0.52) !important;
+  backdrop-filter: blur(7px) saturate(1.12);
+  -webkit-backdrop-filter: blur(7px) saturate(1.12);
+}

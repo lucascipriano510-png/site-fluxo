@@ -102,6 +102,7 @@ import KitModal from './components/KitModal';
 // Seções do return extraídas (verbatim, estado continua no App):
 import HeaderBar from './components/HeaderBar';
 import CatalogMain from './components/CatalogMain';
+import storeWallBackground from './assets/admin-stock-liquid-glass-bg.png';
 import TrustBadges from './components/TrustBadges';
 import StoreFooter from './components/StoreFooter';
 import ProductPageOverlay from './components/ProductPageOverlay';
@@ -1993,7 +1994,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell flux-storefront brilho-ambient min-h-dvh font-sans text-white pb-0 selection:bg-flux selection:text-flux-ink">
+    <div className={`app-shell flux-storefront brilho-ambient min-h-dvh font-sans text-white pb-0 selection:bg-flux selection:text-flux-ink ${!productPageOpen ? 'home-liquid-glass-preview' : ''}`}>
 
       {/* Atmosfera 3D (three.js lazy): profundidade pro brilho-ambient, z -1
           dentro do shell isolado — acima do fundo, abaixo de TODO o conteúdo.
@@ -2001,6 +2002,15 @@ function App() {
       <ThreeAtmosphere />
       {/* Luz neon que segue o dedo/cursor — continuação do galpão do hero */}
       <TouchGlow />
+      {!productPageOpen && (
+        <div
+          aria-hidden="true"
+          className="home-liquid-glass-wall"
+          style={{
+            backgroundImage: `linear-gradient(rgba(9, 9, 11, 0.12), rgba(9, 9, 11, 0.18)), url("${storeWallBackground}")`,
+          }}
+        />
+      )}
 
       {/* LETREIRO SUPERIOR DINÂMICO */}
       {(config.marqueePhrases || []).length > 0 && (
@@ -2034,7 +2044,7 @@ function App() {
 
       {/* ── Barra de Benefícios ─────────────────────────────── */}
       <div
-        className="w-full overflow-x-auto no-scrollbar flex items-center justify-start lg:justify-center border-b"
+        className="home-benefit-bar w-full overflow-x-auto no-scrollbar flex items-center justify-start lg:justify-center border-b"
         style={{ background: 'var(--flux-surface)', borderColor: 'var(--flux-border)', height: '44px' }}
       >
         <div className="flex items-center gap-6 lg:gap-10 px-6 shrink-0">
