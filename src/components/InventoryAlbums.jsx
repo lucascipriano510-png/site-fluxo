@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { optimizeImage } from "../lib/images";
+import adminStockGlassBackground from "../assets/admin-stock-liquid-glass-bg.png";
 import { getProductPhotoSources, prepareProductPhotoFiles } from "../lib/shareProductPhotos";
 
 const normalizeLabel = (value) => String(value || "").trim();
@@ -546,22 +547,31 @@ export default function InventoryAlbums({ products = [], onEdit, onDelete, searc
 
   return (
     <section
-      className="relative isolate space-y-5"
+      className="relative isolate space-y-5 overflow-hidden rounded-[32px] border border-white/10 bg-zinc-950/15 p-3 shadow-[0_24px_70px_rgba(0,0,0,0.28)] sm:p-4"
       aria-label="Estoque organizado por categorias, tamanhos e subcategorias"
-      style={{
-        backgroundImage:
-          "radial-gradient(ellipse at 18% 12%, rgba(16, 185, 129, 0.3), transparent 48%), radial-gradient(ellipse at 88% 42%, rgba(34, 211, 238, 0.26), transparent 50%), radial-gradient(ellipse at 45% 85%, rgba(139, 92, 246, 0.2), transparent 50%)",
-        backgroundSize: "100% 100%",
-        backgroundRepeat: "no-repeat",
-      }}
     >
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[32px]"
+      >
+        <div
+          className="absolute -inset-8 scale-110 bg-no-repeat opacity-100 blur-[8px] brightness-[1.25] contrast-[1.2] saturate-[1.3]"
+          style={{
+            backgroundImage: `url("${adminStockGlassBackground}")`,
+            backgroundPosition: "center",
+            backgroundSize: "100% 100%",
+          }}
+        />
+        <div className="absolute inset-0 bg-zinc-950/[0.04]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/5 via-zinc-950/8 to-zinc-950/18" />
+      </div>
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-[24px] border border-white/15 bg-zinc-950/40 p-3 shadow-[0_18px_40px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl">
         <div>
           <p className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-400">
             Biblioteca de produtos
           </p>
           <h4 className="mt-1 text-lg font-black uppercase tracking-tight text-white">{heading}</h4>
-          <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-zinc-500">
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-zinc-300">
             {isSearching
               ? `${searchResults.length} encontrados`
               : selectedSize !== null
