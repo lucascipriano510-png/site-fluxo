@@ -143,6 +143,42 @@ export default function AdminGrowth({ leads = [], products = [], config = {} }) 
       });
   }, [tab, attnRows, attnLoading]);
 
+  const [metaRows, setMetaRows] = useState(null);
+  const [metaLoading, setMetaLoading] = useState(false);
+  const [metaError, setMetaError] = useState('');
+  useEffect(() => {
+    if (tab !== 'meta' || metaRows !== null || metaLoading) return;
+    setMetaLoading(true);
+    supabase
+      .from('meta_event_receipts')
+      .select('event_name,status,events_received,http_status,error_code,error_subcode,source_path,content_ids,created_at')
+      .order('created_at', { ascending: false })
+      .limit(500)
+      .then(({ data, error }) => {
+        setMetaError(error?.message || '');
+        setMetaRows(error ? [] : data || []);
+        setMetaLoading(false);
+      });
+  }, [tab, metaRows, metaLoading]);
+
+  const metaSummary = useMemo(() => {
+    if (!metaRows) return null;
+    const byEvent = {};
+    metaRows.forEach((row) => {
+      const stat = byEvent[row.event_name] ||= { event: row.event_name, attempts: 0, accepted: 0, errors: 0, received: 0 };
+      stat.attempts += 1;
+      if (row.status === 'enviado') { stat.accepted += 1; stat.received += Number(row.events_received || 0); }
+      if (row.status === 'erro') stat.errors += 1;
+    });
+    return {
+      attempts: metaRows.length,
+      accepted: metaRows.filter((row) => row.status === 'enviado').length,
+      errors: metaRows.filter((row) => row.status === 'erro').length,
+      received: metaRows.reduce((sum, row) => sum + (row.status === 'enviado' ? Number(row.events_received || 0) : 0), 0),
+      byEvent: Object.values(byEvent).sort((a, b) => b.attempts - a.attempts),
+    };
+  }, [metaRows]);
+
   const attn = useMemo(() => {
     if (!attnRows) return null;
     const VISITA_BUCKETS = ['1ª visita', '2ª–3ª visita', '4ª+ visita'];
@@ -213,6 +249,7 @@ export default function AdminGrowth({ leads = [], products = [], config = {} }) 
     { key: 'reativar', label: 'Reativar', icon: <Users size={14} />, count: lapsed.length },
     { key: 'campanha', label: 'Campanha', icon: <Megaphone size={14} />, count: null },
     { key: 'atencao', label: 'Atenção', icon: <Eye size={14} />, count: null },
+    { key: 'meta', label: 'Meta', icon: <Check size={14} />, count: null },
   ];
 
   return (
@@ -434,6 +471,61 @@ export default function AdminGrowth({ leads = [], products = [], config = {} }) 
                   ))}
                 </div>
               )}
+            </>
+          )}
+        </div>
+      )}
+
+      {tab === 'meta' && (
+        <div className="space-y-4">
+          <div className="bg-zinc-900 rounded-2xl border border-white/5 p-4">
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Retorno da Meta CAPI · até 500 registros recentes</p>
+            <p className="text-2xl font-black text-emerald-400" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {metaSummary ? metaSummary.received : '—'} <span className="text-[11px] text-zinc-500 uppercase">eventos aceitos</span>
+            </p>
+            <p className="text-[9px] text-zinc-600 font-bold uppercase mt-0.5">Resposta do servidor Meta; não equivale a atribuição nem confirma eventos do Pixel no navegador.</p>
+          </div>
+
+          {metaLoading ? <Empty msg="Carregando retorno da Meta…" /> : metaError ? <Empty msg="Não foi possível ler os registros da Meta." /> : !metaSummary || metaSummary.attempts === 0 ? (
+            <Empty msg="Nenhuma resposta da CAPI registrada nesse período." />
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-zinc-900 rounded-2xl border border-white/5 p-4">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Envios confirmados</p>
+                  <p className="text-xl font-black text-white">{metaSummary.accepted}</p>
+                </div>
+                <div className="bg-zinc-900 rounded-2xl border border-white/5 p-4">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Com erro</p>
+                  <p className={`text-xl font-black ${metaSummary.errors > 0 ? 'text-red-400' : 'text-white'}`}>{metaSummary.errors}</p>
+                </div>
+              </div>
+
+              {metaSummary.byEvent.map((stat) => (
+                <div key={stat.event} className="bg-zinc-900 rounded-2xl border border-white/5 p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white">{stat.event}</p>
+                    <p className="text-[8px] font-bold uppercase text-zinc-600 mt-1">{stat.attempts} tentativa(s) · {stat.errors} erro(s)</p>
+                  </div>
+                  <p className="text-sm font-black text-emerald-400">{stat.received} aceito(s)</p>
+                </div>
+              ))}
+
+              <div className="bg-zinc-900 rounded-2xl border border-white/5 p-4 space-y-3">
+                <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Últimos retornos</p>
+                {metaRows.slice(0, 12).map((row, index) => (
+                  <div key={`${row.event_name}-${row.created_at}-${index}`} className="flex items-center justify-between gap-3 border-t border-white/5 pt-2">
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black uppercase text-zinc-300 truncate">{row.event_name}{row.source_path || ''}</p>
+                      <p className="text-[8px] font-bold text-zinc-600">{new Date(row.created_at).toLocaleString('pt-BR')}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className={`text-[9px] font-black uppercase ${row.status === 'enviado' ? 'text-emerald-400' : 'text-red-400'}`}>{row.status}</p>
+                      <p className="text-[8px] text-zinc-600">{row.status === 'enviado' ? `${Number(row.events_received || 0)} aceito(s)` : `HTTP ${row.http_status || '—'} · erro ${row.error_code || '—'}`}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </>
           )}
         </div>

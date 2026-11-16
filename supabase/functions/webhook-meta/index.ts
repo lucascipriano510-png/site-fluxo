@@ -61,9 +61,9 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 // 🔖 Version stamp — atualize a cada deploy para auditar o que está publicado.
-const FN_VERSION = '2026-06-23.1';
+const FN_VERSION = '2026-11-16.1';
 const FN_NAME    = 'webhook-meta';
-const FN_NOTES   = 'P17 intacto (event_id/idempotencia). EMQ: admin nao usa IP/UA do request (sao do admin); usa fbp/fbc/UA/url do body (capturados no checkout do cliente).';
+const FN_NOTES   = 'P17 intacto; recibo CAPI minimo sem PII em meta_event_receipts. EMQ preservado.';
 
 console.log(`[${FN_NAME}] boot version=${FN_VERSION} notes="${FN_NOTES}"`);
 
@@ -168,10 +168,46 @@ Deno.serve(async (req) => {
     if (value < 0)  return json({ error: 'value must be non-negative' }, 400);
   }
 
-  // ---------- LOG (apenas Purchase vai pra rastreio_conversoes) ----------
+  // ---------- LOG MINIMO DA RESPOSTA DA META (sem PII/payload bruto) ----------
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  const sourcePath = (() => {
+    try { return sourceUrl ? new URL(sourceUrl).pathname.slice(0, 500) : null; }
+    catch { return null; }
+  })();
+  const contentIds = Array.isArray(customData.content_ids)
+    ? customData.content_ids.map((id: unknown) => String(id).slice(0, 120)).filter(Boolean).slice(0, 25)
+    : [];
+  const receiptSource = authMode === 'session' ? 'admin' : 'site';
+
+  // Evita reenviar eventos já aceitos pela Meta com o mesmo event_id.
+  const { data: priorReceipt, error: receiptReadError } = await admin
+    .from('meta_event_receipts')
+    .select('status, events_received, fb_trace_id')
+    .eq('event_id', eventId)
+    .limit(1)
+    .maybeSingle();
+  if (!receiptReadError && priorReceipt?.status === 'enviado') {
+    return json({ ok: true, deduped: true, event_id: eventId, event_name: eventName, events_received: priorReceipt.events_received || 0 }, 200);
+  }
+
+  const { error: receiptStartError } = await admin.from('meta_event_receipts').upsert({
+    event_id: eventId,
+    event_name: eventName,
+    source: receiptSource,
+    status: 'pendente',
+    events_received: 0,
+    http_status: null,
+    error_code: null,
+    error_subcode: null,
+    fb_trace_id: null,
+    source_path: sourcePath,
+    content_ids: contentIds,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'event_id' });
+  if (receiptStartError) console.warn(`[${FN_NAME}] receipt start falhou:`, receiptStartError.message);
 
   let rowId: string | null = null;
   if (eventName === 'Purchase') {
@@ -179,13 +215,25 @@ Deno.serve(async (req) => {
     // event_id, NÃO reenvia (retorna sucesso deduplicado, sem chamar a Meta).
     const { data: alreadySent } = await admin
       .from('rastreio_conversoes')
-      .select('id')
+      .select('id, fb_trace_id')
       .eq('event_id', eventId)
       .eq('status', 'enviado')
       .limit(1)
       .maybeSingle();
     if (alreadySent) {
-      return json({ ok: true, deduped: true, event_id: eventId, event_name: eventName }, 200);
+      await admin.from('meta_event_receipts').upsert({
+        event_id: eventId,
+        event_name: eventName,
+        source: receiptSource,
+        status: 'enviado',
+        events_received: 1,
+        http_status: 200,
+        fb_trace_id: alreadySent.fb_trace_id || null,
+        source_path: sourcePath,
+        content_ids: contentIds,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'event_id' });
+      return json({ ok: true, deduped: true, event_id: eventId, event_name: eventName, events_received: 1 }, 200);
     }
 
     const { data: inserted, error: insertErr } = await admin
@@ -266,6 +314,22 @@ Deno.serve(async (req) => {
 
   const ok = metaStatus >= 200 && metaStatus < 300 && metaJson && !metaJson.error;
 
+  // Guarda apenas o resultado técnico devolvido pela API; sem dados do cliente.
+  const receivedCount = Math.max(0, Math.trunc(Number(metaJson?.events_received) || 0));
+  const metaError = metaJson?.error || {};
+  const errorCode = Number.isFinite(Number(metaError.code)) ? Number(metaError.code) : null;
+  const errorSubcode = Number.isFinite(Number(metaError.error_subcode)) ? Number(metaError.error_subcode) : null;
+  const { error: receiptUpdateError } = await admin.from('meta_event_receipts').update({
+    status: ok ? 'enviado' : 'erro',
+    events_received: receivedCount,
+    http_status: metaStatus || null,
+    error_code: errorCode,
+    error_subcode: errorSubcode,
+    fb_trace_id: metaJson?.fbtrace_id || null,
+    updated_at: new Date().toISOString(),
+  }).eq('event_id', eventId);
+  if (receiptUpdateError) console.warn(`[${FN_NAME}] receipt update falhou:`, receiptUpdateError.message);
+
   // ---------- UPDATE rastreio (só p/ Purchase) ----------
   if (rowId) {
     if (ok) {
@@ -294,7 +358,7 @@ Deno.serve(async (req) => {
 
   return json(
     ok
-      ? { ok: true, id: rowId, event_id: eventId, event_name: eventName, fb_trace_id: metaJson?.fbtrace_id || null }
+      ? { ok: true, id: rowId, event_id: eventId, event_name: eventName, events_received: receivedCount, fb_trace_id: metaJson?.fbtrace_id || null }
       : { ok: false, id: rowId, event_id: eventId, event_name: eventName, error: 'Meta CAPI rejected', details: metaJson || metaErrText },
     ok ? 200 : 502,
   );
