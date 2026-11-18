@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Search, X, Plus, Minus, Trash2, Check, MessageCircle } from 'lucide-react';
 import { createMetaEventId, dispatchCAPIPurchase } from '../lib/capi';
+import { getMetaCatalogId } from '../lib/metaCatalogId';
 import { createOrder, confirmOrderSale, markOrderPurchaseSent } from '../lib/orders';
 import { formatBRL } from '../lib/format';
 import { optimizeImage } from '../lib/images';
@@ -68,7 +69,7 @@ export default function ManualSale({ products, setProducts, setLeads, mapOrderRo
     setSaving(true);
     try {
       // 1) Cria o pedido como CONCLUÍDO (venda já fechada no WhatsApp)
-      const items = picked.map((i) => ({ id: i.id, name: i.name, sku: i.sku, price: i.price, size: i.size, qty: i.qty, image: i.image }));
+      const items = picked.map((i) => ({ id: i.id, name: i.name, sku: i.sku, meta_content_id: getMetaCatalogId(i, products), price: i.price, size: i.size, qty: i.qty, image: i.image }));
       const order = await createOrder({
         customer: { name: name.trim() || 'Cliente WhatsApp', phone: phoneClean, orderNumber: `WA${Math.floor(10000 + Math.random() * 90000)}` },
         items,
@@ -101,8 +102,8 @@ export default function ManualSale({ products, setProducts, setLeads, mapOrderRo
       const eventId = createMetaEventId();
       const res = await dispatchCAPIPurchase({
         phone: phoneClean, value: total, name: name.trim(), event_id: eventId,
-        content_ids: items.map(i => String(i.sku || i.id)),
-        contents: items.map(i => ({ id: String(i.sku || i.id), quantity: Number(i.qty || 1), item_price: Number(i.price || 0) })),
+        content_ids: items.map(i => i.meta_content_id),
+        contents: items.map(i => ({ id: i.meta_content_id, quantity: Number(i.qty || 1), item_price: Number(i.price || 0) })),
       });
       if (res?.ok) { try { await markOrderPurchaseSent(order.id, eventId); } catch {} }
 

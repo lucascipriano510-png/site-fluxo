@@ -34,6 +34,7 @@ import { getSessionToken, saveSession, clearSession, registerAccount, loginAccou
 import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFIG } from './lib/siteConfig';
 import { createMetaEventId } from './lib/capi';
 import { initMetaPixel, trackEvent, getMetaBrowserParams, getStoredUtm, markOwnerDevice } from './lib/metaPixel';
+import { getMetaCatalogId, hasDuplicateMetaSku } from './lib/metaCatalogId';
 import { criarAtendimentoFromPedido } from './lib/crm';
 import { fetchRatingsBatch } from './lib/reviews';
 // Admin + recharts: code-split. Só baixam quando o painel abre — fora do bundle do cliente.
@@ -490,6 +491,9 @@ function App() {
   const initialUrlProduto = useRef(
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('produto') : null
   );
+  const initialUrlProdutoId = useRef(
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('produto_id') : null
+  );
   // Captura ?sacola=SKU:TAM:QTD,SKU:TAM — link de sacola montada (vendedor monta o
   // pedido e manda um link; abre com tudo na sacola). QTD é opcional (padrão 1).
   const initialUrlSacola = useRef(
@@ -555,7 +559,7 @@ function App() {
         value,
         currency: 'BRL',
         content_name: p.name,
-        content_ids: [String(p.sku || p.id)],
+        content_ids: [getMetaCatalogId(p, products)],
         content_type: 'product',
       });
     } catch (e) { /* ignore */ }
@@ -1216,9 +1220,9 @@ function App() {
         value: addedValue,
         currency: 'BRL',
         content_name: selectedProduct.name,
-        content_ids: [String(selectedProduct.sku || selectedProduct.id)],
+        content_ids: [getMetaCatalogId(selectedProduct, products)],
         content_type: 'product',
-        contents: [{ id: String(selectedProduct.sku || selectedProduct.id), quantity: addedQty, item_price: unitPrice }],
+        contents: [{ id: getMetaCatalogId(selectedProduct, products), quantity: addedQty, item_price: unitPrice }],
       });
     } catch (e) { /* ignore */ }
     setSelectedProduct(null);
@@ -1245,6 +1249,7 @@ function App() {
         id: Number(item?.id) || 0,
         name: String(item?.name ?? ''),
         sku: String(item?.sku ?? ''),
+        meta_content_id: getMetaCatalogId(item, products),
         size: String(item?.size ?? ''),
         price: Number(item?.price) || 0,
         qty: Number(item?.quantity) || 0,
@@ -1322,9 +1327,9 @@ function App() {
         value: totalPedido,
         currency: 'BRL',
         phone: customerPhone,
-        content_ids: itensNormalizados.map(i => String(i.sku || i.id)),
+        content_ids: itensNormalizados.map(i => i.meta_content_id),
         content_type: 'product',
-        contents: itensNormalizados.map(i => ({ id: String(i.sku || i.id), quantity: i.qty, item_price: i.price })),
+        contents: itensNormalizados.map(i => ({ id: i.meta_content_id, quantity: i.qty, item_price: i.price })),
       });
 
       // ⚠️ P17: Purchase NÃO é mais disparado aqui (checkout do cliente).
@@ -1512,10 +1517,15 @@ function App() {
     if (!productsLoaded && !selectedProduct) return;
     try {
       const url = new URL(window.location.href);
-      if (selectedProduct?.sku) {
+      if (selectedProduct && hasDuplicateMetaSku(selectedProduct, products)) {
+        url.searchParams.delete('produto');
+        url.searchParams.set('produto_id', String(selectedProduct.id));
+      } else if (selectedProduct?.sku) {
+        url.searchParams.delete('produto_id');
         url.searchParams.set('produto', selectedProduct.sku);
       } else {
         url.searchParams.delete('produto');
+        url.searchParams.delete('produto_id');
       }
       const newUrl = url.pathname + (url.search ? url.search : '') + url.hash;
       const current = window.location.pathname + window.location.search + window.location.hash;
@@ -1528,9 +1538,13 @@ function App() {
   useEffect(() => {
     if (!productsLoaded || !(products || []).length) return;
     const sku = initialUrlProduto.current;
-    if (!sku || selectedProduct) return;
+    const productId = initialUrlProdutoId.current;
+    if ((!sku && !productId) || selectedProduct) return;
     initialUrlProduto.current = null; // evita re-trigger
-    const found = (products || []).find(p => (p.sku || '').toUpperCase() === sku.toUpperCase());
+    initialUrlProdutoId.current = null;
+    const found = productId
+      ? (products || []).find(p => String(p.id) === productId)
+      : (products || []).find(p => (p.sku || '').toUpperCase() === sku.toUpperCase());
     if (found && (found.is_kit || (found.stock || 0) > 0)) {
       setSelectedProduct(found);
       setSelectedSizes({});

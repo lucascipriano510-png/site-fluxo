@@ -14,8 +14,8 @@
 // preguiçoso do CSV pronto.
 //
 // IMPORTANTE (dedup com Pixel/CAPI): o `id` de cada item é o MESMO valor que
-// o site manda em content_ids (String(sku || id)) — é isso que liga o evento
-// ViewContent/AddToCart/Purchase ao item do catálogo no anúncio dinâmico.
+// o site manda em content_ids: SKU quando único; ID próprio do produto quando
+// há SKU duplicado. Isso liga ViewContent/AddToCart/Purchase ao item do catálogo.
 // =====================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -24,7 +24,7 @@ const FEED_TOKEN = 'flx-feed-x7K2m9Qw4Zr8pT3v';
 const SITE_URL = 'https://www.fluxooutlet.com.br';
 const BRAND = 'Fluxo Outlet';
 
-const FN_VERSION = '2026-07-02.1';
+const FN_VERSION = '2026-11-18.1';
 
 // Escapa um campo CSV (aspas, vírgulas, quebras de linha).
 function csv(v: unknown): string {
@@ -58,6 +58,14 @@ Deno.serve(async (req) => {
   }
 
   const now = Date.now();
+  const feedProducts = (data || []).filter((p) =>
+    p.is_kit !== true && p.is_active !== false && Boolean(p.image) && Number(p.price || 0) > 0
+  );
+  const skuCounts = new Map<string, number>();
+  for (const p of feedProducts) {
+    const sku = String(p.sku || '').trim();
+    if (sku) skuCounts.set(sku, (skuCounts.get(sku) || 0) + 1);
+  }
   const header = [
     'id', 'title', 'description', 'availability', 'condition',
     'price', 'sale_price', 'link', 'image_link', 'additional_image_link',
@@ -66,15 +74,21 @@ Deno.serve(async (req) => {
 
   const lines: string[] = [header];
 
-  for (const p of data || []) {
+  for (const p of feedProducts) {
     if (p.is_kit === true) continue;            // kit não tem estoque próprio
     if (p.is_active === false) continue;
     if (!p.image) continue;                     // Meta exige image_link
     const price = Number(p.price || 0);
     if (price <= 0) continue;                   // Meta exige preço > 0
 
-    // Mesmo id que o Pixel/CAPI manda em content_ids (dedup do anúncio dinâmico).
-    const contentId = String(p.sku || p.id);
+    // SKUs únicos mantêm os IDs atuais. Colisões usam o ID próprio do produto,
+    // exatamente como o Pixel/CAPI e o deeplink do site.
+    const sku = String(p.sku || '').trim();
+    const duplicateSku = Boolean(sku && (skuCounts.get(sku) || 0) > 1);
+    const contentId = sku && !duplicateSku ? sku : String(p.id);
+    const productLink = duplicateSku
+      ? `${SITE_URL}/?produto_id=${encodeURIComponent(String(p.id))}`
+      : `${SITE_URL}/?produto=${encodeURIComponent(contentId)}`;
 
     // sale_price: Oferta do Dia viva tem prioridade; senão preço promocional.
     let sale: number | null = null;
@@ -100,7 +114,7 @@ Deno.serve(async (req) => {
       csv('new'),
       csv(moneyBRL(price)),
       csv(sale != null ? moneyBRL(sale) : ''),
-      csv(`${SITE_URL}/?produto=${encodeURIComponent(contentId)}`),
+      csv(productLink),
       csv(p.image),
       csv(gallery.join(',')),
       csv(BRAND),

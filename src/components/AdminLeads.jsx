@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Barcode, Box, Clock, Database, Edit3, Megaphone, MessageCircle, X, Plus } from 'lucide-react';
 import { createMetaEventId, dispatchCAPIPurchase, dispatchCAPIRefund } from '../lib/capi';
+import { getMetaCatalogId } from '../lib/metaCatalogId';
 import { formatBRL } from '../lib/format';
 import { cancelOrder, confirmOrderSale, getOrderPurchaseEventId, markOrderPurchaseSent, restoreOrderStock, updateOrderPhone, updateOrderStatus, updateOrderValue } from '../lib/orders';
 import ManualSale from './ManualSale';
@@ -116,6 +117,11 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config,
             // CATÁLOGO: itens do pedido (id = sku, mesmo do feed meta-catalog) —
             // é o que permite a campanha de catálogo atribuir a VENDA ao produto.
             const orderItems = Array.isArray(leadToUpdate.items) ? leadToUpdate.items : [];
+            const metaItems = orderItems.map((item) => {
+              const product = products.find((candidate) => String(candidate.id) === String(item.id)) || item;
+              const contentId = item.meta_content_id || getMetaCatalogId(product, products);
+              return { ...item, meta_content_id: contentId };
+            });
             const res = await dispatchCAPIPurchase({
               phone: leadToUpdate.phone,
               value: leadToUpdate.value,
@@ -125,8 +131,8 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config,
               fbc: raw.fbc || null,
               event_source_url: raw.src_url || null,
               user_agent: raw.client_ua || null,
-              content_ids: orderItems.map(i => String(i.sku || i.id)),
-              contents: orderItems.map(i => ({ id: String(i.sku || i.id), quantity: Number(i.qty || i.quantity || 1), item_price: Number(i.price || 0) })),
+              content_ids: metaItems.map(i => i.meta_content_id),
+              contents: metaItems.map(i => ({ id: i.meta_content_id, quantity: Number(i.qty || i.quantity || 1), item_price: Number(i.price || 0) })),
             });
             if (res?.ok) await markOrderPurchaseSent(purchaseOrderId, purchaseEventId);
           }
