@@ -47,6 +47,7 @@ const AdminRastreio = React.lazy(() => import('./components/AdminRastreio'));
 const AdminCRM = React.lazy(() => import('./components/AdminCRM'));
 const AdminGrowth = React.lazy(() => import('./components/AdminGrowth'));
 const AdminStockAlerts = React.lazy(() => import('./components/AdminStockAlerts'));
+const AdminRewards = React.lazy(() => import('./components/AdminRewards'));
 
 // ==========================================
 // 1. CONFIGURAÇÃO E DADOS INICIAIS
@@ -1933,6 +1934,7 @@ function App() {
     { key: 'inventory', icon: <Box size={18}/>, label: 'Estoque' },
     { key: 'leads', icon: <User size={18}/>, label: 'Pedidos', badge: newOrdersCount > 0 ? (newOrdersCount > 99 ? '99+' : String(newOrdersCount)) : null },
     { key: 'crm', icon: <MessageCircle size={18}/>, label: 'Atend.' },
+    { key: 'rewards', icon: <Ticket size={18}/>, label: 'Rewards' },
     { key: 'growth', icon: <Flame size={18}/>, label: 'Vendas' },
     { key: 'banners', icon: <Megaphone size={18}/>, label: 'Promo' },
     { key: 'alerts', icon: <Bell size={18}/>, label: 'Avisos', badge: stockAlertsPending > 0 ? (stockAlertsPending > 99 ? '99+' : String(stockAlertsPending)) : null },
@@ -1978,6 +1980,7 @@ function App() {
               {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} products={products} setProducts={setProducts} uploadImage={uploadImage} />}
               {adminTab === 'rastreio' && <AdminRastreio />}
               {adminTab === 'crm' && <AdminCRM showToast={showToast} config={config} />}
+              {adminTab === 'rewards' && <AdminRewards showToast={showToast} />}
               {adminTab === 'growth' && <AdminGrowth leads={leads} products={products} config={config} />}
               {adminTab === 'alerts' && <AdminStockAlerts showToast={showToast} onPendingChange={setStockAlertsPending} products={products} />}
               </React.Suspense>
@@ -1986,12 +1989,12 @@ function App() {
         </div>
 
         {/* BOTTOM NAV — visível só no mobile */}
-        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-zinc-900/95 backdrop-blur-xl px-4 py-4 rounded-3xl flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-50 border border-white/10 lg:hidden">
+        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[94%] max-w-md bg-zinc-900/95 backdrop-blur-xl px-4 py-3 rounded-3xl flex items-center justify-start gap-5 overflow-x-auto shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-50 border border-white/10 lg:hidden">
           {adminNavItems.map(item => (
             <button
               key={item.key}
               onClick={() => { setAdminTab(item.key); if (item.key === 'leads') setNewOrdersCount(0); }}
-              className={`flex flex-col items-center gap-1 transition-colors duration-200 relative ${adminTab === item.key ? 'text-emerald-500' : 'text-zinc-500'}`}
+              className={`flex shrink-0 flex-col items-center gap-1 transition-colors duration-200 relative ${adminTab === item.key ? 'text-emerald-500' : 'text-zinc-500'}`}
             >
               {item.icon}
               {item.badge && (
