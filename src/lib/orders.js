@@ -4,7 +4,7 @@ import { supabase } from './supabaseClient';
 // id | order_number | name | phone | items (jsonb) | value | status | created_at
 
 // Cria um pedido novo (status NOVO). NÃO mexe no estoque.
-export async function createOrder({ customer, items, total, notes = '', status = 'NOVO' }) {
+export async function createOrder({ customer, items, total, notes = '', status = 'NOVO', salesChannel = null }) {
   const name = String(customer?.name || 'Cliente não informado').trim();
   const phone = String(customer?.phone || '').replace(/\D/g, '') || '00000000000';
   const orderNumber = String(customer?.orderNumber || Math.floor(10000 + Math.random() * 90000));
@@ -27,6 +27,7 @@ export async function createOrder({ customer, items, total, notes = '', status =
     items: safeItems,
     value: Number(total || 0),
     status: String(status || 'NOVO'),
+    ...(salesChannel ? { sales_channel: salesChannel } : {}),
   };
 
   const { data, error } = await supabase

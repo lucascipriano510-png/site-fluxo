@@ -18,5 +18,8 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_meta_connections (
 ALTER TABLE public.whatsapp_meta_connections ENABLE ROW LEVEL SECURITY;
 
 -- Sem policies: apenas a service role da Function tem acesso (RLS bloqueia anon/authenticated).
+REVOKE ALL ON TABLE public.whatsapp_meta_connections FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE public.whatsapp_meta_connections TO service_role;
+
 CREATE INDEX IF NOT EXISTS idx_whatsapp_meta_connections_business_status
   ON public.whatsapp_meta_connections (business_id, status);

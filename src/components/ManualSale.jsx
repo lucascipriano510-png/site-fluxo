@@ -22,11 +22,11 @@ const stockedSizes = (p) => (Array.isArray(p.sizes) ? p.sizes : [])
   }))
   .filter((e) => e.stock > 0);
 
-export default function ManualSale({ products, setProducts, setLeads, mapOrderRow, showToast, onClose }) {
+export default function ManualSale({ products, setProducts, setLeads, mapOrderRow, showToast, onClose, initialPhone = '', initialName = '' }) {
   const [search, setSearch] = useState('');
   const [picked, setPicked] = useState([]); // {key,id,name,sku,image,price,size,qty}
-  const [phone, setPhone] = useState('');
-  const [name, setName] = useState('');
+  const [phone, setPhone] = useState(initialPhone);
+  const [name, setName] = useState(initialName);
   const [valueOverride, setValueOverride] = useState('');
   const [decrementStock, setDecrementStock] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,6 +75,7 @@ export default function ManualSale({ products, setProducts, setLeads, mapOrderRo
         items,
         total,
         status: 'CONCLUÍDO',
+        salesChannel: 'whatsapp',
       });
 
       // 2) Baixa estoque (opcional) — reusa a mesma rotina da venda do site

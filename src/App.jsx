@@ -35,7 +35,6 @@ import { fetchSiteConfig, upsertSiteConfig, DEFAULT_CONFIG as SITE_DEFAULT_CONFI
 import { createMetaEventId } from './lib/capi';
 import { initMetaPixel, trackEvent, getMetaBrowserParams, getStoredUtm, markOwnerDevice } from './lib/metaPixel';
 import { getMetaCatalogId, hasDuplicateMetaSku } from './lib/metaCatalogId';
-import { criarAtendimentoFromPedido } from './lib/crm';
 import { fetchRatingsBatch } from './lib/reviews';
 // Admin + recharts: code-split. Só baixam quando o painel abre — fora do bundle do cliente.
 const AdminInventory = React.lazy(() => import('./components/AdminInventory'));
@@ -1282,9 +1281,6 @@ function App() {
       const { data: newOrder, error } = await supabase.from('orders').insert([payload]).select().single();
       if (error) throw new Error(error.message);
 
-      // Fire-and-forget: registra no CRM sem bloquear o checkout
-      criarAtendimentoFromPedido({ ...payload, id: newOrder.id }).catch((e) => console.warn('[CRM]', e));
-
       // Monta mensagem WhatsApp
       const itemsText = itensNormalizados
         .map((item) => {
@@ -1979,7 +1975,7 @@ function App() {
               {adminTab === 'banners' && <AdminBanners banners={banners} setBanners={setBanners} showToast={showToast} bannerImageFile={bannerImageFile} setBannerImageFile={setBannerImageFile} uploadImage={uploadImage} uploadVideo={uploadVideo} products={products} setProducts={setProducts} />}
               {adminTab === 'config' && <AdminConfig config={config} setConfig={setConfig} showToast={showToast} products={products} setProducts={setProducts} uploadImage={uploadImage} />}
               {adminTab === 'rastreio' && <AdminRastreio />}
-              {adminTab === 'crm' && <AdminCRM showToast={showToast} config={config} />}
+              {adminTab === 'crm' && <AdminCRM showToast={showToast} products={products} setProducts={setProducts} setLeads={setLeads} mapOrderRow={mapOrderRow} />}
               {adminTab === 'rewards' && <AdminRewards showToast={showToast} />}
               {adminTab === 'growth' && <AdminGrowth leads={leads} products={products} config={config} />}
               {adminTab === 'alerts' && <AdminStockAlerts showToast={showToast} onPendingChange={setStockAlertsPending} products={products} />}

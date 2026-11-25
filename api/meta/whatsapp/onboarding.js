@@ -84,6 +84,24 @@ export default async function handler(req, res) {
       return json(res, 502, { error: "Meta did not authorize the connection." });
     }
 
+    const subscribeResponse = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${wabaId}/subscribed_apps`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
+        },
+      },
+    );
+    const subscribePayload = await subscribeResponse.json().catch(() => ({}));
+    const subscribed = subscribeResponse.ok && subscribePayload.success !== false;
+    if (!subscribed) {
+      console.warn("[whatsapp-onboarding] WABA subscription failed", {
+        status: subscribeResponse.status,
+      });
+    }
+
     const encrypted = encryptAccessToken(accessToken);
     const connection = {
       business_id: process.env.META_BUSINESS_ID,
@@ -120,6 +138,7 @@ export default async function handler(req, res) {
     return json(res, 200, {
       ok: true,
       status: "connected",
+      webhook_subscribed: subscribed,
       waba_id: String(wabaId),
       phone_number_id: String(phoneNumberId),
     });
