@@ -1929,7 +1929,7 @@ function App() {
     { key: 'dashboard', icon: <LayoutDashboard size={18}/>, label: 'Painel' },
     { key: 'inventory', icon: <Box size={18}/>, label: 'Estoque' },
     { key: 'leads', icon: <User size={18}/>, label: 'Pedidos', badge: newOrdersCount > 0 ? (newOrdersCount > 99 ? '99+' : String(newOrdersCount)) : null },
-    { key: 'crm', icon: <MessageCircle size={18}/>, label: 'Atend.' },
+    { key: 'crm', icon: <MessageCircle size={18}/>, label: 'CRM' },
     { key: 'rewards', icon: <Ticket size={18}/>, label: 'Rewards' },
     { key: 'growth', icon: <Flame size={18}/>, label: 'Vendas' },
     { key: 'banners', icon: <Megaphone size={18}/>, label: 'Promo' },
