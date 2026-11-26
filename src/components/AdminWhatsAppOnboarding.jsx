@@ -341,8 +341,9 @@ export default function AdminWhatsAppOnboarding() {
         {!isConfigured && (
           <p className="mt-6 rounded-xl bg-amber-400/10 px-4 py-3 text-sm leading-6 text-amber-100">
             <CircleAlert className="mr-2 inline-block" size={17} />
-            Configure <code>VITE_META_APP_ID</code> e <code>VITE_META_WHATSAPP_CONFIG_ID</code>{" "}
-            antes de iniciar.
+            O Embedded Signup desta tela é opcional e só pode ser iniciado quando{" "}
+            <code>VITE_META_APP_ID</code> e <code>VITE_META_WHATSAPP_CONFIG_ID</code> estiverem
+            configurados. A ausência do Config ID não bloqueia o webhook nem a WhatsApp Cloud API.
           </p>
         )}
         <div className="mt-10 border-t border-white/10 pt-5 text-sm leading-6 text-zinc-400">

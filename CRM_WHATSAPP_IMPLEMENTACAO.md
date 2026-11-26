@@ -20,7 +20,7 @@ O health check e os recibos recentes da CAPI/Pixel `1488076836116872` foram veri
 
 ## Pendências para ativar a integração real
 
-No ambiente Vercel do projeto, confirme que estão definidos: `SUPABASE_URL` (ou `VITE_SUPABASE_URL`), `SUPABASE_ANON_KEY` (ou `VITE_SUPABASE_ANON_KEY`), `SUPABASE_SERVICE_ROLE_KEY`, `META_ADMIN_USER_ID`, `META_APP_ID`, `META_APP_SECRET`, `META_WHATSAPP_CONFIG_ID`, `META_BUSINESS_ID`, `META_TOKEN_ENCRYPTION_KEY` (32 bytes em Base64) e `META_WHATSAPP_VERIFY_TOKEN`. `META_GRAPH_VERSION` é opcional. Nenhum valor deve ser inserido no frontend.
+No ambiente Vercel do projeto, confirme que estão definidos: `SUPABASE_URL` (ou `VITE_SUPABASE_URL`), `SUPABASE_ANON_KEY` (ou `VITE_SUPABASE_ANON_KEY`), `SUPABASE_SERVICE_ROLE_KEY`, `META_ADMIN_USER_ID`, `META_APP_ID`, `META_APP_SECRET`, `META_BUSINESS_ID`, `META_TOKEN_ENCRYPTION_KEY` (32 bytes em Base64) e `META_WHATSAPP_VERIFY_TOKEN`. `META_GRAPH_VERSION` e `META_WHATSAPP_CONFIG_ID` são opcionais; o Config ID só é necessário para usar Embedded Signup, junto com `VITE_META_APP_ID`, e não para webhook/Cloud API. Nenhum valor deve ser inserido no frontend.
 
 Para ativar a integração real, configurar no Meta App Dashboard o callback `https://www.fluxooutlet.com.br/api/meta/whatsapp/webhook`, o mesmo verify token guardado no Vercel e assinar o campo `messages` em WhatsApp > Configuration. Completar o Embedded Signup; o servidor tentará então inscrever a WABA em `/<WABA_ID>/subscribed_apps`. Confirmar que o app tem acesso à permissão `whatsapp_business_messaging` e à WABA/número selecionados. A documentação da Meta descreve a verificação GET e a assinatura HMAC do POST [1], o campo `messages` [2] e a inscrição da WABA [3].
 

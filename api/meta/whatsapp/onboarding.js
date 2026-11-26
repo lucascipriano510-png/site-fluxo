@@ -42,7 +42,6 @@ export default async function handler(req, res) {
   const required = [
     "META_APP_ID",
     "META_APP_SECRET",
-    "META_WHATSAPP_CONFIG_ID",
     "META_BUSINESS_ID",
     "META_ADMIN_USER_ID",
     "META_TOKEN_ENCRYPTION_KEY",

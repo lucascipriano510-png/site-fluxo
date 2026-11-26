@@ -9,11 +9,11 @@ Configure as variáveis abaixo nos ambientes necessários e faça um novo deploy
 | Variável                       | Valor / finalidade                                                                                                                   |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `VITE_META_APP_ID`             | `1505001754713162` — exposta ao navegador para inicializar o SDK.                                                                    |
-| `VITE_META_WHATSAPP_CONFIG_ID` | Config ID do Embedded Signup criado no Meta for Developers.                                                                          |
+| `VITE_META_WHATSAPP_CONFIG_ID` | Opcional; Config ID do Embedded Signup criado no Meta for Developers. Necessário apenas para iniciar esse fluxo nesta tela.          |
 | `VITE_META_GRAPH_VERSION`      | `v25.0` (opcional; este é o padrão).                                                                                                 |
 | `META_APP_ID`                  | `1505001754713162` — uso exclusivo da Function.                                                                                      |
 | `META_APP_SECRET`              | App Secret do app Meta; exclusivo de servidor.                                                                                       |
-| `META_WHATSAPP_CONFIG_ID`      | Mesmo Config ID; reservado para auditoria/configuração de servidor.                                                                  |
+| `META_WHATSAPP_CONFIG_ID`      | Opcional; não é usado pelo endpoint após a autorização do código OAuth.                                                              |
 | `META_GRAPH_VERSION`           | `v25.0`.                                                                                                                             |
 | `META_BUSINESS_ID`             | `836103152921929`.                                                                                                                   |
 | `META_ADMIN_USER_ID`           | UUID do usuário Supabase que já acessa a administração. A Function recusa todos os outros usuários.                                  |
@@ -30,10 +30,10 @@ Execute a migration `supabase/migrations/20260723_create_whatsapp_meta_connectio
 
 ## Meta: passos manuais restantes
 
-1. No Meta for Developers, crie/revise a configuração do WhatsApp Embedded Signup para o app `1505001754713162`, em modo de coexistência com WhatsApp Business App, e copie seu Config ID para as duas variáveis correspondentes.
+1. Opcional: no Meta for Developers, crie/revise a configuração do WhatsApp Embedded Signup para o app `1505001754713162`, em modo de coexistência com WhatsApp Business App. Para usar esta tela, configure `VITE_META_APP_ID` e `VITE_META_WHATSAPP_CONFIG_ID`; não use o App ID como substituto do Config ID.
 2. Autorize a URL de produção `https://www.fluxooutlet.com.br/admin/conectar-whatsapp` nas configurações exigidas pela Meta (domínios, redirect/origens permitidas conforme o painel atual).
 3. Confirme que o usuário informado em `META_ADMIN_USER_ID` é o administrador do painel Supabase. A rota também exige a sessão Supabase desse mesmo usuário.
-4. Faça deploy depois de configurar os env vars e abra a rota administrativa. O fluxo deve retornar `FINISH` com `waba_id` e `phone_number_id`; então a Function troca o código por token e grava a conexão.
+4. Se optar pelo Embedded Signup, faça deploy depois de configurar as variáveis necessárias e abra a rota administrativa. O fluxo deve retornar `FINISH` com `waba_id` e `phone_number_id`; então a Function troca o código por token e grava a conexão. O endpoint server-side não exige `META_WHATSAPP_CONFIG_ID`.
 
 WABA conhecida atualmente: `469734826223192`. Ela é apenas referência operacional; a página salva a WABA realmente devolvida pela Meta, para não fixar indevidamente uma seleção futura.
 
@@ -43,3 +43,4 @@ WABA conhecida atualmente: `469734826223192`. Ela é apenas referência operacio
 - O endpoint exige `Authorization: Bearer <sessão Supabase>` e confere `META_ADMIN_USER_ID` antes de falar com a Meta.
 - Logs registram somente status e mensagens genéricas; nunca o authorization code ou access token.
 - Não há endpoint `/register` e nenhum Flow existente é modificado.
+- O Config ID identifica a configuração do Embedded Signup; não é requisito do webhook nem da WhatsApp Cloud API.
