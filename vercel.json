@@ -8,6 +8,7 @@
     { "source": "/status/:sku", "destination": "/api/og-status?sku=:sku" },
     { "source": "/qr/:sku", "destination": "/api/qr?sku=:sku" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/privacidade", "destination": "/privacidade.html" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
