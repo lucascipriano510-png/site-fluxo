@@ -1,4 +1,4 @@
--- Preparação aprovada para revisão. NÃO aplicada ao projeto Supabase nesta tarefa.
+-- CRM da Fluxo Outlet: tarefas privadas, segmentos e transações atômicas de pedidos/estoque.
 -- Transações de venda/estoque e fila de ações CRM, com acesso somente ao backend.
 
 CREATE TABLE IF NOT EXISTS public.whatsapp_crm_tasks (
