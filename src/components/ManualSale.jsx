@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Search, X, Plus, Minus, Trash2, Check, MessageCircle } from 'lucide-react';
-import { createMetaEventId, dispatchCAPIPurchase } from '../lib/capi';
+import { dispatchCAPIPurchase } from '../lib/capi';
 import { getMetaCatalogId } from '../lib/metaCatalogId';
-import { createOrder, confirmOrderSale, markOrderPurchaseSent } from '../lib/orders';
+import { createWhatsAppSale, getOrderPurchaseEventId, markOrderPurchaseSent } from '../lib/orders';
 import { formatBRL } from '../lib/format';
 import { optimizeImage } from '../lib/images';
+import { fetchProducts } from '../lib/supabase';
 
 /**
  * Venda manual (WhatsApp): o dono seleciona os produtos vendidos, informa o
@@ -30,6 +31,7 @@ export default function ManualSale({ products, setProducts, setLeads, mapOrderRo
   const [valueOverride, setValueOverride] = useState('');
   const [decrementStock, setDecrementStock] = useState(true);
   const [saving, setSaving] = useState(false);
+  const saleRequestRef = useRef(null);
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -68,50 +70,55 @@ export default function ManualSale({ products, setProducts, setLeads, mapOrderRo
     if (total <= 0) { showToast('Valor da venda inválido.', 'error'); return; }
     setSaving(true);
     try {
-      // 1) Cria o pedido como CONCLUÍDO (venda já fechada no WhatsApp)
+      // 1) Registra venda e baixa opcional do estoque numa única transação.
       const items = picked.map((i) => ({ id: i.id, name: i.name, sku: i.sku, meta_content_id: getMetaCatalogId(i, products), price: i.price, size: i.size, qty: i.qty, image: i.image }));
-      const order = await createOrder({
-        customer: { name: name.trim() || 'Cliente WhatsApp', phone: phoneClean, orderNumber: `WA${Math.floor(10000 + Math.random() * 90000)}` },
+      const fingerprint = JSON.stringify({ name: name.trim(), phone: phoneClean, items, total, decrementStock });
+      if (saleRequestRef.current?.fingerprint !== fingerprint) {
+        const requestId = globalThis.crypto?.randomUUID?.() || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = Math.floor(Math.random() * 16);
+          return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+        });
+        saleRequestRef.current = { fingerprint, requestId };
+      }
+      const order = await createWhatsAppSale({
+        requestId: saleRequestRef.current.requestId,
+        name: name.trim() || 'Cliente WhatsApp',
+        phone: phoneClean,
         items,
-        total,
-        status: 'CONCLUÍDO',
-        salesChannel: 'whatsapp',
+        value: total,
+        orderNumber: `WA${Math.floor(10000 + Math.random() * 90000)}`,
+        decrementStock,
       });
 
-      // 2) Baixa estoque (opcional) — reusa a mesma rotina da venda do site
+      // 2) Reflete no painel somente após a transação confirmar pedido e estoque.
       if (decrementStock) {
         try {
-          await confirmOrderSale({ id: order.id, items }, products);
-          // Reflete no estado local
-          setProducts((prev) => prev.map((p) => {
-            const its = items.filter((it) => it.id === p.id);
-            if (its.length === 0) return p;
-            const totalQty = its.reduce((a, c) => a + Number(c.qty || 0), 0);
-            const newSizes = (p.sizes || []).map((s) => {
-              const sName = typeof s === 'string' ? s : (s.size || 'U');
-              const sStock = typeof s === 'string' ? (p.stock || 0) : Number(s.stock || 0);
-              const dec = its.filter((i) => i.size === sName).reduce((a, c) => a + Number(c.qty || 0), 0);
-              return { size: sName, stock: Math.max(0, sStock - dec) };
-            });
-            return { ...p, sizes: newSizes, stock: Math.max(0, (p.stock || 0) - totalQty), sales: (p.sales || 0) + totalQty };
-          }));
+          setProducts(await fetchProducts());
         } catch (e) { console.warn('[venda-manual] estoque:', e?.message); }
       }
 
       // 3) Dispara Purchase pra Meta (mesmo caminho do site) + trava idempotência
       // CATÁLOGO: itens com sku -> content_ids (liga a venda ao item do catálogo)
-      const eventId = createMetaEventId();
-      const res = await dispatchCAPIPurchase({
-        phone: phoneClean, value: total, name: name.trim(), event_id: eventId,
-        content_ids: items.map(i => i.meta_content_id),
-        contents: items.map(i => ({ id: i.meta_content_id, quantity: Number(i.qty || 1), item_price: Number(i.price || 0) })),
-      });
-      if (res?.ok) { try { await markOrderPurchaseSent(order.id, eventId); } catch {} }
+      let metaOk = false;
+      try {
+        const sentEventId = await getOrderPurchaseEventId(order.id);
+        if (sentEventId) metaOk = true;
+        else {
+          const res = await dispatchCAPIPurchase({
+            phone: phoneClean, value: total, name: name.trim(), event_id: saleRequestRef.current.requestId,
+            content_ids: items.map(i => i.meta_content_id),
+            contents: items.map(i => ({ id: i.meta_content_id, quantity: Number(i.qty || 1), item_price: Number(i.price || 0) })),
+          });
+          metaOk = Boolean(res?.ok);
+          if (res?.ok) { try { await markOrderPurchaseSent(order.id, saleRequestRef.current.requestId); } catch {} }
+        }
+      } catch (capiError) { console.warn('[venda-manual] Meta:', capiError?.message || capiError); }
 
       // 4) Mostra na lista de Pedidos na hora
       try { setLeads((prev) => [mapOrderRow(order), ...prev]); } catch {}
 
-      showToast(res?.ok ? 'Venda registrada e enviada pra Meta!' : 'Venda registrada. (Meta: verifique o CAPI)', res?.ok ? 'success' : 'info');
+      showToast(metaOk ? 'Venda registrada e enviada pra Meta!' : 'Venda registrada. (Meta: verifique o CAPI)', metaOk ? 'success' : 'info');
+      saleRequestRef.current = null;
       onClose();
     } catch (err) {
       console.error('[venda-manual]', err);

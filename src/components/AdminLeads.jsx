@@ -3,7 +3,8 @@ import { Barcode, Box, Clock, Database, Edit3, Megaphone, MessageCircle, X, Plus
 import { createMetaEventId, dispatchCAPIPurchase, dispatchCAPIRefund } from '../lib/capi';
 import { getMetaCatalogId } from '../lib/metaCatalogId';
 import { formatBRL } from '../lib/format';
-import { cancelOrder, confirmOrderSale, getOrderPurchaseEventId, markOrderPurchaseSent, restoreOrderStock, updateOrderPhone, updateOrderStatus, updateOrderValue } from '../lib/orders';
+import { cancelOrder, confirmOrderSale, getOrderPurchaseEventId, markOrderPurchaseSent, updateOrderPhone, updateOrderStatus, updateOrderValue } from '../lib/orders';
+import { fetchProducts } from '../lib/supabase';
 import ManualSale from './ManualSale';
 
 const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config, mapOrderRow }) => {
@@ -83,25 +84,12 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config,
             id: i.id, size: i.size, qty: i.qty || i.quantity || 1,
           })),
         };
-        await confirmOrderSale(orderForSale, products);
+        await confirmOrderSale(orderForSale);
         // Atualiza local: marca como concluído. O `value` é preservado pelo spread,
         // então o totalRevenue do Dashboard é recalculado em tempo real (useMemo).
         // A persistência no Supabase já foi feita por confirmOrderSale acima.
         setLeads(prev => prev.map(l => l.id === id ? { ...l, status: 'CONCLUÍDO' } : l));
-        // Atualiza products local pra refletir baixa imediata (polling vai re-sincronizar)
-        const updatedProducts = products.map(p => {
-          const itemsForP = (orderForSale.items || []).filter(it => it.id === p.id);
-          if (itemsForP.length === 0) return p;
-          const totalQty = itemsForP.reduce((a, c) => a + Number(c.qty || 0), 0);
-          const newSizes = (p.sizes || []).map(s => {
-            const sName = typeof s === 'string' ? s : (s.size || 'U');
-            const sStock = typeof s === 'string' ? (p.stock || 0) : (s.stock || 0);
-            const dec = itemsForP.filter(i => i.size === sName).reduce((a, c) => a + Number(c.qty || 0), 0);
-            return { size: sName, stock: Math.max(0, sStock - dec) };
-          });
-          return { ...p, sizes: newSizes, stock: Math.max(0, (p.stock || 0) - totalQty), sales: (p.sales || 0) + totalQty };
-        });
-        setProducts(updatedProducts);
+        try { setProducts(await fetchProducts()); } catch (refreshErr) { console.warn('[STOCK_REFRESH]', refreshErr?.message); }
         showToast('Venda confirmada e estoque atualizado!');
         // 🔴 P17: Purchase idempotente — a trava vive no BANCO (orders.meta_purchase_event_id),
         // não no status em memória. Relê o pedido: se já tem event_id, NÃO dispara de novo
@@ -141,40 +129,10 @@ const AdminLeads = ({ leads, setLeads, products, setProducts, showToast, config,
         }
       } else if (newStatus === 'CANCELADO') {
         await cancelOrder(leadToUpdate._raw?.id || leadToUpdate.id);
-
-        // 🔄 Devolve estoque SOMENTE se a venda já tinha sido CONCLUÍDA (estoque já baixou).
-        // Em qualquer outro status anterior (NOVO, EM ATENDIMENTO) o estoque nunca foi mexido.
         if (oldStatus === 'CONCLUÍDO') {
-          const orderForRestore = {
-            id: leadToUpdate._raw?.id || leadToUpdate.id,
-            items: (leadToUpdate.items || []).map(i => ({
-              id: i.id, size: i.size, qty: i.qty || i.quantity || 1,
-            })),
-          };
-          try {
-            await restoreOrderStock(orderForRestore, products);
-            // Reflete na UI imediatamente (polling re-sincroniza depois)
-            const restoredProducts = products.map(p => {
-              const itemsForP = (orderForRestore.items || []).filter(it => it.id === p.id);
-              if (itemsForP.length === 0) return p;
-              const totalQty = itemsForP.reduce((a, c) => a + Number(c.qty || 0), 0);
-              const newSizes = (p.sizes || []).map(s => {
-                const sName = typeof s === 'string' ? s : (s.size || 'U');
-                const sStock = typeof s === 'string' ? (p.stock || 0) : (s.stock || 0);
-                const inc = itemsForP.filter(i => i.size === sName).reduce((a, c) => a + Number(c.qty || 0), 0);
-                return { size: sName, stock: sStock + inc };
-              });
-              return { ...p, sizes: newSizes, stock: (p.stock || 0) + totalQty, sales: Math.max(0, (p.sales || 0) - totalQty) };
-            });
-            setProducts(restoredProducts);
-            showToast('Pedido cancelado e estoque devolvido.');
-          } catch (restoreErr) {
-            console.log('[STOCK_RESTORE_ERROR]', restoreErr);
-            showToast('Pedido cancelado, mas houve erro ao devolver estoque.', 'error');
-          }
-        } else {
-          showToast('Pedido cancelado.');
-        }
+          try { setProducts(await fetchProducts()); } catch (refreshErr) { console.warn('[STOCK_REFRESH]', refreshErr?.message); }
+          showToast('Pedido cancelado e estoque devolvido.');
+        } else showToast('Pedido cancelado.');
 
         setLeads(prev => prev.map(l => l.id === id ? { ...l, status: 'CANCELADO' } : l));
         // 🔴 CAPI — fire-and-forget: dispara Refund para a Meta (com Advanced Matching)

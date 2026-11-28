@@ -1278,7 +1278,7 @@ function App() {
 
       console.log('[checkout] enviando pedido:', payload);
 
-      const { data: newOrder, error } = await supabase.from('orders').insert([payload]).select().single();
+      const { error } = await supabase.from('orders').insert([payload]);
       if (error) throw new Error(error.message);
 
       // Monta mensagem WhatsApp
